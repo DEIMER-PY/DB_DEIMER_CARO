@@ -1,0 +1,152 @@
+erDiagram
+    PATIENTS {
+        bigint id PK
+        int document_type_id FK
+        varchar document_number UK
+        varchar first_name
+        varchar last_name
+        date birth_date
+        enum gender
+        int city_id FK
+        varchar email UK
+        varchar phone
+        datetime created_at
+    }
+
+    CLINICAL_HISTORIES {
+        bigint id PK
+        bigint patient_id FK_UK
+        varchar history_number UK
+        enum status
+        datetime created_at
+    }
+
+    HEALTHCARE_PROFESSIONALS {
+        bigint id PK
+        int document_type_id FK
+        varchar document_number UK
+        varchar first_name
+        varchar last_name
+        varchar medical_license UK
+        int specialty_id FK
+        varchar email UK
+        boolean is_active
+    }
+
+    MEDICAL_VISITS {
+        bigint id PK
+        bigint clinical_history_id FK
+        bigint professional_id FK
+        datetime visit_date
+        text reason
+        text assessment
+        text plan
+        boolean is_closed
+    }
+
+    DIAGNOSES {
+        int id PK
+        varchar code UK
+        varchar name
+        boolean is_glaucoma_type
+    }
+
+    VISIT_DIAGNOSES {
+        bigint id PK
+        bigint visit_id FK
+        int diagnosis_id FK
+        boolean is_primary
+        varchar notes
+    }
+
+    INTRAOCULAR_PRESSURES {
+        bigint id PK
+        bigint visit_id FK
+        enum eye
+        decimal pressure
+        time measurement_time
+        enum method
+    }
+
+    OCT_EXAMS {
+        bigint id PK
+        bigint visit_id FK
+        enum eye
+        decimal rnfl_average
+        decimal cup_to_disc_ratio
+        text interpretation
+        boolean is_validated
+    }
+
+    VISUAL_FIELD_EXAMS {
+        bigint id PK
+        bigint visit_id FK
+        enum eye
+        decimal mean_deviation_md
+        decimal pattern_std_deviation_psd
+        decimal visual_field_index_vfi
+        text interpretation
+    }
+
+    TREATMENTS {
+        bigint id PK
+        bigint visit_id FK
+        int medication_id FK
+        enum eye
+        varchar dosage
+        varchar frequency
+        date start_date
+        date end_date
+        boolean is_active
+    }
+
+    MEDICATIONS {
+        int id PK
+        varchar name UK
+        varchar generic_name
+        varchar concentration
+        varchar presentation
+    }
+
+    GLAUCOMA_RECORDS {
+        bigint id PK
+        bigint patient_id FK_UK
+        decimal target_iop_od
+        decimal target_iop_oi
+        enum clinical_stage
+        date diagnosis_date
+    }
+
+    GLAUCOMA_CONTROLS {
+        bigint id PK
+        bigint glaucoma_record_id FK
+        bigint visit_id FK
+        date control_date
+        boolean is_progression_detected
+        enum adherence_score
+    }
+
+    AUDIT_LOGS {
+        bigint id PK
+        varchar table_name
+        bigint record_id
+        enum action
+        json old_values
+        json new_values
+        varchar performed_by
+        datetime changed_at
+    }
+
+    PATIENTS ||--|| CLINICAL_HISTORIES : "1:1"
+    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:1"
+    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "1:N"
+    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N"
+    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "1:N"
+    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "1:N"
+    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : "1:N"
+    MEDICAL_VISITS ||--o{ OCT_EXAMS : "1:N"
+    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "1:N"
+    MEDICAL_VISITS ||--o{ TREATMENTS : "1:N"
+    MEDICATIONS ||--o{ TREATMENTS : "1:N"
+    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "1:N"
+    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "1:N"

@@ -1,0 +1,46 @@
+flowchart TD
+    %% Modelo Conceptual de Oftalmología y Glaucoma
+    PACIENTE["PACIENTE\n(Datos Personales, Contacto)"]
+    HISTORIA["HISTORIA CLÍNICA\n(Expediente Único)"]
+    PROFESIONAL["PROFESIONAL DE SALUD\n(Especialistas, Oftalmólogos)"]
+    ESPECIALIDAD["ESPECIALIDAD\n(Glaucoma, Oftalmología General)"]
+    
+    CONSULTA["CONSULTA MÉDICA\n(Evaluación, Plan, Cierre)"]
+    DIAGNOSTICO["DIAGNÓSTICO\n(CIE-10, Tipos de Glaucoma)"]
+    
+    EXAMEN_OFTALMOLOGICO["EXÁMENES OFTALMOLÓGICOS\n(Paraclínicos Especializados)"]
+    PIO["PRESIÓN INTRAOCULAR\n(Tonometría OD / OI)"]
+    PAQUIMETRIA["PAQUIMETRÍA CORNEAL\n(Espesor CCT)"]
+    GONIOSCOPIA["GONIOSCOPÍA\n(Ángulo Iridocorneal)"]
+    OCT["TOMOGRAFÍA OCT\n(RNFL, Células Ganglionares)"]
+    CAMPO_VISUAL["CAMPO VISUAL\n(Campimetría MD, PSD, VFI)"]
+    
+    TRATAMIENTO["TRATAMIENTO FARMACOLÓGICO\n(Prescripciones Activas)"]
+    MEDICAMENTO["MEDICAMENTO\n(Hipotensores Oculares)"]
+    PROCEDIMIENTO["PROCEDIMIENTOS Y CIRUGÍAS\n(Láser SLT, Trabeculectomía)"]
+    
+    REGISTRO_GLAUCOMA["REGISTRO DE GLAUCOMA\n(Presión Objetivo, Estadio)"]
+    CONTROL_GLAUCOMA["CONTROLES DE GLAUCOMA\n(Evolución, Adherencia)"]
+    
+    %% Relaciones Conceptuales
+    PACIENTE -->|"1 : 1 tiene"| HISTORIA
+    PACIENTE -->|"1 : 1 posee"| REGISTRO_GLAUCOMA
+    ESPECIALIDAD -->|"1 : N agrupa"| PROFESIONAL
+    PROFESIONAL -->|"1 : N atiende"| CONSULTA
+    HISTORIA -->|"1 : N registra"| CONSULTA
+    
+    CONSULTA -->|"1 : N asigna"| DIAGNOSTICO
+    CONSULTA -->|"1 : N incluye"| EXAMEN_OFTALMOLOGICO
+    
+    EXAMEN_OFTALMOLOGICO --> PIO
+    EXAMEN_OFTALMOLOGICO --> PAQUIMETRIA
+    EXAMEN_OFTALMOLOGICO --> GONIOSCOPIA
+    EXAMEN_OFTALMOLOGICO --> OCT
+    EXAMEN_OFTALMOLOGICO --> CAMPO_VISUAL
+    
+    CONSULTA -->|"1 : N prescribe"| TRATAMIENTO
+    MEDICAMENTO -->|"1 : N suministra"| TRATAMIENTO
+    CONSULTA -->|"1 : N realiza"| PROCEDIMIENTO
+    
+    REGISTRO_GLAUCOMA -->|"1 : N monitorea"| CONTROL_GLAUCOMA
+    CONSULTA -->|"1 : 1 asocia"| CONTROL_GLAUCOMA

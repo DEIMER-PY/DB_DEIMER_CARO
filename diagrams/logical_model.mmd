@@ -1,0 +1,33 @@
+erDiagram
+    %% Modelo Lógico Relacional Normalizado
+    DEPARTMENTS ||--o{ CITIES : contains
+    CITIES ||--o{ PATIENTS : locates
+    DOCUMENT_TYPES ||--o{ PATIENTS : identifies
+    DOCUMENT_TYPES ||--o{ HEALTHCARE_PROFESSIONALS : identifies
+    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : qualifies
+    
+    PATIENTS ||--|| CLINICAL_HISTORIES : has_one
+    PATIENTS ||--o{ PATIENT_ALLERGIES : exhibits
+    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : reports
+    PATIENTS ||--o{ PATIENT_ANTECEDENTS : records
+    PATIENTS ||--o| GLAUCOMA_RECORDS : registers
+    
+    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : conducts
+    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : compiles
+    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : attaches
+    
+    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : diagnoses
+    DIAGNOSES ||--o{ VISIT_DIAGNOSES : categorizes
+    
+    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : measures
+    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : evaluates
+    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : inspects
+    MEDICAL_VISITS ||--o{ OCT_EXAMS : scans
+    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : maps
+    
+    MEDICAL_VISITS ||--o{ TREATMENTS : prescribes
+    MEDICATIONS ||--o{ TREATMENTS : utilizes
+    MEDICAL_VISITS ||--o{ PROCEDURES : performs
+    
+    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : tracks
+    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : associates
