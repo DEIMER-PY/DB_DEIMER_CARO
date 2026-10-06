@@ -90,26 +90,31 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 - [x] **Fase 1 (Estructura y Git):** Directorio creado, `.gitignore` establecido.
 - [x] **Fase 2 (Documentación y Modelos):** 4 documentos generados en `docs/`, 3 diagramas Mermaid en `diagrams/` y el archivo StarUML `oftalmologia_model.mdj` listo y validado.
 - [x] **Fase 3A (DDL Schema):** Scripts `00_init_database.sql` y `01_ddl_schema.sql` ejecutados y validados con 0 errores en MySQL port 3307 (25 tablas principales + 4 tablas de backup).
-- [ ] **Fase 3B (DML Seed Data):** `sql/02_dml_seed_data.sql` con datos representativos y consistentes.
-- [ ] **Fase 4 (Banco de 250 Ejercicios):**
-  - [ ] `sql/03_part1_queries.sql` (50 consultas según guía).
-  - [ ] `sql/04_part2_subqueries.sql` (50 subconsultas según guía).
-  - [ ] `sql/05_part3_procedures.sql` (50 procedimientos según guía).
-  - [ ] `sql/06_part4_triggers.sql` (50 triggers según guía).
-  - [ ] `sql/07_part5_functions.sql` (50 funciones según guía).
-  - [ ] `sql/08_views_and_events.sql` (Vistas y Eventos).
-- [ ] **Fase 5 (Tests y Verificación):** `tests/run_all.sh` y script de comprobación.
-- [ ] **Fase 6 (README.md Maestro y Commit Git):** `README.md` completo y commit inicial limpio.
+- [x] **Fase 3B (DML Seed Data):** `sql/02_dml_seed_data.sql` con datos representativos y consistentes cargados exitosamente.
+- [x] **Fase 4 (Banco de 250 Ejercicios):**
+  - [x] `sql/03_part1_queries.sql` (50 consultas según guía, verificadas).
+  - [x] `sql/04_part2_subqueries.sql` (50 subconsultas según guía, verificadas).
+  - [x] `sql/05_part3_procedures.sql` (50 procedimientos compilados con éxito).
+  - [x] `sql/06_part4_triggers.sql` (50 triggers compilados con éxito).
+  - [x] `sql/07_part5_functions.sql` (50 funciones compiladas con éxito).
+  - [x] `sql/08_views_and_events.sql` (8 Vistas y 2 Eventos en ejecución).
+- [x] **Fase 5 (Tests y Verificación):** `tests/run_all.sh` y script de comprobación pasando al 100%.
+- [x] **Fase 6 (README.md Maestro y Commit Git):** `README.md` completo y repositorio con commit inicial en `main`.
 
 ---
 
 ## 6. Directrices Obligatorias para los Agentes
 
 1. **Idioma de Comunicación:** Comunicarse y responder SIEMPRE en **español**, tal como lo solicitó explícitamente el usuario.
-2. **Sintaxis SQL:**
+2. **Ejecución Totalmente Autónoma (Sin Preguntas Innecesarias):**
+   - El usuario ha ordenado explícitamente: *"no me vuelvas a preguntar tu solo ejecuta lo que sea necesario"*.
+   - El agente DEBE asumir total autonomía técnica: no formular preguntas triviales ni detenerse a pedir confirmación para tareas que puede deducir o ejecutar por sí mismo.
+   - Ejecutar, probar y verificar de inmediato en el entorno local antes de responder.
+3. **Sintaxis SQL:**
    - Compatible estrictamente con MySQL 8.0.
    - En procedimientos, triggers y funciones, usar `DELIMITER $$ ... DELIMITER ;`.
    - Limpiar con `DROP PROCEDURE IF EXISTS`, `DROP TRIGGER IF EXISTS`, `DROP FUNCTION IF EXISTS` antes de cada creación.
    - En los procedimientos transaccionales, emplear `DECLARE EXIT HANDLER FOR SQLEXCEPTION` con `ROLLBACK; RESIGNAL;`.
-3. **Verificación Directa:**
+4. **Verificación Directa:**
    - Todo script que se desarrolle debe ser probado inmediatamente en el motor local ejecutando el comando bash sobre el puerto 3307 para comprobar que no existan errores de sintaxis, violaciones de llaves foráneas o errores de delimiter.
+
