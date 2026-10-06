@@ -7,7 +7,7 @@
       "_type": "ERDDataModel",
       "_id": "AAAAAf6ad05fb1cf0478e8c06",
       "_parent": {
-        "": "AAAAA844d7a8d00a643e686e8"
+        "$ref": "AAAAA844d7a8d00a643e686e8"
       },
       "name": "OftalmologiaGlaucomaModel",
       "ownedElements": [
@@ -15,7 +15,7 @@
           "_type": "ERDDiagram",
           "_id": "AAAAAa5fb046b07e044b7becf",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "Oftalmologia & Glaucoma ERD",
           "visible": true,
@@ -25,10 +25,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA57b7ec968f694a708d96",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA4deec9b37a474cfa8ca4"
+                "$ref": "AAAAA4deec9b37a474cfa8ca4"
               },
               "left": 50,
               "top": 50,
@@ -39,10 +39,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA4ed80b3a589c4c5fa606",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA010b6bb6514548ada87e"
+                "$ref": "AAAAA010b6bb6514548ada87e"
               },
               "left": 310,
               "top": 50,
@@ -53,10 +53,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAd8bfb18de015486096fd",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA31211eef9e814bb5b1d3"
+                "$ref": "AAAAA31211eef9e814bb5b1d3"
               },
               "left": 570,
               "top": 50,
@@ -67,10 +67,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAcf74bad7d4054b2c8e13",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA176c3fc2b5ed4ea18697"
+                "$ref": "AAAAA176c3fc2b5ed4ea18697"
               },
               "left": 830,
               "top": 50,
@@ -81,10 +81,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAb6f2da4f94194340b1db",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "left": 1090,
               "top": 50,
@@ -95,10 +95,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAffda47b8082d4ec98d61",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "left": 1350,
               "top": 50,
@@ -109,10 +109,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAfbafbf5d6ed748af9885",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "left": 50,
               "top": 330,
@@ -123,10 +123,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA31ea0f9297ff40fca1f9",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA4fb8d16217e640d280db"
+                "$ref": "AAAAA4fb8d16217e640d280db"
               },
               "left": 310,
               "top": 330,
@@ -137,10 +137,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAf5d8737179b14460a9a7",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA262e969a95e7400c80df"
+                "$ref": "AAAAA262e969a95e7400c80df"
               },
               "left": 570,
               "top": 330,
@@ -151,10 +151,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA3a15b0b8860549a48080",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "left": 830,
               "top": 330,
@@ -165,10 +165,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAd4f3a21d30914cacb761",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA4f2e685c05a94a4fbd0d"
+                "$ref": "AAAAA4f2e685c05a94a4fbd0d"
               },
               "left": 1090,
               "top": 330,
@@ -179,10 +179,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA15ff764af0f74a809c12",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA6451f0b60188410b8ddb"
+                "$ref": "AAAAA6451f0b60188410b8ddb"
               },
               "left": 1350,
               "top": 330,
@@ -193,10 +193,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA7c91bca5d51346de9526",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "left": 50,
               "top": 610,
@@ -207,10 +207,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA110221e526ca4fa09a53",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "left": 310,
               "top": 610,
@@ -221,10 +221,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA06fdc24849aa4efe932a",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "left": 570,
               "top": 610,
@@ -235,10 +235,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAAceb79f99906e441592ac",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAb6c8d393916145c7b7c0"
+                "$ref": "AAAAAb6c8d393916145c7b7c0"
               },
               "left": 830,
               "top": 610,
@@ -249,10 +249,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA5af84d7f14dd43978061",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAa512b2a2d4d5422b82ac"
+                "$ref": "AAAAAa512b2a2d4d5422b82ac"
               },
               "left": 1090,
               "top": 610,
@@ -263,10 +263,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA33eb8dbf65884cd2b7ad",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAa6cb0a721c5249dabfb1"
+                "$ref": "AAAAAa6cb0a721c5249dabfb1"
               },
               "left": 1350,
               "top": 610,
@@ -277,10 +277,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA7e2b3199a3ac49f59148",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "left": 50,
               "top": 890,
@@ -291,10 +291,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA742c546a59d54cf787f2",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "left": 310,
               "top": 890,
@@ -305,10 +305,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA527eff77053b4543af2d",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "left": 570,
               "top": 890,
@@ -319,10 +319,10 @@
               "_type": "ERDEntityView",
               "_id": "AAAAA04ba0836c1024ace8b01",
               "_parent": {
-                "": "AAAAAa5fb046b07e044b7becf"
+                "$ref": "AAAAAa5fb046b07e044b7becf"
               },
               "model": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "left": 830,
               "top": 890,
@@ -335,7 +335,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA4deec9b37a474cfa8ca4",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "departments",
           "columns": [
@@ -343,7 +343,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAf3c4403f77f94fb88d29",
               "_parent": {
-                "": "AAAAA4deec9b37a474cfa8ca4"
+                "$ref": "AAAAA4deec9b37a474cfa8ca4"
               },
               "name": "id",
               "type": "INT",
@@ -356,7 +356,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa19692d423af4eb1ad99",
               "_parent": {
-                "": "AAAAA4deec9b37a474cfa8ca4"
+                "$ref": "AAAAA4deec9b37a474cfa8ca4"
               },
               "name": "name",
               "type": "VARCHAR(100)",
@@ -371,7 +371,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA010b6bb6514548ada87e",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "cities",
           "columns": [
@@ -379,7 +379,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA5c3c4a293f554279aaf6",
               "_parent": {
-                "": "AAAAA010b6bb6514548ada87e"
+                "$ref": "AAAAA010b6bb6514548ada87e"
               },
               "name": "id",
               "type": "INT",
@@ -392,7 +392,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA6b5368d0b9a7410a9a6f",
               "_parent": {
-                "": "AAAAA010b6bb6514548ada87e"
+                "$ref": "AAAAA010b6bb6514548ada87e"
               },
               "name": "department_id",
               "type": "INT",
@@ -405,7 +405,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAba6444e2054d4072bffa",
               "_parent": {
-                "": "AAAAA010b6bb6514548ada87e"
+                "$ref": "AAAAA010b6bb6514548ada87e"
               },
               "name": "name",
               "type": "VARCHAR(100)",
@@ -420,7 +420,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA31211eef9e814bb5b1d3",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "document_types",
           "columns": [
@@ -428,7 +428,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA64d09171676046abb1be",
               "_parent": {
-                "": "AAAAA31211eef9e814bb5b1d3"
+                "$ref": "AAAAA31211eef9e814bb5b1d3"
               },
               "name": "id",
               "type": "INT",
@@ -441,7 +441,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa4089e895e324a8a93cf",
               "_parent": {
-                "": "AAAAA31211eef9e814bb5b1d3"
+                "$ref": "AAAAA31211eef9e814bb5b1d3"
               },
               "name": "code",
               "type": "VARCHAR(10)",
@@ -454,7 +454,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA5d95c8c6bb2e45bab6f8",
               "_parent": {
-                "": "AAAAA31211eef9e814bb5b1d3"
+                "$ref": "AAAAA31211eef9e814bb5b1d3"
               },
               "name": "name",
               "type": "VARCHAR(50)",
@@ -469,7 +469,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA176c3fc2b5ed4ea18697",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "specialties",
           "columns": [
@@ -477,7 +477,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAd9de476ad67f47959b82",
               "_parent": {
-                "": "AAAAA176c3fc2b5ed4ea18697"
+                "$ref": "AAAAA176c3fc2b5ed4ea18697"
               },
               "name": "id",
               "type": "INT",
@@ -490,7 +490,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA523ab57fb4984f13be58",
               "_parent": {
-                "": "AAAAA176c3fc2b5ed4ea18697"
+                "$ref": "AAAAA176c3fc2b5ed4ea18697"
               },
               "name": "name",
               "type": "VARCHAR(100)",
@@ -503,7 +503,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA359fbdb55b694f11a178",
               "_parent": {
-                "": "AAAAA176c3fc2b5ed4ea18697"
+                "$ref": "AAAAA176c3fc2b5ed4ea18697"
               },
               "name": "description",
               "type": "TEXT",
@@ -518,7 +518,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAc80aa22fa9b74cf9b542",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "healthcare_professionals",
           "columns": [
@@ -526,7 +526,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAda29115eae924cf39f66",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "id",
               "type": "BIGINT",
@@ -539,7 +539,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAaacb53dff7714796b1b5",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "document_type_id",
               "type": "INT",
@@ -552,7 +552,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA1bbfe9fa036b4bdabd2f",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "document_number",
               "type": "VARCHAR(30)",
@@ -565,7 +565,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA256c2128095a4ebaa36f",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "first_name",
               "type": "VARCHAR(100)",
@@ -578,7 +578,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAd33f80cc5fd042a1bd03",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "last_name",
               "type": "VARCHAR(100)",
@@ -591,7 +591,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAec6808fcc81a4b37a0a6",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "medical_license",
               "type": "VARCHAR(50)",
@@ -604,7 +604,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAb8d06f09cab14fb9b219",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "specialty_id",
               "type": "INT",
@@ -617,7 +617,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA13576557c247449592c4",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "email",
               "type": "VARCHAR(150)",
@@ -630,7 +630,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAec8b890279b3430dae5f",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "phone",
               "type": "VARCHAR(30)",
@@ -643,7 +643,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA92aa1819b0a344f399e8",
               "_parent": {
-                "": "AAAAAc80aa22fa9b74cf9b542"
+                "$ref": "AAAAAc80aa22fa9b74cf9b542"
               },
               "name": "is_active",
               "type": "BOOLEAN",
@@ -658,7 +658,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA20d19fe21d6d492cbdf1",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "patients",
           "columns": [
@@ -666,7 +666,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAb8f62ecfed1d4f1aa684",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "id",
               "type": "BIGINT",
@@ -679,7 +679,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAba3338d33d9843ad93c3",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "document_type_id",
               "type": "INT",
@@ -692,7 +692,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA478a1049127e4feea792",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "document_number",
               "type": "VARCHAR(30)",
@@ -705,7 +705,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA65eaa90987854f27b14f",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "first_name",
               "type": "VARCHAR(100)",
@@ -718,7 +718,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA647ae74e326043b6b31d",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "last_name",
               "type": "VARCHAR(100)",
@@ -731,7 +731,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA6fe333ff122846b5a92d",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "birth_date",
               "type": "DATE",
@@ -744,7 +744,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA2865f50f689a44339c05",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "gender",
               "type": "ENUM('M','F','OTRO')",
@@ -757,7 +757,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA48744ef5cd9f4f318d19",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "city_id",
               "type": "INT",
@@ -770,7 +770,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA41c2a1d9b5af4e878170",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "address",
               "type": "VARCHAR(255)",
@@ -783,7 +783,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA743d0a9dea6141f0b0c6",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "phone",
               "type": "VARCHAR(30)",
@@ -796,7 +796,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAf82f8ef19d1d4039a12b",
               "_parent": {
-                "": "AAAAA20d19fe21d6d492cbdf1"
+                "$ref": "AAAAA20d19fe21d6d492cbdf1"
               },
               "name": "email",
               "type": "VARCHAR(150)",
@@ -811,7 +811,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA6732f0a70d284ff6b6f2",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "patient_allergies",
           "columns": [
@@ -819,7 +819,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA62f00a039cf140849c41",
               "_parent": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "name": "id",
               "type": "BIGINT",
@@ -832,7 +832,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa6641fecfc5d4a76a1bf",
               "_parent": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "name": "patient_id",
               "type": "BIGINT",
@@ -845,7 +845,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAcb906098c99143eb90ea",
               "_parent": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "name": "allergen",
               "type": "VARCHAR(150)",
@@ -858,7 +858,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAced2791e2fb0408cb17d",
               "_parent": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "name": "reaction",
               "type": "VARCHAR(255)",
@@ -871,7 +871,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA14fc4c9ce8f9438fbd0a",
               "_parent": {
-                "": "AAAAA6732f0a70d284ff6b6f2"
+                "$ref": "AAAAA6732f0a70d284ff6b6f2"
               },
               "name": "severity",
               "type": "ENUM",
@@ -886,7 +886,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA4fb8d16217e640d280db",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "patient_family_histories",
           "columns": [
@@ -894,7 +894,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAc29df6de1c834cfca167",
               "_parent": {
-                "": "AAAAA4fb8d16217e640d280db"
+                "$ref": "AAAAA4fb8d16217e640d280db"
               },
               "name": "id",
               "type": "BIGINT",
@@ -907,7 +907,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA32d97a2ac3214c118a1c",
               "_parent": {
-                "": "AAAAA4fb8d16217e640d280db"
+                "$ref": "AAAAA4fb8d16217e640d280db"
               },
               "name": "patient_id",
               "type": "BIGINT",
@@ -920,7 +920,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAc2118d184f06431aba8a",
               "_parent": {
-                "": "AAAAA4fb8d16217e640d280db"
+                "$ref": "AAAAA4fb8d16217e640d280db"
               },
               "name": "condition_name",
               "type": "VARCHAR(150)",
@@ -933,7 +933,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAab3b240577a043f28796",
               "_parent": {
-                "": "AAAAA4fb8d16217e640d280db"
+                "$ref": "AAAAA4fb8d16217e640d280db"
               },
               "name": "relationship",
               "type": "VARCHAR(50)",
@@ -948,7 +948,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA262e969a95e7400c80df",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "clinical_histories",
           "columns": [
@@ -956,7 +956,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA1f5e5cfbd7e04a3e94bd",
               "_parent": {
-                "": "AAAAA262e969a95e7400c80df"
+                "$ref": "AAAAA262e969a95e7400c80df"
               },
               "name": "id",
               "type": "BIGINT",
@@ -969,7 +969,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA329992348c9b4e0790b8",
               "_parent": {
-                "": "AAAAA262e969a95e7400c80df"
+                "$ref": "AAAAA262e969a95e7400c80df"
               },
               "name": "patient_id",
               "type": "BIGINT",
@@ -982,7 +982,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA7178bb03ad1043d1b4ad",
               "_parent": {
-                "": "AAAAA262e969a95e7400c80df"
+                "$ref": "AAAAA262e969a95e7400c80df"
               },
               "name": "history_number",
               "type": "VARCHAR(50)",
@@ -995,7 +995,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAd42e51e7769f425d9518",
               "_parent": {
-                "": "AAAAA262e969a95e7400c80df"
+                "$ref": "AAAAA262e969a95e7400c80df"
               },
               "name": "status",
               "type": "ENUM",
@@ -1010,7 +1010,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA2307ceeca56342669d4d",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "medical_visits",
           "columns": [
@@ -1018,7 +1018,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa0891232e14944ffaffe",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1031,7 +1031,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA864ca0dd41d942e0929d",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "clinical_history_id",
               "type": "BIGINT",
@@ -1044,7 +1044,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA1c862147c48c424faec9",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "professional_id",
               "type": "BIGINT",
@@ -1057,7 +1057,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAe010e76a40ac4e948df6",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "visit_date",
               "type": "DATETIME",
@@ -1070,7 +1070,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA7dd92f5fdf384b34842b",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "reason",
               "type": "TEXT",
@@ -1083,7 +1083,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAc2a121044daa43f2a0a9",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "assessment",
               "type": "TEXT",
@@ -1096,7 +1096,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA5498adee6b814d3aaf41",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "plan",
               "type": "TEXT",
@@ -1109,7 +1109,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAcd61373aa6ac42dda649",
               "_parent": {
-                "": "AAAAA2307ceeca56342669d4d"
+                "$ref": "AAAAA2307ceeca56342669d4d"
               },
               "name": "is_closed",
               "type": "BOOLEAN",
@@ -1124,7 +1124,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA4f2e685c05a94a4fbd0d",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "diagnoses",
           "columns": [
@@ -1132,7 +1132,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA81c952ffd6d742f9b176",
               "_parent": {
-                "": "AAAAA4f2e685c05a94a4fbd0d"
+                "$ref": "AAAAA4f2e685c05a94a4fbd0d"
               },
               "name": "id",
               "type": "INT",
@@ -1145,7 +1145,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAb58adc8070304bcab500",
               "_parent": {
-                "": "AAAAA4f2e685c05a94a4fbd0d"
+                "$ref": "AAAAA4f2e685c05a94a4fbd0d"
               },
               "name": "code",
               "type": "VARCHAR(20)",
@@ -1158,7 +1158,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA2e4a9a26950e4d0890d7",
               "_parent": {
-                "": "AAAAA4f2e685c05a94a4fbd0d"
+                "$ref": "AAAAA4f2e685c05a94a4fbd0d"
               },
               "name": "name",
               "type": "VARCHAR(200)",
@@ -1171,7 +1171,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa728e194a5bf4f3696f0",
               "_parent": {
-                "": "AAAAA4f2e685c05a94a4fbd0d"
+                "$ref": "AAAAA4f2e685c05a94a4fbd0d"
               },
               "name": "is_glaucoma_type",
               "type": "BOOLEAN",
@@ -1186,7 +1186,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA6451f0b60188410b8ddb",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "visit_diagnoses",
           "columns": [
@@ -1194,7 +1194,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA8e37d802000f4640a438",
               "_parent": {
-                "": "AAAAA6451f0b60188410b8ddb"
+                "$ref": "AAAAA6451f0b60188410b8ddb"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1207,7 +1207,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAe3c664e2f8c34b96ae22",
               "_parent": {
-                "": "AAAAA6451f0b60188410b8ddb"
+                "$ref": "AAAAA6451f0b60188410b8ddb"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1220,7 +1220,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA77316838d2da4382917e",
               "_parent": {
-                "": "AAAAA6451f0b60188410b8ddb"
+                "$ref": "AAAAA6451f0b60188410b8ddb"
               },
               "name": "diagnosis_id",
               "type": "INT",
@@ -1233,7 +1233,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA42b5f71a2cd8409a9e5f",
               "_parent": {
-                "": "AAAAA6451f0b60188410b8ddb"
+                "$ref": "AAAAA6451f0b60188410b8ddb"
               },
               "name": "is_primary",
               "type": "BOOLEAN",
@@ -1248,7 +1248,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA6467addb3ba6443aaa42",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "intraocular_pressures",
           "columns": [
@@ -1256,7 +1256,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA9ba6e122eeb046fdb825",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1269,7 +1269,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa7bafb214d0643bb9bd8",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1282,7 +1282,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAce224fa20fc64e87a58f",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "eye",
               "type": "ENUM('OD','OI')",
@@ -1295,7 +1295,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA492bd4ae4dfc4128ae84",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "pressure",
               "type": "DECIMAL(5,2)",
@@ -1308,7 +1308,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAdbe47b7b118a4f77b63a",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "measurement_time",
               "type": "TIME",
@@ -1321,7 +1321,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAfba4ba8a4152480d8069",
               "_parent": {
-                "": "AAAAA6467addb3ba6443aaa42"
+                "$ref": "AAAAA6467addb3ba6443aaa42"
               },
               "name": "method",
               "type": "ENUM",
@@ -1336,7 +1336,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAaa22716142f34d19a622",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "oct_exams",
           "columns": [
@@ -1344,7 +1344,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAff307373ae7c4458b0d2",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1357,7 +1357,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAc6b52b88463d44888b60",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1370,7 +1370,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA17e2da8e198a40388a06",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "eye",
               "type": "ENUM('OD','OI')",
@@ -1383,7 +1383,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAf0e30aa2de7d41edaa6c",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "rnfl_average",
               "type": "DECIMAL(6,2)",
@@ -1396,7 +1396,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA37b9013bdeec455eb47f",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "cup_to_disc_ratio",
               "type": "DECIMAL(4,2)",
@@ -1409,7 +1409,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA5f43ec7c312946d488b4",
               "_parent": {
-                "": "AAAAAaa22716142f34d19a622"
+                "$ref": "AAAAAaa22716142f34d19a622"
               },
               "name": "is_validated",
               "type": "BOOLEAN",
@@ -1424,7 +1424,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAee8de3c55efe4bec97bc",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "visual_field_exams",
           "columns": [
@@ -1432,7 +1432,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA24d7001624154704917e",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1445,7 +1445,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA6218fe2de83f4b188a74",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1458,7 +1458,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAfed453868a1d4a69b54b",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "eye",
               "type": "ENUM('OD','OI')",
@@ -1471,7 +1471,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA325955d7b83644b18e2e",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "mean_deviation_md",
               "type": "DECIMAL(6,2)",
@@ -1484,7 +1484,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA04911c6d4f794af1bee9",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "pattern_std_deviation_psd",
               "type": "DECIMAL(6,2)",
@@ -1497,7 +1497,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA87fd3dd4eb84404d9966",
               "_parent": {
-                "": "AAAAAee8de3c55efe4bec97bc"
+                "$ref": "AAAAAee8de3c55efe4bec97bc"
               },
               "name": "visual_field_index_vfi",
               "type": "DECIMAL(5,2)",
@@ -1512,7 +1512,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAb6c8d393916145c7b7c0",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "pachymetry_exams",
           "columns": [
@@ -1520,7 +1520,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAfccd35153c4c4c13aed0",
               "_parent": {
-                "": "AAAAAb6c8d393916145c7b7c0"
+                "$ref": "AAAAAb6c8d393916145c7b7c0"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1533,7 +1533,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAba97e25110fd4b7c9c86",
               "_parent": {
-                "": "AAAAAb6c8d393916145c7b7c0"
+                "$ref": "AAAAAb6c8d393916145c7b7c0"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1546,7 +1546,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA202343c1804e47c4a342",
               "_parent": {
-                "": "AAAAAb6c8d393916145c7b7c0"
+                "$ref": "AAAAAb6c8d393916145c7b7c0"
               },
               "name": "eye",
               "type": "ENUM('OD','OI')",
@@ -1559,7 +1559,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA4bc42cbf7f374829b2e1",
               "_parent": {
-                "": "AAAAAb6c8d393916145c7b7c0"
+                "$ref": "AAAAAb6c8d393916145c7b7c0"
               },
               "name": "corneal_thickness",
               "type": "DECIMAL(6,2)",
@@ -1574,7 +1574,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAa512b2a2d4d5422b82ac",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "gonioscopy_exams",
           "columns": [
@@ -1582,7 +1582,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA12ed4d91d65b4cd4aa7b",
               "_parent": {
-                "": "AAAAAa512b2a2d4d5422b82ac"
+                "$ref": "AAAAAa512b2a2d4d5422b82ac"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1595,7 +1595,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAdfa98e0b87c54f0b9d38",
               "_parent": {
-                "": "AAAAAa512b2a2d4d5422b82ac"
+                "$ref": "AAAAAa512b2a2d4d5422b82ac"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1608,7 +1608,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAbd2adae1bade44bdb577",
               "_parent": {
-                "": "AAAAAa512b2a2d4d5422b82ac"
+                "$ref": "AAAAAa512b2a2d4d5422b82ac"
               },
               "name": "eye",
               "type": "ENUM('OD','OI')",
@@ -1621,7 +1621,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA3a71e68c50b94cbc9a0b",
               "_parent": {
-                "": "AAAAAa512b2a2d4d5422b82ac"
+                "$ref": "AAAAAa512b2a2d4d5422b82ac"
               },
               "name": "angle_grade",
               "type": "VARCHAR(50)",
@@ -1636,7 +1636,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAa6cb0a721c5249dabfb1",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "medications",
           "columns": [
@@ -1644,7 +1644,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAaa837eece53f4a9ca20f",
               "_parent": {
-                "": "AAAAAa6cb0a721c5249dabfb1"
+                "$ref": "AAAAAa6cb0a721c5249dabfb1"
               },
               "name": "id",
               "type": "INT",
@@ -1657,7 +1657,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA976eb11d147d4672a9d8",
               "_parent": {
-                "": "AAAAAa6cb0a721c5249dabfb1"
+                "$ref": "AAAAAa6cb0a721c5249dabfb1"
               },
               "name": "name",
               "type": "VARCHAR(150)",
@@ -1670,7 +1670,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa572ef68eac7405da55a",
               "_parent": {
-                "": "AAAAAa6cb0a721c5249dabfb1"
+                "$ref": "AAAAAa6cb0a721c5249dabfb1"
               },
               "name": "generic_name",
               "type": "VARCHAR(150)",
@@ -1683,7 +1683,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAca250d00f4714f90a21a",
               "_parent": {
-                "": "AAAAAa6cb0a721c5249dabfb1"
+                "$ref": "AAAAAa6cb0a721c5249dabfb1"
               },
               "name": "concentration",
               "type": "VARCHAR(50)",
@@ -1698,7 +1698,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAb2f8ddb1829747269f5d",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "treatments",
           "columns": [
@@ -1706,7 +1706,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA78ff77ff82e140b1aa0e",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1719,7 +1719,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAf7bc99e074f54a6e95d7",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1732,7 +1732,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA98aebc5281ee4dfcab78",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "medication_id",
               "type": "INT",
@@ -1745,7 +1745,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA8984036731704838bb1b",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "eye",
               "type": "ENUM",
@@ -1758,7 +1758,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa1db468e02bd4fafb3bc",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "dosage",
               "type": "VARCHAR(100)",
@@ -1771,7 +1771,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA956d760719d347928c5b",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "start_date",
               "type": "DATE",
@@ -1784,7 +1784,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA98bf28af3df64736a291",
               "_parent": {
-                "": "AAAAAb2f8ddb1829747269f5d"
+                "$ref": "AAAAAb2f8ddb1829747269f5d"
               },
               "name": "is_active",
               "type": "BOOLEAN",
@@ -1799,7 +1799,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAAb9e9786bf0e84064bc8b",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "glaucoma_records",
           "columns": [
@@ -1807,7 +1807,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAa26d77fe470845bebdba",
               "_parent": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1820,7 +1820,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA9b4dc9c2e7f94265b0bb",
               "_parent": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "name": "patient_id",
               "type": "BIGINT",
@@ -1833,7 +1833,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA3302cdec2d624132bee7",
               "_parent": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "name": "target_iop_od",
               "type": "DECIMAL(5,2)",
@@ -1846,7 +1846,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA7be294c4bd9248098a1f",
               "_parent": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "name": "target_iop_oi",
               "type": "DECIMAL(5,2)",
@@ -1859,7 +1859,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA60d23d8317274d08a0af",
               "_parent": {
-                "": "AAAAAb9e9786bf0e84064bc8b"
+                "$ref": "AAAAAb9e9786bf0e84064bc8b"
               },
               "name": "clinical_stage",
               "type": "VARCHAR(50)",
@@ -1874,7 +1874,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA0f3d3eba9e2040b5b1a2",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "glaucoma_controls",
           "columns": [
@@ -1882,7 +1882,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAb367206e1a234471b471",
               "_parent": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1895,7 +1895,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAfcd8c70aac4f43ec8fad",
               "_parent": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "name": "glaucoma_record_id",
               "type": "BIGINT",
@@ -1908,7 +1908,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA4a912941aec944ea8925",
               "_parent": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "name": "visit_id",
               "type": "BIGINT",
@@ -1921,7 +1921,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAabc87945467946e582e8",
               "_parent": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "name": "control_date",
               "type": "DATE",
@@ -1934,7 +1934,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA13629477fe844497836b",
               "_parent": {
-                "": "AAAAA0f3d3eba9e2040b5b1a2"
+                "$ref": "AAAAA0f3d3eba9e2040b5b1a2"
               },
               "name": "is_progression_detected",
               "type": "BOOLEAN",
@@ -1949,7 +1949,7 @@
           "_type": "ERDEntity",
           "_id": "AAAAA4c2edeb2b5f84081907a",
           "_parent": {
-            "": "AAAAAf6ad05fb1cf0478e8c06"
+            "$ref": "AAAAAf6ad05fb1cf0478e8c06"
           },
           "name": "audit_logs",
           "columns": [
@@ -1957,7 +1957,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA078330d828ec452095a2",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "id",
               "type": "BIGINT",
@@ -1970,7 +1970,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA380200896b8c4fa79998",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "table_name",
               "type": "VARCHAR(100)",
@@ -1983,7 +1983,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAc530a51f490c4e9f9587",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "record_id",
               "type": "BIGINT",
@@ -1996,7 +1996,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA70e817dfa75941faae06",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "action",
               "type": "VARCHAR(20)",
@@ -2009,7 +2009,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAA33976bc1cfb94b86b0d1",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "performed_by",
               "type": "VARCHAR(100)",
@@ -2022,7 +2022,7 @@
               "_type": "ERDColumn",
               "_id": "AAAAAb300ca2d37fe41f8905d",
               "_parent": {
-                "": "AAAAA4c2edeb2b5f84081907a"
+                "$ref": "AAAAA4c2edeb2b5f84081907a"
               },
               "name": "changed_at",
               "type": "DATETIME",
