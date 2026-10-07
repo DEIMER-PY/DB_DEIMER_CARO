@@ -4,8 +4,8 @@
 **Motor RDBMS:** MySQL 8.0 (InnoDB)  
 **Entorno de Ejecución:** Ubuntu Linux — Host `127.0.0.1`, Puerto `3307`  
 **Base de Datos:** `oftalmologia_glaucoma_db`  
-**Especificación Original:** [`tallerexamenbd.md`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/tallerexamenbd.md)  
-**Protocolo para Agentes de IA:** [`AGENTS.md`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/AGENTS.md)  
+**Especificación Original:** [`tallerexamenbd.md`](file:///home/camper/Documents/DB_DEIMER_CARO/tallerexamenbd.md)  
+**Protocolo para Agentes de IA:** [`AGENTS.md`](file:///home/camper/Documents/DB_DEIMER_CARO/AGENTS.md)  
 
 ---
 
@@ -22,7 +22,7 @@ Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabili
 ## 2. Estructura del Repositorio
 
 ```
-/home/camper/Documentos/TALLERDB_DEIMER_CARO/
+/home/camper/Documents/DB_DEIMER_CARO/
 ├── README.md                          # Este archivo: Documentación maestra del proyecto
 ├── AGENTS.md                          # Guía de contexto, arquitectura y credenciales para agentes
 ├── tallerexamenbd.md                  # Enunciado y rúbricas completas del taller/examen
@@ -114,7 +114,7 @@ erDiagram
 
 ## 4. Normalización Rigurosa hasta 4FN
 
-El proceso formal se encuentra detallado en [`docs/02_proceso_normalizacion_4fn.md`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/docs/02_proceso_normalizacion_4fn.md):
+El proceso formal se encuentra detallado en [`docs/02_proceso_normalizacion_4fn.md`](file:///home/camper/Documents/DB_DEIMER_CARO/docs/02_proceso_normalizacion_4fn.md):
 
 1. **Primera Forma Normal (1FN):** Eliminación de listas de texto libre y atributos multivaluados en una sola columna. Cada columna almacena valores atómicos.
 2. **Segunda Forma Normal (2FN):** Toda tabla con clave primaria compuesta tiene sus atributos no clave dependiendo de la totalidad de la clave y no de una parte (ej. desacoplamiento de diagnósticos y tratamientos respecto a la consulta médica).
@@ -127,17 +127,29 @@ El proceso formal se encuentra detallado en [`docs/02_proceso_normalizacion_4fn.
 
 ---
 
-## 5. Integración con StarUML
+## 5. Modelado Visual: StarUML y draw.io
 
-El proyecto incluye un modelo nativo completo en formato StarUML listo para ser abierto e inspeccionado:
+### 5.1. StarUML (DER Físico y Modelo Lógico con Cardinalidad)
+El proyecto incluye un modelo nativo completo en formato StarUML 6.x (`diagrams/oftalmologia_model.mdj`), con **todas las 25 entidades relacionales**, atributos tipificados, restricciones PK/FK y **líneas de relación con cardinalidad explícita (notación Crow's Foot)**:
 
-- **Archivo del Modelo:** `diagrams/oftalmologia_model.mdj`
-- **Ubicación del ejecutable StarUML:** `/usr/bin/staruml`
-- **Instrucciones para abrir en StarUML:**
+- **Archivo del Modelo:** [`diagrams/oftalmologia_model.mdj`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/oftalmologia_model.mdj)
+- **Diagramas incluidos:**
+  1. **Diagrama Entidad-Relación (Físico 4FN):** Contiene las 25 tablas con todas las columnas, índices, llaves foráneas y cardinalidad completa (`1:1`, `1:N`, `0..*`, `0..1`).
+  2. **Modelo Lógico Relacional:** Diagrama estructural con las entidades lógicas y dependencias relacionales directas.
+- **Formas de abrir en StarUML:**
   ```bash
+  # Opción A: Mediante el script lanzador directo
+  bash open_staruml.sh
+
+  # Opción B: Ejecutando el comando directo
   staruml diagrams/oftalmologia_model.mdj &
   ```
-  Al abrir este archivo, StarUML cargará automáticamente el paquete `Oftalmologia_Glaucoma_Model` con sus diagramas de entidades, tipos de datos SQL, relaciones de cardinalidad, llaves primarias (`PK`) y foráneas (`FK`).
+
+### 5.2. Modelo Conceptual en draw.io
+El diagrama conceptual del dominio clínico también se encuentra disponible en formato nativo de draw.io / diagrams.net:
+- **Archivo draw.io:** [`diagrams/modelo_conceptual.drawio`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/modelo_conceptual.drawio)
+- **Archivo Mermaid:** [`diagrams/conceptual_model.mmd`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/conceptual_model.mmd)
+- Compatible para abrir en [diagrams.net](https://app.diagrams.net/) o mediante la extensión Draw.io en VS Code.
 
 ---
 
@@ -147,12 +159,12 @@ El proyecto da cumplimiento íntegro y verificable a las 5 partes solicitadas:
 
 | Componente | Archivo SQL | Ejercicios | Descripción |
 | :--- | :--- | :---: | :--- |
-| **Parte I: Consultas SQL** | [`sql/03_part1_queries.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/03_part1_queries.sql) | **50** | Consultas Básicas (1-20), Intermedias con `JOIN` (21-40) y Avanzadas con agregaciones, `GROUP BY`, `HAVING` y funciones ventana (41-50). |
-| **Parte II: Subconsultas** | [`sql/04_part2_subqueries.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/04_part2_subqueries.sql) | **50** | Subconsultas escalares (1-10), operadores `IN` (11-20), cláusulas `NOT IN` / `NOT EXISTS` (21-30), subconsultas correlacionadas (31-40) y avanzadas (41-50). |
-| **Parte III: Procedimientos** | [`sql/05_part3_procedures.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/05_part3_procedures.sql) | **50** | Procedimientos de consulta y catálogo (1-10), inserción (11-20), actualización (21-30), validaciones con `SIGNAL SQLSTATE` (31-40) y flujos transaccionales con `START TRANSACTION`, `COMMIT` y `ROLLBACK` (41-50). |
-| **Parte IV: Triggers** | [`sql/06_part4_triggers.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/06_part4_triggers.sql) | **50** | Disparadores `BEFORE INSERT` (1-10), `AFTER INSERT` con auditoría (11-20), `BEFORE UPDATE` para integridad (21-30), `AFTER UPDATE` con alertas clínicas (31-40) y `BEFORE/AFTER DELETE` con tablas de backup (41-50). |
-| **Parte V: Funciones** | [`sql/07_part5_functions.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/07_part5_functions.sql) | **50** | Funciones escalares y formato (1-10), métricas clínicas (11-20), lógica diagnóstica y completitud (21-30), cálculos estadísticos temporales (31-40) y fichas de resumen textual (41-50). |
-| **Vistas y Event Scheduler** | [`sql/08_views_and_events.sql`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/sql/08_views_and_events.sql) | **10** | 8 vistas para analítica clínica y 2 eventos programados de mantenimiento preventivo y control de tratamientos. |
+| **Parte I: Consultas SQL** | [`sql/03_part1_queries.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/03_part1_queries.sql) | **50** | Consultas Básicas (1-20), Intermedias con `JOIN` (21-40) y Avanzadas con agregaciones, `GROUP BY`, `HAVING` y funciones ventana (41-50). |
+| **Parte II: Subconsultas** | [`sql/04_part2_subqueries.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/04_part2_subqueries.sql) | **50** | Subconsultas escalares (1-10), operadores `IN` (11-20), cláusulas `NOT IN` / `NOT EXISTS` (21-30), subconsultas correlacionadas (31-40) y avanzadas (41-50). |
+| **Parte III: Procedimientos** | [`sql/05_part3_procedures.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/05_part3_procedures.sql) | **50** | Procedimientos de consulta y catálogo (1-10), inserción (11-20), actualización (21-30), validaciones con `SIGNAL SQLSTATE` (31-40) y flujos transaccionales con `START TRANSACTION`, `COMMIT` y `ROLLBACK` (41-50). |
+| **Parte IV: Triggers** | [`sql/06_part4_triggers.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/06_part4_triggers.sql) | **50** | Disparadores `BEFORE INSERT` (1-10), `AFTER INSERT` con auditoría (11-20), `BEFORE UPDATE` para integridad (21-30), `AFTER UPDATE` con alertas clínicas (31-40) y `BEFORE/AFTER DELETE` con tablas de backup (41-50). |
+| **Parte V: Funciones** | [`sql/07_part5_functions.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/07_part5_functions.sql) | **50** | Funciones escalares y formato (1-10), métricas clínicas (11-20), lógica diagnóstica y completitud (21-30), cálculos estadísticos temporales (31-40) y fichas de resumen textual (41-50). |
+| **Vistas y Event Scheduler** | [`sql/08_views_and_events.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/08_views_and_events.sql) | **10** | 8 vistas para analítica clínica y 2 eventos programados de mantenimiento preventivo y control de tratamientos. |
 
 ---
 

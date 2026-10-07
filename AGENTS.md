@@ -8,8 +8,8 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 
 - **Nombre del Proyecto:** Sistema de Gestión Integral de Historias Clínicas (Oftalmología y Glaucoma)
 - **Autor / Titular:** Deimer Caro
-- **Ubicación en el Filesystem:** `/home/camper/Documentos/TALLERDB_DEIMER_CARO`
-- **Guía de Requerimientos y Rúbricas:** [`tallerexamenbd.md`](file:///home/camper/Documentos/TALLERDB_DEIMER_CARO/tallerexamenbd.md)
+- **Ubicación en el Filesystem:** `/home/camper/Documents/DB_DEIMER_CARO`
+- **Guía de Requerimientos y Rúbricas:** [`tallerexamenbd.md`](file:///home/camper/Documents/DB_DEIMER_CARO/tallerexamenbd.md)
 - **Objetivo Central:** Diseñar, normalizar rigurosamente hasta la **Cuarta Forma Normal (4FN)**, documentar e implementar en **MySQL 8.0** una base de datos relacional médica de nivel clínico, acompañada de un banco exhaustivo de **250 ejercicios resueltos** (consultas, subconsultas, procedimientos almacenados, triggers y funciones), modelos conceptual/lógico/físico, archivo nativo StarUML y suite de pruebas automatizadas.
 
 ---
@@ -38,7 +38,7 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 ## 3. Arquitectura del Repositorio de Archivos
 
 ```
-/home/camper/Documentos/TALLERDB_DEIMER_CARO/
+/home/camper/Documents/DB_DEIMER_CARO/
 ├── AGENTS.md                          # Este archivo: contexto vivo y directrices de relevo
 ├── README.md                          # Documentación maestra de entrega y sustentación
 ├── tallerexamenbd.md                  # Enunciado y rúbricas originales del taller
