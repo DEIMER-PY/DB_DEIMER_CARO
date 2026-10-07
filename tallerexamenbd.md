@@ -1512,7 +1512,7 @@ CASE
 
 Ejemplo:
 
-```
+```sql
 SELECT
     p.first_name,
     p.last_name,
@@ -1530,7 +1530,7 @@ Ejemplo:
 
 Obtener cada paciente con su última consulta:
 
-```
+```sql
 SELECT
     p.id,
     p.first_name,
@@ -1553,7 +1553,7 @@ Ejemplo:
 
 Obtener pacientes con más consultas que el promedio:
 
-```
+```sql
 SELECT
     patient_id,
     total_visits
@@ -1593,7 +1593,7 @@ MAX
 
 Ejemplo:
 
-```
+```sql
 SELECT
     AVG(pressure) AS average_pressure,
     MIN(pressure) AS minimum_pressure,
@@ -1605,7 +1605,7 @@ FROM intraocular_pressures;
 
 Ejemplo:
 
-```
+```sql
 SELECT
     eye,
     AVG(pressure) AS average_pressure
@@ -1620,7 +1620,7 @@ Ejemplo:
 ```
 SELECT
     patient_id,
-    COUNT(*) AS controls
+    COUNT(*) AS controlsS
 FROM glaucoma_controls
 GROUP BY patient_id
 HAVING COUNT(*) >= 3;
