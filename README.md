@@ -32,7 +32,10 @@ Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabili
 │   ├── oftalmologia_model.mdj         # Proyecto nativo para StarUML 5.x
 │   ├── conceptual_model.mmd           # Diagrama Conceptual (Mermaid)
 │   ├── logical_model.mmd              # Diagrama Lógico Relacional (Mermaid)
-│   └── physical_erd.mmd               # Diagrama Físico DER Completo (Mermaid)
+│   ├── physical_erd.mmd               # Diagrama Físico DER Completo (Mermaid)
+│   ├── modelo_entidad_relacion.html   # Modelo ER interactivo: conceptual, lógico, DER y explorador
+│   ├── generador_modelo_er.py         # Script que genera el HTML del modelo ER
+│   └── plantilla_modelo_er.html       # Plantilla (estilos, navegación y explorador) del modelo ER
 │
 ├── docs/                              # Documentación técnica paso a paso
 │   ├── 01_planteamiento_problema.md   # Justificación clínica, alcance y entidades
@@ -149,7 +152,24 @@ El proyecto incluye un modelo nativo completo en formato StarUML 6.x (`diagrams/
   staruml diagrams/oftalmologia_model.mdj &
   ```
 
-### 5.2. Modelo Conceptual en draw.io
+### 5.2. Modelo Entidad-Relación interactivo (HTML)
+Una sola página con las 25 tablas (+4 de respaldo), sus 214 atributos y las 25 llaves foráneas, organizada en 7 módulos. Las pestañas siguen el orden del diseño:
+1. **Mapa general:** cómo se conectan los módulos y tabla con las 25 relaciones (cardinalidad y `ON DELETE`).
+2. **Modelo conceptual (Chen):** entidades, entidades débiles, rombos de relación y cardinalidades `1 · N · M · 0..1`.
+3. **Modelo lógico relacional:** cada tabla en notación relacional con tipos, nulidad, claves, defaults y restricciones `CHECK`/`UNIQUE`/`FK`.
+4. **Diagrama entidad-relación (pata de gallo):** cada línea une la columna FK con el `id` que referencia.
+5. **Explorador de tablas y atributos:** búsqueda en tablas o atributos y filtros por módulo, tipo de entidad (fuerte, débil, catálogo, asociativa N:M, auditoría, respaldo), clave (PK, FK, UK), tipo de dato y nulidad; vista por tabla o lista de atributos ordenable.
+
+**Navegación cruzada:** al hacer clic en una entidad de cualquier diagrama, en una tabla del mapa general o en «Explorar →» del modelo lógico, se abre su ficha en el explorador; desde cada ficha se vuelve al modelo conceptual, lógico o DER de su módulo.
+
+- **Archivo:** [`diagrams/modelo_entidad_relacion.html`](diagrams/modelo_entidad_relacion.html) (se abre en cualquier navegador)
+- **Versión publicada:** https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis
+- **Regenerarlo** (si cambia el DDL, actualizar primero las tablas `T` y las FK `FKS` del script):
+  ```bash
+  python diagrams/generador_modelo_er.py diagrams/modelo_entidad_relacion.html diagrams/plantilla_modelo_er.html
+  ```
+
+### 5.3. Modelo Conceptual en draw.io
 El diagrama conceptual del dominio clínico también se encuentra disponible en formato nativo de draw.io / diagrams.net:
 - **Archivo draw.io:** [`diagrams/modelo_conceptual.drawio`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/modelo_conceptual.drawio)
 - **Archivo Mermaid:** [`diagrams/conceptual_model.mmd`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/conceptual_model.mmd)

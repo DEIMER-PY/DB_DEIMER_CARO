@@ -101,6 +101,8 @@ Este documento contiene la especificación técnica completa, el estado de avanc
   - [x] `sql/07_part5_functions.sql` (50 funciones compiladas con éxito).
   - [x] `sql/08_views_and_events.sql` (8 Vistas y 2 Eventos en ejecución).
 - [x] **Fase 5 (Tests y Verificación):** `tests/run_all.sh` y script de comprobación pasando al 100%.
+- [x] **Fase 8 (Modelo ER interactivo):** `diagrams/modelo_entidad_relacion.html` (mapa de módulos, Chen, lógico relacional y DER pata de gallo; 25 tablas + 4 de respaldo, 25 FK) generado por `diagrams/generador_modelo_er.py` con `diagrams/plantilla_modelo_er.html`. Si cambia el DDL, actualizar `T` y `FKS` en el generador y regenerar. Publicado en https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis
+- [x] **Fase 9 (Explorador fusionado):** el explorador de tablas, entidades y atributos es la 5.ª pestaña de `diagrams/modelo_entidad_relacion.html` (filtros por módulo, tipo de entidad, clave, tipo de dato y nulidad; clic en una entidad de los diagramas abre su ficha). Su JS/CSS vive en `diagrams/plantilla_modelo_er.html` (prefijo `xp-`) y sus datos los genera `explorer_json()` en `generador_modelo_er.py`. No existe página aparte.
 - [x] **Fase 7 (Arranque multiplataforma):** lanzadores `run_all.sh` (Linux/macOS), `run_all.ps1` y `run_all.cmd` (Windows) con modo `auto|local|docker` (por defecto usa `docker exec` sobre el contenedor `mysql_db` si no hay cliente `mysql` local). `.gitattributes` fuerza LF en `.sh`/`.sql` y CRLF en `.ps1`/`.cmd`.
 - [x] **Fase 6 (README.md Maestro y Commit Git):** `README.md` completo y repositorio con commit inicial en `main`.
 
