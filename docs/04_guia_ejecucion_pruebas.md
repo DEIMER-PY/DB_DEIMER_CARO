@@ -38,12 +38,33 @@ docker compose up -d mysql_db phpmyadmin
 ---
 
 ### Paso 2: Desplegar la Base de Datos en el Contenedor
-Desde la carpeta del proyecto `DB_DEIMER_CARO`, ejecute la suite de inicialización automatizada apuntando al puerto `3307`:
+Desde la carpeta del proyecto `DB_DEIMER_CARO`, ejecute el lanzador correspondiente a su sistema operativo:
+
+| Sistema operativo | Comando |
+| :--- | :--- |
+| **Linux / macOS** | `bash tests/run_all.sh` |
+| **Windows (PowerShell)** | `powershell -ExecutionPolicy Bypass -File tests\run_all.ps1` |
+| **Windows (CMD o doble clic)** | `tests\run_all.cmd` |
+| **Windows (Git Bash / WSL)** | `bash tests/run_all.sh` |
 
 ```bash
-cd /home/camper/Documents/DB_DEIMER_CARO
+# Linux / macOS
+cd /ruta/a/DB_DEIMER_CARO
 bash tests/run_all.sh
 ```
+```powershell
+# Windows
+cd C:\ruta\a\DB_DEIMER_CARO
+.\tests\run_all.cmd
+```
+
+**¿Cómo se conecta al contenedor?** No es necesario tener MySQL instalado en el equipo. En modo `auto` (por defecto), los scripts:
+1. Usan el cliente `mysql` local contra `127.0.0.1:3307` si está instalado.
+2. Si no lo está, ejecutan el cliente `mysql` **dentro del contenedor** `mysql_db` con `docker exec -i`, enviándole cada archivo `.sql`.
+
+Para forzar un modo o cambiar el contenedor, use variables de entorno (`MYSQL_MODE=local|docker`, `MYSQL_CONTAINER`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASS`, `MYSQL_DB`). La tabla completa está en la sección 7 del [`README.md`](../README.md).
+
+> **Error `$'\r': command not found` en Windows:** el `run_all.sh` quedó con finales de línea CRLF. El archivo `.gitattributes` del repositorio lo previene; si el clon es antiguo, ejecute `rm tests/run_all.sh && git checkout -- tests/run_all.sh` o use `tests\run_all.cmd`.
 
 El script ejecutará automáticamente en el contenedor:
 1. `00_init_database.sql`: Crea la base de datos `oftalmologia_glaucoma_db` con codificación `utf8mb4`.

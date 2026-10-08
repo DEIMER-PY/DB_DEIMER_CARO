@@ -68,7 +68,9 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 │   └── 08_views_and_events.sql        # Vistas requeridas y Event Scheduler de mantenimiento
 │
 └── tests/                             # Verificación automatizada
-    ├── run_all.sh                     # Script Bash de ejecución desatendida integral
+    ├── run_all.sh                     # Lanzador Linux / macOS / Git Bash (debe conservar LF)
+    ├── run_all.ps1                    # Lanzador Windows PowerShell (UTF-8 con BOM, CRLF)
+    ├── run_all.cmd                    # Atajo Windows que ejecuta run_all.ps1
     └── verify_solutions.sql           # Consultas de verificación y aserciones de prueba
 ```
 
@@ -99,6 +101,7 @@ Este documento contiene la especificación técnica completa, el estado de avanc
   - [x] `sql/07_part5_functions.sql` (50 funciones compiladas con éxito).
   - [x] `sql/08_views_and_events.sql` (8 Vistas y 2 Eventos en ejecución).
 - [x] **Fase 5 (Tests y Verificación):** `tests/run_all.sh` y script de comprobación pasando al 100%.
+- [x] **Fase 7 (Arranque multiplataforma):** lanzadores `run_all.sh` (Linux/macOS), `run_all.ps1` y `run_all.cmd` (Windows) con modo `auto|local|docker` (por defecto usa `docker exec` sobre el contenedor `mysql_db` si no hay cliente `mysql` local). `.gitattributes` fuerza LF en `.sh`/`.sql` y CRLF en `.ps1`/`.cmd`.
 - [x] **Fase 6 (README.md Maestro y Commit Git):** `README.md` completo y repositorio con commit inicial en `main`.
 
 ---

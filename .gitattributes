@@ -1,0 +1,15 @@
+# ==============================================================================
+# Normalización de finales de línea (evita el error $'\r': command not found)
+# ==============================================================================
+* text=auto
+
+# Scripts de shell: SIEMPRE LF (Linux / macOS / Git Bash / WSL)
+*.sh  text eol=lf
+
+# Scripts de Windows: SIEMPRE CRLF
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Scripts SQL: LF (el cliente mysql los procesa igual en todos los sistemas)
+*.sql text eol=lf

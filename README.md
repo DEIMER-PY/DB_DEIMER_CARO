@@ -2,7 +2,7 @@
 
 **Autor:** Deimer Caro  
 **Motor RDBMS:** MySQL 8.0 (InnoDB)  
-**Entorno de Ejecución:** Ubuntu Linux — Host `127.0.0.1`, Puerto `3307`  
+**Entorno de Ejecución:** Linux, macOS o Windows (Docker `mysql_db` o MySQL local) — Host `127.0.0.1`, Puerto `3307`  
 **Base de Datos:** `oftalmologia_glaucoma_db`  
 **Especificación Original:** [`tallerexamenbd.md`](file:///home/camper/Documents/DB_DEIMER_CARO/tallerexamenbd.md)  
 **Protocolo para Agentes de IA:** [`AGENTS.md`](file:///home/camper/Documents/DB_DEIMER_CARO/AGENTS.md)  
@@ -51,8 +51,12 @@ Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabili
 │   ├── 07_part5_functions.sql         # Parte V: 50 Funciones Almacenadas (KPIs y clasificaciones)
 │   └── 08_views_and_events.sql        # 8 Vistas clínicas y 2 Eventos automáticos
 │
+├── .gitattributes                     # Fuerza LF en .sh/.sql y CRLF en .ps1/.cmd
+│
 └── tests/                             # Suite de pruebas automatizadas
-    ├── run_all.sh                     # Runner Bash desatendido de ejecución integral
+    ├── run_all.sh                     # Lanzador Linux / macOS (y Git Bash / WSL)
+    ├── run_all.ps1                    # Lanzador Windows (PowerShell)
+    ├── run_all.cmd                    # Atajo Windows (CMD o doble clic) que ejecuta run_all.ps1
     └── verify_solutions.sql           # Consultas de verificación y aserciones de integridad
 ```
 
@@ -170,19 +174,53 @@ El proyecto da cumplimiento íntegro y verificable a las 5 partes solicitadas:
 
 ## 7. Despliegue y Ejecución Automatizada
 
-El proyecto incluye un script de automatización desatendida que reconstruye la base de datos, compila todos los objetos, ejecuta los 250 ejercicios y comprueba las aserciones de calidad.
+El proyecto incluye scripts de arranque desatendidos que reconstruyen la base de datos, compilan todos los objetos, ejecutan los 250 ejercicios y comprueban las aserciones de calidad. Hay un lanzador para cada sistema operativo:
 
-### Ejecución en un solo comando:
+| Sistema operativo | Archivo | Comando (desde la raíz del proyecto) |
+| :--- | :--- | :--- |
+| **Linux** | `tests/run_all.sh` | `bash tests/run_all.sh` |
+| **macOS** | `tests/run_all.sh` | `bash tests/run_all.sh` |
+| **Windows (PowerShell)** | `tests/run_all.ps1` | `powershell -ExecutionPolicy Bypass -File tests\run_all.ps1` |
+| **Windows (CMD / doble clic)** | `tests/run_all.cmd` | `tests\run_all.cmd` |
+
+> Linux y macOS comparten el mismo script porque ambos usan bash. En Windows también funciona `bash tests/run_all.sh` desde Git Bash o WSL.
+
+### Requisitos
+Se necesita **uno** de estos dos programas:
+- **Docker** con el contenedor MySQL en ejecución (por defecto `mysql_db`). No hace falta instalar MySQL en el equipo: los scripts ejecutan el cliente `mysql` **dentro del contenedor** con `docker exec`.
+- **Cliente `mysql`** instalado en el equipo, con acceso a `127.0.0.1:3307`.
+
+Con el modo `auto` (por defecto), si el cliente `mysql` está en el PATH se usa ese; si no, se usa Docker.
+
+### Parámetros de conexión configurables
+Todos los lanzadores leen las mismas variables de entorno:
+
+| Variable | Valor por defecto | Descripción |
+| :--- | :--- | :--- |
+| `MYSQL_MODE` | `auto` | `auto`, `local` (cliente mysql del equipo) o `docker` (cliente dentro del contenedor) |
+| `MYSQL_CONTAINER` | `mysql_db` | Nombre del contenedor (solo en modo `docker`) |
+| `MYSQL_HOST` | `127.0.0.1` | Host (solo en modo `local`) |
+| `MYSQL_PORT` | `3307` | Puerto (solo en modo `local`) |
+| `MYSQL_USER` | `root` | Usuario |
+| `MYSQL_PASS` | `root2026` | Contraseña |
+| `MYSQL_DB` | `oftalmologia_glaucoma_db` | Base de datos destino |
 
 ```bash
-bash tests/run_all.sh
+# Linux / macOS
+MYSQL_MODE=docker MYSQL_CONTAINER=mysql_db bash tests/run_all.sh
+```
+```powershell
+# Windows (PowerShell)
+$env:MYSQL_MODE = "docker"; $env:MYSQL_CONTAINER = "mysql_db"
+powershell -ExecutionPolicy Bypass -File tests\run_all.ps1
 ```
 
-### Parámetros de conexión configurables:
-Por defecto, el script se conecta al puerto `3307` con las credenciales del sistema:
+### Error `$'\r': command not found` al ejecutar el script de bash
+Este error aparece cuando `run_all.sh` tiene finales de línea de Windows (CRLF). Git en Windows (`core.autocrlf=true`) los convierte al hacer checkout. El archivo [`.gitattributes`](.gitattributes) evita el problema porque obliga a guardar los `.sh` con LF. Si el clon es anterior a ese archivo, vuelva a extraer el script una sola vez (no afecta otros archivos):
 ```bash
-MYSQL_HOST=127.0.0.1 MYSQL_PORT=3307 MYSQL_USER=root MYSQL_PASS=root2026 bash tests/run_all.sh
+rm tests/run_all.sh && git checkout -- tests/run_all.sh
 ```
+Alternativa: en VS Code abra el archivo, haga clic en `CRLF` en la barra inferior, elija `LF` y guarde.
 
 ### Resultados de la Verificación:
 ```
