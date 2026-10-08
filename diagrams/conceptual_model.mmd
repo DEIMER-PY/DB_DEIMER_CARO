@@ -24,12 +24,12 @@ flowchart TD
     
     %% Relaciones Conceptuales
     PACIENTE -->|"1 : 1 tiene"| HISTORIA
-    PACIENTE -->|"1 : 1 posee"| REGISTRO_GLAUCOMA
+    PACIENTE -->|"1 : 0..1 posee"| REGISTRO_GLAUCOMA
     ESPECIALIDAD -->|"1 : N agrupa"| PROFESIONAL
     PROFESIONAL -->|"1 : N atiende"| CONSULTA
     HISTORIA -->|"1 : N registra"| CONSULTA
     
-    CONSULTA -->|"1 : N asigna"| DIAGNOSTICO
+    CONSULTA -->|"N : M asigna (visit_diagnoses)"| DIAGNOSTICO
     CONSULTA -->|"1 : N incluye"| EXAMEN_OFTALMOLOGICO
     
     EXAMEN_OFTALMOLOGICO --> PIO
@@ -43,4 +43,4 @@ flowchart TD
     CONSULTA -->|"1 : N realiza"| PROCEDIMIENTO
     
     REGISTRO_GLAUCOMA -->|"1 : N monitorea"| CONTROL_GLAUCOMA
-    CONSULTA -->|"1 : 1 asocia"| CONTROL_GLAUCOMA
+    CONSULTA -->|"1 : N asocia"| CONTROL_GLAUCOMA

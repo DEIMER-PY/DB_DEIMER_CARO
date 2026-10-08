@@ -95,7 +95,7 @@
         <mxCell id="e_hist_vis" value="1 : N registra" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#6c8ebf;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="HISTORIA" target="CONSULTA">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_vis_diag" value="1 : N asigna" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="CONSULTA" target="DIAGNOSTICO">
+        <mxCell id="e_vis_diag" value="N : M asigna (visit_diagnoses)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="CONSULTA" target="DIAGNOSTICO">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_vis_exam" value="1 : N ordena/realiza" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="CONSULTA" target="EXAMENES_HUB">
@@ -125,13 +125,13 @@
         <mxCell id="e_exam_cv" value="cuantifica" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#d79b00;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="EXAMENES_HUB" target="CAMPO_VISUAL">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_pac_glauc" value="1 : 1 posee" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#9673a6;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="PACIENTE" target="REGISTRO_GLAUCOMA">
+        <mxCell id="e_pac_glauc" value="1 : 0..1 posee" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#9673a6;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="PACIENTE" target="REGISTRO_GLAUCOMA">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_glauc_ctrl" value="1 : N monitorea" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#9673a6;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="REGISTRO_GLAUCOMA" target="CONTROL_GLAUCOMA">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_vis_ctrl" value="1 : 1 asocia" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="CONSULTA" target="CONTROL_GLAUCOMA">
+        <mxCell id="e_vis_ctrl" value="1 : N asocia" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;fontSize=11;strokeColor=#82b366;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="CONSULTA" target="CONTROL_GLAUCOMA">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>

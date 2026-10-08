@@ -534,8 +534,15 @@ def render_chen(mod):
             for i, a in enumerate(attrs):
                 shapes.append(f"<text class='mu' x='{ax_}' y='{ay_ - ah / 2 + 22 + 15 * i:.1f}' font-size='11' text-anchor='middle'>{E(a)}</text>")
             b.add(ax_ - aw / 2, ay_ - ah / 2, ax_ + aw / 2, ay_ + ah / 2)
-        shapes.append(f"<polygon class='rel' points='{dx_},{dy_ - hh} {dx_ + hw:.1f},{dy_} {dx_},{dy_ + hh} {dx_ - hw:.1f},{dy_}'/>"
-                      f"<text class='fg' x='{dx_}' y='{dy_ + 4}' font-size='12' text-anchor='middle'>{E(verb)}</text>")
+        diamond = (f"<polygon class='rel' points='{dx_},{dy_ - hh} {dx_ + hw:.1f},{dy_} {dx_},{dy_ + hh} {dx_ - hw:.1f},{dy_}'/>"
+                   f"<text class='fg' x='{dx_}' y='{dy_ + 4}' font-size='12' text-anchor='middle'>{E(verb)}</text>")
+        # una relación N:M con atributos es la tabla asociativa que tiene FK hacia ambas entidades
+        assoc = [t for t in T if {p for ch, c, p, v, od in FKS if ch == t} == {A, B}] if attrs else []
+        if assoc:
+            t = assoc[0]
+            diamond = (f"<g class='ent' data-t='{E(t)}'><title>{E(t)} — {E(T[t]['desc'])}&#10;Atributos: "
+                       f"{E(', '.join(c['name'] for c in T[t]['cols']))}&#10;Clic: ver en el explorador</title>{diamond}</g>")
+        shapes.append(diamond)
         b.add(dx_ - hw, dy_ - hh, dx_ + hw, dy_ + hh)
     for name, (ex, ey) in ents.items():
         w = ent_w(name); own = T[name]['mod'] == mod; color = MODS[T[name]['mod']][1]

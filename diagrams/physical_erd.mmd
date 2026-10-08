@@ -1,152 +1,301 @@
 erDiagram
+    %% DER físico de oftalmologia_glaucoma_db (MySQL 8.0, 4FN).
+    %% Generado con diagrams/generador_mermaid.py desde sql/01_ddl_schema.sql. No editar a mano.
+    DEPARTMENTS {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar name UK "VARCHAR(100) NOT NULL"
+    }
+    CITIES {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        int department_id FK "INT NOT NULL"
+        varchar name "VARCHAR(100) NOT NULL"
+    }
+    DOCUMENT_TYPES {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar code UK "VARCHAR(10) NOT NULL"
+        varchar name "VARCHAR(50) NOT NULL"
+    }
     PATIENTS {
-        bigint id PK
-        int document_type_id FK
-        varchar document_number UK
-        varchar first_name
-        varchar last_name
-        date birth_date
-        enum gender
-        int city_id FK
-        varchar email UK
-        varchar phone
-        datetime created_at
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        int document_type_id FK "INT NOT NULL"
+        varchar document_number UK "VARCHAR(30) NOT NULL"
+        varchar first_name "VARCHAR(100) NOT NULL"
+        varchar last_name "VARCHAR(100) NOT NULL"
+        date birth_date "DATE NOT NULL"
+        enum gender "ENUM('M','F','OTRO') NOT NULL"
+        int city_id FK "INT NOT NULL"
+        varchar address "VARCHAR(255) NULL"
+        varchar phone "VARCHAR(30) NULL"
+        varchar email UK "VARCHAR(150) NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
     }
-
-    CLINICAL_HISTORIES {
-        bigint id PK
-        bigint patient_id FK_UK
-        varchar history_number UK
-        enum status
-        datetime created_at
+    PATIENT_ALLERGIES {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK "BIGINT NOT NULL"
+        varchar allergen "VARCHAR(150) NOT NULL"
+        varchar reaction "VARCHAR(255) NULL"
+        enum severity "ENUM('LEVE','MODERADA','SEVERA') NOT NULL"
     }
-
+    PATIENT_FAMILY_HISTORIES {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK "BIGINT NOT NULL"
+        varchar condition_name "VARCHAR(150) NOT NULL"
+        varchar relationship "VARCHAR(50) NOT NULL"
+        text notes "TEXT NULL"
+    }
+    PATIENT_ANTECEDENTS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK "BIGINT NOT NULL"
+        enum antecedent_type "ENUM('PATOLOGICO','QUIRURGICO','TRAUMATICO','FARMACOLOGICO') NOT NULL"
+        text description "TEXT NOT NULL"
+        year year_diagnosed "YEAR NULL"
+    }
+    SPECIALTIES {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar name UK "VARCHAR(100) NOT NULL"
+        text description "TEXT NULL"
+    }
     HEALTHCARE_PROFESSIONALS {
-        bigint id PK
-        int document_type_id FK
-        varchar document_number UK
-        varchar first_name
-        varchar last_name
-        varchar medical_license UK
-        int specialty_id FK
-        varchar email UK
-        boolean is_active
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        int document_type_id FK "INT NOT NULL"
+        varchar document_number UK "VARCHAR(30) NOT NULL"
+        varchar first_name "VARCHAR(100) NOT NULL"
+        varchar last_name "VARCHAR(100) NOT NULL"
+        varchar medical_license UK "VARCHAR(50) NOT NULL"
+        int specialty_id FK "INT NOT NULL"
+        varchar email UK "VARCHAR(150) NOT NULL"
+        varchar phone "VARCHAR(30) NULL"
+        boolean is_active "BOOLEAN NOT NULL"
+        datetime created_at "DATETIME NOT NULL"
     }
-
+    CLINICAL_HISTORIES {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK, UK "BIGINT NOT NULL"
+        varchar history_number UK "VARCHAR(50) NOT NULL"
+        enum status "ENUM('ACTIVA','ARCHIVADA','INACTIVA') NOT NULL"
+        datetime created_at "DATETIME NOT NULL"
+    }
     MEDICAL_VISITS {
-        bigint id PK
-        bigint clinical_history_id FK
-        bigint professional_id FK
-        datetime visit_date
-        text reason
-        text assessment
-        text plan
-        boolean is_closed
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint clinical_history_id FK "BIGINT NOT NULL"
+        bigint professional_id FK "BIGINT NOT NULL"
+        datetime visit_date "DATETIME NOT NULL"
+        text reason "TEXT NOT NULL"
+        text symptoms "TEXT NULL"
+        text assessment "TEXT NOT NULL"
+        text plan "TEXT NOT NULL"
+        boolean is_closed "BOOLEAN NOT NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
     }
-
     DIAGNOSES {
-        int id PK
-        varchar code UK
-        varchar name
-        boolean is_glaucoma_type
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar code UK "VARCHAR(20) NOT NULL"
+        varchar name "VARCHAR(200) NOT NULL"
+        boolean is_glaucoma_type "BOOLEAN NOT NULL"
+        text description "TEXT NULL"
     }
-
     VISIT_DIAGNOSES {
-        bigint id PK
-        bigint visit_id FK
-        int diagnosis_id FK
-        boolean is_primary
-        varchar notes
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        int diagnosis_id FK "INT NOT NULL"
+        boolean is_primary "BOOLEAN NOT NULL"
+        varchar notes "VARCHAR(255) NULL"
     }
-
+    CLINICAL_DOCUMENTS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint clinical_history_id FK "BIGINT NOT NULL"
+        varchar title "VARCHAR(150) NOT NULL"
+        varchar file_type "VARCHAR(50) NOT NULL"
+        varchar file_path "VARCHAR(255) NOT NULL"
+        datetime uploaded_at "DATETIME NOT NULL"
+        varchar deleted_by "VARCHAR(100) NULL"
+    }
     INTRAOCULAR_PRESSURES {
-        bigint id PK
-        bigint visit_id FK
-        enum eye
-        decimal pressure
-        time measurement_time
-        enum method
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        decimal pressure "DECIMAL(5,2) NOT NULL"
+        time measurement_time "TIME NULL"
+        enum method "ENUM('GOLDMANN','AIRE','PERKINS','ICARE') NOT NULL"
+        varchar notes "VARCHAR(255) NULL"
     }
-
+    PACHYMETRY_EXAMS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        decimal corneal_thickness "DECIMAL(6,2) NOT NULL"
+        varchar method "VARCHAR(50) NOT NULL"
+        datetime exam_date "DATETIME NOT NULL"
+    }
+    GONIOSCOPY_EXAMS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        enum angle_grade "ENUM('GRADO 0','GRADO I','GRADO II','GRADO III','GRADO IV') NOT NULL"
+        enum pigmentation "ENUM('LEVE','MODERADA','SEVERA') NOT NULL"
+        text findings "TEXT NULL"
+        datetime exam_date "DATETIME NOT NULL"
+    }
     OCT_EXAMS {
-        bigint id PK
-        bigint visit_id FK
-        enum eye
-        decimal rnfl_average
-        decimal cup_to_disc_ratio
-        text interpretation
-        boolean is_validated
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        decimal rnfl_average "DECIMAL(6,2) NOT NULL"
+        decimal rnfl_superior "DECIMAL(6,2) NULL"
+        decimal rnfl_inferior "DECIMAL(6,2) NULL"
+        decimal cup_to_disc_ratio "DECIMAL(4,2) NULL"
+        text interpretation "TEXT NULL"
+        boolean is_validated "BOOLEAN NOT NULL"
+        datetime exam_date "DATETIME NOT NULL"
     }
-
     VISUAL_FIELD_EXAMS {
-        bigint id PK
-        bigint visit_id FK
-        enum eye
-        decimal mean_deviation_md
-        decimal pattern_std_deviation_psd
-        decimal visual_field_index_vfi
-        text interpretation
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        varchar strategy "VARCHAR(50) NOT NULL"
+        decimal mean_deviation_md "DECIMAL(6,2) NOT NULL"
+        decimal pattern_std_deviation_psd "DECIMAL(6,2) NOT NULL"
+        decimal visual_field_index_vfi "DECIMAL(5,2) NOT NULL"
+        decimal false_positives_pct "DECIMAL(5,2) NULL"
+        decimal false_negatives_pct "DECIMAL(5,2) NULL"
+        enum reliability "ENUM('CONFIABLE','NO CONFIABLE') NOT NULL"
+        text interpretation "TEXT NULL"
+        datetime exam_date "DATETIME NOT NULL"
     }
-
-    TREATMENTS {
-        bigint id PK
-        bigint visit_id FK
-        int medication_id FK
-        enum eye
-        varchar dosage
-        varchar frequency
-        date start_date
-        date end_date
-        boolean is_active
-    }
-
     MEDICATIONS {
-        int id PK
-        varchar name UK
-        varchar generic_name
-        varchar concentration
-        varchar presentation
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar name UK "VARCHAR(150) NOT NULL"
+        varchar generic_name "VARCHAR(150) NOT NULL"
+        varchar concentration "VARCHAR(50) NOT NULL"
+        varchar presentation "VARCHAR(100) NOT NULL"
+        boolean is_active "BOOLEAN NOT NULL"
     }
-
+    TREATMENTS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        int medication_id FK "INT NOT NULL"
+        enum eye "ENUM('OD','OI','AMBOS') NOT NULL"
+        varchar dosage "VARCHAR(100) NOT NULL"
+        varchar frequency "VARCHAR(100) NOT NULL"
+        date start_date "DATE NOT NULL"
+        date end_date "DATE NULL"
+        boolean is_active "BOOLEAN NOT NULL"
+        text notes "TEXT NULL"
+    }
+    PROCEDURES {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        varchar name "VARCHAR(150) NOT NULL"
+        enum eye "ENUM('OD','OI','AMBOS') NOT NULL"
+        datetime procedure_date "DATETIME NOT NULL"
+        text complications "TEXT NULL"
+        text results "TEXT NULL"
+    }
     GLAUCOMA_RECORDS {
-        bigint id PK
-        bigint patient_id FK_UK
-        decimal target_iop_od
-        decimal target_iop_oi
-        enum clinical_stage
-        date diagnosis_date
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK, UK "BIGINT NOT NULL"
+        decimal target_iop_od "DECIMAL(5,2) NOT NULL"
+        decimal target_iop_oi "DECIMAL(5,2) NOT NULL"
+        enum clinical_stage "ENUM('SOSPECHA','INICIAL','MODERADO','AVANZADO','TERMINAL') NOT NULL"
+        date diagnosis_date "DATE NOT NULL"
+        text notes "TEXT NULL"
     }
-
     GLAUCOMA_CONTROLS {
-        bigint id PK
-        bigint glaucoma_record_id FK
-        bigint visit_id FK
-        date control_date
-        boolean is_progression_detected
-        enum adherence_score
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint glaucoma_record_id FK "BIGINT NOT NULL"
+        bigint visit_id FK "BIGINT NOT NULL"
+        date control_date "DATE NOT NULL"
+        boolean is_progression_detected "BOOLEAN NOT NULL"
+        enum adherence_score "ENUM('EXCELENTE','BUENA','REGULAR','MALA') NOT NULL"
+        text notes "TEXT NULL"
     }
-
     AUDIT_LOGS {
-        bigint id PK
-        varchar table_name
-        bigint record_id
-        enum action
-        json old_values
-        json new_values
-        varchar performed_by
-        datetime changed_at
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        varchar table_name "VARCHAR(100) NOT NULL"
+        bigint record_id "BIGINT NOT NULL"
+        enum action "ENUM('INSERT','UPDATE','DELETE','ALERT') NOT NULL"
+        json old_values "JSON NULL"
+        json new_values "JSON NULL"
+        varchar performed_by "VARCHAR(100) NOT NULL"
+        datetime changed_at "DATETIME NOT NULL"
+    }
+    PATIENTS_BACKUP {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        int document_type_id "INT NOT NULL"
+        varchar document_number UK "VARCHAR(30) NOT NULL"
+        varchar first_name "VARCHAR(100) NOT NULL"
+        varchar last_name "VARCHAR(100) NOT NULL"
+        date birth_date "DATE NOT NULL"
+        enum gender "ENUM('M','F','OTRO') NOT NULL"
+        int city_id "INT NOT NULL"
+        varchar address "VARCHAR(255) NULL"
+        varchar phone "VARCHAR(30) NULL"
+        varchar email UK "VARCHAR(150) NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
+    }
+    MEDICAL_VISITS_BACKUP {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint clinical_history_id "BIGINT NOT NULL"
+        bigint professional_id "BIGINT NOT NULL"
+        datetime visit_date "DATETIME NOT NULL"
+        text reason "TEXT NOT NULL"
+        text symptoms "TEXT NULL"
+        text assessment "TEXT NOT NULL"
+        text plan "TEXT NOT NULL"
+        boolean is_closed "BOOLEAN NOT NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
+    }
+    TREATMENTS_BACKUP {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id "BIGINT NOT NULL"
+        int medication_id "INT NOT NULL"
+        enum eye "ENUM('OD','OI','AMBOS') NOT NULL"
+        varchar dosage "VARCHAR(100) NOT NULL"
+        varchar frequency "VARCHAR(100) NOT NULL"
+        date start_date "DATE NOT NULL"
+        date end_date "DATE NULL"
+        boolean is_active "BOOLEAN NOT NULL"
+        text notes "TEXT NULL"
+    }
+    OCT_EXAMS_BACKUP {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        decimal rnfl_average "DECIMAL(6,2) NOT NULL"
+        decimal rnfl_superior "DECIMAL(6,2) NULL"
+        decimal rnfl_inferior "DECIMAL(6,2) NULL"
+        decimal cup_to_disc_ratio "DECIMAL(4,2) NULL"
+        text interpretation "TEXT NULL"
+        boolean is_validated "BOOLEAN NOT NULL"
+        datetime exam_date "DATETIME NOT NULL"
     }
 
-    PATIENTS ||--|| CLINICAL_HISTORIES : "1:1"
-    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:1"
-    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "1:N"
-    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N"
-    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "1:N"
-    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "1:N"
-    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : "1:N"
-    MEDICAL_VISITS ||--o{ OCT_EXAMS : "1:N"
-    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "1:N"
-    MEDICAL_VISITS ||--o{ TREATMENTS : "1:N"
-    MEDICATIONS ||--o{ TREATMENTS : "1:N"
-    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "1:N"
-    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "1:N"
+    DEPARTMENTS ||--o{ CITIES : "pertenece a (1:N)"
+    DOCUMENT_TYPES ||--o{ PATIENTS : "identifica (1:N)"
+    CITIES ||--o{ PATIENTS : "reside en (1:N)"
+    PATIENTS ||--o{ PATIENT_ALLERGIES : "presenta (1:N)"
+    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "reporta (1:N)"
+    PATIENTS ||--o{ PATIENT_ANTECEDENTS : "registra (1:N)"
+    DOCUMENT_TYPES ||--o{ HEALTHCARE_PROFESSIONALS : "identifica (1:N)"
+    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : "ejerce (1:N)"
+    PATIENTS ||--o| CLINICAL_HISTORIES : "tiene (1:1)"
+    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "acumula (1:N)"
+    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "atiende (1:N)"
+    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "diagnostica (1:N)"
+    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "diagnostica (1:N)"
+    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : "adjunta (1:N)"
+    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : "mide (1:N)"
+    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : "evalúa (1:N)"
+    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : "inspecciona (1:N)"
+    MEDICAL_VISITS ||--o{ OCT_EXAMS : "escanea (1:N)"
+    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "cuantifica (1:N)"
+    MEDICAL_VISITS ||--o{ TREATMENTS : "prescribe (1:N)"
+    MEDICATIONS ||--o{ TREATMENTS : "suministra (1:N)"
+    MEDICAL_VISITS ||--o{ PROCEDURES : "realiza (1:N)"
+    PATIENTS ||--o| GLAUCOMA_RECORDS : "posee (1:0..1)"
+    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "monitorea (1:N)"
+    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "asocia (1:N)"
