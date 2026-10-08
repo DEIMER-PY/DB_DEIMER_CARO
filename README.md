@@ -1,79 +1,156 @@
-# Sistema de Gestión Integral de Historias Clínicas (Oftalmología y Glaucoma)
+<div align="center">
 
-**Autor:** Deimer Caro  
-**Motor RDBMS:** MySQL 8.0 (InnoDB)  
-**Entorno de Ejecución:** Linux, macOS o Windows (Docker `mysql_db` o MySQL local) — Host `127.0.0.1`, Puerto `3307`  
-**Base de Datos:** `oftalmologia_glaucoma_db`  
-**Especificación Original:** [`tallerexamenbd.md`](file:///home/camper/Documents/DB_DEIMER_CARO/tallerexamenbd.md)  
-**Protocolo para Agentes de IA:** [`AGENTS.md`](file:///home/camper/Documents/DB_DEIMER_CARO/AGENTS.md)  
+# Sistema de Gestión de Historias Clínicas
+### Oftalmología y Glaucoma · Base de datos relacional en 4FN
+
+**Autor:** Deimer Caro · **Base de datos:** `oftalmologia_glaucoma_db`
+
+[![Ver el modelo ER interactivo](https://img.shields.io/badge/Ver%20modelo%20ER%20interactivo-claude.ai-1F4E78?style=for-the-badge)](https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis)
+
+![MySQL](https://img.shields.io/badge/MySQL-8.0%2B-4479A1?logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-mysql__db-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![Normalización](https://img.shields.io/badge/Normalizaci%C3%B3n-4FN-117A65)
+![Ejercicios](https://img.shields.io/badge/Ejercicios-250-9A6300)
+![Pruebas](https://img.shields.io/badge/Pruebas-Windows%20%C2%B7%20Linux%20%C2%B7%20macOS-2ea44f)
+![Validación](https://img.shields.io/badge/Validaci%C3%B3n-0%20errores-2ea44f)
+
+<img src="docs/img/modelo_er_der-m6.png" alt="Diagrama entidad-relación del módulo de seguimiento de glaucoma en el modelo ER interactivo" width="860">
+
+</div>
 
 ---
 
-## 1. Resumen Ejecutivo y Planteamiento del Problema
+## Contenido
 
-El presente proyecto implementa una solución relacional integral para la administración clínica, diagnóstico y seguimiento longitudinal de pacientes en el área de **Oftalmología y Glaucoma**. 
-
-El glaucoma representa una de las principales causas mundiales de ceguera irreversible. El control de esta neuropatía óptica exige el seguimiento riguroso y comparativo de variables biométricas por ojo (`OD` = Ojo Derecho, `OI` = Ojo Izquierdo), tales como la **Presión Intraocular (PIO)** mediante tonometría de aplanación Goldmann, la **Paquimetría Corneal Central (CCT)**, la **Gonioscopía** de ángulo iridocorneal, la **Tomografía de Coherencia Óptica (OCT)** de la capa de fibras nerviosas de la retina (CFNR / RNFL) y la **Campimetría Computarizada (Campo Visual)**.
-
-Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabilidad, el modelo fue estructurado bajo una estricta **normalización hasta la Cuarta Forma Normal (4FN)**, complementado con un banco exhaustivo de **250 ejercicios resueltos** en SQL (consultas, subconsultas, procedimientos, disparadores y funciones), vistas analíticas, eventos programados y compatibilidad nativa con **StarUML**.
+1. [Descripción](#descripción)
+2. [Modelo ER interactivo](#modelo-er-interactivo)
+3. [Tecnologías utilizadas](#tecnologías-utilizadas)
+4. [Arquitectura](#arquitectura)
+5. [Modelo de datos](#modelo-de-datos)
+6. [Banco de 250 ejercicios](#banco-de-250-ejercicios)
+7. [Instalación y pruebas](#instalación-y-pruebas)
+8. [Validación de consistencia](#validación-de-consistencia)
+9. [Estructura del repositorio](#estructura-del-repositorio)
+10. [Documentación](#documentación)
 
 ---
 
-## 2. Estructura del Repositorio
+## Descripción
 
+El glaucoma es una de las principales causas de ceguera irreversible. Su control exige seguir en el tiempo, y **por cada ojo** (`OD` derecho, `OI` izquierdo), la presión intraocular, el espesor corneal, el ángulo iridocorneal, la capa de fibras nerviosas de la retina y el campo visual.
+
+Este proyecto diseña, normaliza hasta la **Cuarta Forma Normal (4FN)**, documenta e implementa en **MySQL** la base de datos de historias clínicas de una consulta de oftalmología y glaucoma. Incluye además:
+
+- los modelos conceptual, lógico y físico;
+- un banco de **250 ejercicios resueltos**: consultas, subconsultas, procedimientos, triggers y funciones;
+- pruebas automatizadas que funcionan en Windows, Linux y macOS.
+
+| Elemento | Cantidad | Elemento | Cantidad |
+|---|---:|---|---:|
+| Tablas relacionales | 25 | Procedimientos almacenados | 50 |
+| Tablas de respaldo | 4 | Funciones almacenadas | 50 |
+| Columnas | 214 | Triggers | 50 |
+| Llaves foráneas | 25 | Vistas | 8 |
+| Restricciones `CHECK` | 17 | Eventos programados | 2 |
+| Índices | 81 | Consultas y subconsultas | 100 |
+
+> Cifras tomadas de `information_schema` tras ejecutar `tests/run_all` (MySQL 8.4.11 en Docker).
+
+---
+
+## Modelo ER interactivo
+
+**→ [Abrir el modelo ER interactivo](https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis)** · también se abre sin conexión: [`diagrams/modelo_entidad_relacion.html`](diagrams/modelo_entidad_relacion.html)
+
+Es una sola página organizada en 7 módulos y 5 pestañas:
+
+| Pestaña | Contenido |
+|---|---|
+| Mapa general | Cómo se conectan los módulos y tabla con las 25 llaves foráneas, su cardinalidad y su `ON DELETE` |
+| 1 · Modelo conceptual | Notación de Chen: entidades, entidades débiles, relaciones y cardinalidades |
+| 2 · Modelo lógico relacional | Ficha de cada tabla con tipos, nulidad, claves, valores por defecto y restricciones |
+| 3 · Diagrama entidad-relación | Notación pata de gallo: cada línea une la columna FK con el `id` que referencia |
+| Explorador de tablas y atributos | Búsqueda y filtros por módulo, tipo de entidad, clave, tipo de dato y nulidad |
+
+Al hacer clic en una entidad de cualquier diagrama se abre su ficha en el explorador, y desde cada ficha se vuelve al diagrama de su módulo.
+
+| Mapa general | Modelo conceptual (Chen) | Explorador |
+|:---:|:---:|:---:|
+| <img src="docs/img/modelo_er_map.png" alt="Mapa general de los 7 módulos" width="280"> | <img src="docs/img/modelo_er_chen-m3.png" alt="Modelo conceptual del módulo de historia clínica" width="280"> | <img src="docs/img/modelo_er_exp.png" alt="Explorador de tablas y atributos" width="280"> |
+
+---
+
+## Tecnologías utilizadas
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=mysql,docker,python,bash,powershell,git,github,html,css,js,md,linux,apple,windows,vscode" alt="Íconos de las tecnologías utilizadas">
+</p>
+
+| Tecnología | Uso en el proyecto |
+|---|---|
+| ![MySQL](https://img.shields.io/badge/-MySQL%208-4479A1?logo=mysql&logoColor=white) | Motor relacional InnoDB: esquema 4FN, procedimientos, funciones, triggers, vistas y eventos |
+| ![Docker](https://img.shields.io/badge/-Docker-2496ED?logo=docker&logoColor=white) | Contenedor `mysql_db` (puerto `3307`) y `phpmyadmin` (puerto `8081`); las pruebas usan `docker exec` cuando no hay cliente MySQL local |
+| ![phpMyAdmin](https://img.shields.io/badge/-phpMyAdmin-6C78AF?logo=phpmyadmin&logoColor=white) | Exploración visual de tablas, rutinas, triggers y del diseñador de relaciones |
+| ![StarUML](https://img.shields.io/badge/-StarUML-E5A00D) | Modelo lógico nativo (`.mdj`) con 8 diagramas y exportaciones PNG/SVG |
+| ![Mermaid](https://img.shields.io/badge/-Mermaid-FF3670?logo=mermaid&logoColor=white) | Diagramas como código: conceptual, lógico y DER físico |
+| ![draw.io](https://img.shields.io/badge/-draw.io-F08705?logo=diagramsdotnet&logoColor=white) | Modelo conceptual editable |
+| ![Python](https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white) | Generadores de diagramas (`diagrams/generador_*.py`) y validadores (`tests/validar_*.py`) |
+| ![HTML](https://img.shields.io/badge/-HTML%20%C2%B7%20CSS%20%C2%B7%20JS-E34F26?logo=html5&logoColor=white) | Modelo ER interactivo con explorador y navegación entre vistas |
+| ![Bash](https://img.shields.io/badge/-Bash-4EAA25?logo=gnubash&logoColor=white) ![PowerShell](https://img.shields.io/badge/-PowerShell-5391FE?logo=powershell&logoColor=white) | Lanzadores de despliegue y pruebas para Linux, macOS y Windows |
+| ![Git](https://img.shields.io/badge/-Git-F05032?logo=git&logoColor=white) | Control de versiones con *Conventional Commits* y `.gitattributes` para los finales de línea |
+
+---
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    subgraph SQL["sql/ — fuente del esquema"]
+        S0["00 init"] --> S1["01 DDL<br/>25 tablas + 4 respaldo"] --> S2["02 datos<br/>de prueba"]
+        S2 --> S3["03–04<br/>consultas"] --> S5["05–07<br/>rutinas y triggers"] --> S8["08 vistas<br/>y eventos"]
+    end
+    subgraph RUN["tests/ — ejecución"]
+        R1["run_all.sh<br/>Linux · macOS"]
+        R2["run_all.ps1 · .cmd<br/>Windows"]
+    end
+    subgraph DB["Docker"]
+        M[("MySQL<br/>mysql_db :3307")]
+        P["phpMyAdmin<br/>:8081"]
+    end
+    subgraph GEN["diagrams/ — modelos generados"]
+        G["generador_modelo_er.py<br/>tablas y llaves"] --> H["Modelo ER HTML<br/>+ artefacto"]
+        G --> U["StarUML .mdj<br/>PNG · SVG"]
+        G --> D["DER Mermaid"]
+    end
+    SQL --> RUN --> M
+    M --> P
+    M -- information_schema --> V["validar_consistencia.py<br/>validar_modelo_staruml.py"]
+    V -. compara .-> GEN
+    V -. compara .-> DOCS["docs/ · README · AGENTS"]
 ```
-/home/camper/Documents/DB_DEIMER_CARO/
-├── README.md                          # Este archivo: Documentación maestra del proyecto
-├── AGENTS.md                          # Guía de contexto, arquitectura y credenciales para agentes
-├── tallerexamenbd.md                  # Enunciado y rúbricas completas del taller/examen
-├── .gitignore                         # Exclusiones estándar de Git
-│
-├── diagrams/                          # Modelos visuales y de herramientas UML
-│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML: 29 entidades, 25 relaciones, 8 diagramas
-│   ├── generador_staruml.py           # Script que genera el .mdj desde los datos del DDL
-│   ├── conceptual_model.mmd           # Diagrama Conceptual (Mermaid)
-│   ├── logical_model.mmd              # Diagrama Lógico Relacional (Mermaid)
-│   ├── physical_erd.mmd               # DER físico completo en Mermaid (29 entidades, 214 atributos, 25 relaciones)
-│   ├── generador_mermaid.py           # Script que genera physical_erd.mmd desde los datos del DDL
-│   ├── erd_exported.png               # Imagen del diagrama completo exportada desde StarUML
-│   ├── exportaciones_staruml/         # Los 8 diagramas de StarUML exportados en PNG y SVG
-│   ├── modelo_entidad_relacion.html   # Modelo ER interactivo: conceptual, lógico, DER y explorador
-│   ├── generador_modelo_er.py         # Script que genera el HTML del modelo ER
-│   └── plantilla_modelo_er.html       # Plantilla (estilos, navegación y explorador) del modelo ER
-│
-├── docs/                              # Documentación técnica paso a paso
-│   ├── 01_planteamiento_problema.md   # Justificación clínica, alcance y entidades
-│   ├── 02_proceso_normalizacion_4fn.md# Demostración formal de normalización de 0FN a 4FN
-│   ├── 03_diccionario_de_datos.md     # Catálogo exhaustivo de tablas, tipos y restricciones
-│   └── 04_guia_ejecucion_pruebas.md   # Manual de despliegue y verificación
-│
-├── sql/                               # Scripts SQL modulares y secuenciales
-│   ├── 00_init_database.sql           # CREATE DATABASE utf8mb4 y configuración inicial
-│   ├── 01_ddl_schema.sql              # Creación de 25 tablas relacionales, llaves e índices
-│   ├── 02_dml_seed_data.sql           # Dataset semilla clínicamente coherente
-│   ├── 03_part1_queries.sql           # Parte I: 50 Consultas SQL (Básicas, Intermedias, Avanzadas)
-│   ├── 04_part2_subqueries.sql        # Parte II: 50 Subconsultas SQL (Escalares, IN, EXISTS, Correlacionadas)
-│   ├── 05_part3_procedures.sql        # Parte III: 50 Procedimientos Almacenados (CRUD y Transaccionales)
-│   ├── 06_part4_triggers.sql          # Parte IV: 50 Triggers (BEFORE/AFTER INSERT, UPDATE, DELETE)
-│   ├── 07_part5_functions.sql         # Parte V: 50 Funciones Almacenadas (KPIs y clasificaciones)
-│   └── 08_views_and_events.sql        # 8 Vistas clínicas y 2 Eventos automáticos
-│
-├── .gitattributes                     # Fuerza LF en .sh/.sql y CRLF en .ps1/.cmd
-│
-└── tests/                             # Suite de pruebas automatizadas
-    ├── run_all.sh                     # Lanzador Linux / macOS (y Git Bash / WSL)
-    ├── run_all.ps1                    # Lanzador Windows (PowerShell)
-    ├── run_all.cmd                    # Atajo Windows (CMD o doble clic) que ejecuta run_all.ps1
-    ├── verify_solutions.sql           # Consultas de verificación y aserciones de integridad
-    ├── validar_modelo_staruml.py      # Compara el .mdj de StarUML con la base real
-    └── validar_consistencia.py        # Compara TODOS los modelos, diagramas, documentos y SQL con la base real
-```
+
+- **El esquema nace en `sql/`.** Los lanzadores de `tests/` lo despliegan en MySQL y ejecutan los 250 ejercicios y las aserciones.
+- **Los diagramas se generan desde una sola fuente** (`diagrams/generador_modelo_er.py`), así el HTML, StarUML y Mermaid no se contradicen.
+- **La base desplegada es la fuente de verdad:** los validadores leen `information_schema` y comparan contra ella cada diagrama, documento y script.
+
+### Módulos del modelo
+
+| # | Módulo | Tablas |
+|---|---|---|
+| 1 | Pacientes y ubicación | `departments`, `cities`, `document_types`, `patients`, `patient_allergies`, `patient_family_histories`, `patient_antecedents` |
+| 2 | Profesionales de salud | `specialties`, `healthcare_professionals` |
+| 3 | Historia clínica y consultas | `clinical_histories`, `medical_visits`, `diagnoses`, `visit_diagnoses`, `clinical_documents` |
+| 4 | Exámenes oftalmológicos | `intraocular_pressures`, `pachymetry_exams`, `gonioscopy_exams`, `oct_exams`, `visual_field_exams` |
+| 5 | Tratamientos y procedimientos | `medications`, `treatments`, `procedures` |
+| 6 | Seguimiento de glaucoma | `glaucoma_records`, `glaucoma_controls` |
+| 7 | Auditoría y respaldo | `audit_logs`, `patients_backup`, `medical_visits_backup`, `treatments_backup`, `oct_exams_backup` |
 
 ---
 
-## 3. Modelo Entidad-Relación (DER)
+## Modelo de datos
 
-A continuación se presenta el diagrama físico de la base de datos relacional:
+### Diagrama entidad-relación
 
 ```mermaid
 erDiagram
@@ -123,161 +200,256 @@ erDiagram
     }
 ```
 
----
+El DER completo, con los 214 atributos y sus tipos, está en [`diagrams/physical_erd.mmd`](diagrams/physical_erd.mmd).
 
-## 4. Normalización Rigurosa hasta 4FN
+### Normalización hasta 4FN
 
-El proceso formal se encuentra detallado en [`docs/02_proceso_normalizacion_4fn.md`](file:///home/camper/Documents/DB_DEIMER_CARO/docs/02_proceso_normalizacion_4fn.md):
+| Forma normal | Qué se resolvió en este modelo |
+|---|---|
+| **1FN** | Listas de alergias, diagnósticos y medicamentos separadas en filas atómicas |
+| **2FN** | Catálogos `diagnoses` y `medications` fuera de `visit_diagnoses` y `treatments` |
+| **3FN** | Catálogos `cities`, `departments`, `specialties` y `document_types` para eliminar dependencias transitivas |
+| **BCNF** | Todo determinante es clave: `id` o una clave candidata `UNIQUE` (`document_number`, `history_number`, …) |
+| **4FN** | Las dependencias multivaluadas del paciente (alergias, antecedentes familiares y personales) van en tres tablas independientes |
 
-1. **Primera Forma Normal (1FN):** Eliminación de listas de texto libre y atributos multivaluados en una sola columna. Cada columna almacena valores atómicos.
-2. **Segunda Forma Normal (2FN):** Toda tabla con clave primaria compuesta tiene sus atributos no clave dependiendo de la totalidad de la clave y no de una parte (ej. desacoplamiento de diagnósticos y tratamientos respecto a la consulta médica).
-3. **Tercera Forma Normal (3FN):** Eliminación de dependencias transitivas. Los catálogos de ciudades (`cities`), departamentos (`departments`), especialidades (`specialties`), tipos de documento (`document_types`), medicamentos (`medications`) y diagnósticos (`diagnoses`) se aislaron de las tablas operativas.
-4. **Forma Normal de Boyce-Codd (BCNF):** Toda determinante de una dependencia funcional es una superclave.
-5. **Cuarta Forma Normal (4FN):** Eliminación de **Dependencias Multivaluadas Independientes (MVD)**:
-   - En el dominio clínico, un paciente tiene un conjunto de *Alergias* ($P \twoheadrightarrow A$), un conjunto de *Antecedentes Familiares* ($P \twoheadrightarrow AF$) y antecedentes personales patológicos ($P \twoheadrightarrow AP$).
-   - Dejar estos atributos en una misma tabla generaba anomalías de producto cartesiano y redundancia combinatoria.
-   - **Solución 4FN:** Se crearon las tablas aisladas `patient_allergies`, `patient_family_histories` y `patient_antecedents`.
+Demostración paso a paso en [`docs/02_proceso_normalizacion_4fn.md`](docs/02_proceso_normalizacion_4fn.md); detalle de cada columna en el [diccionario de datos](docs/03_diccionario_de_datos.md).
 
----
+### Modelo lógico en StarUML
 
-## 5. Modelado Visual: StarUML y draw.io
+[`diagrams/oftalmologia_model.mdj`](diagrams/oftalmologia_model.mdj) contiene:
 
-### 5.1. StarUML (Modelo Lógico con Cardinalidad)
-El modelo nativo de StarUML (`diagrams/oftalmologia_model.mdj`) se genera desde el DDL (`sql/01_ddl_schema.sql`) y contiene:
+- **29 entidades y 214 columnas**, cada una con su tipo y sus marcas **PK**, **FK** (con la columna a la que apunta), **U** (UNIQUE) y **N** (admite NULL);
+- **25 relaciones** con cardinalidad `1 : 0..*` o `1 : 0..1`;
+- **8 diagramas**: uno completo y uno por módulo.
 
-- **ERDDataModel `oftalmologia_glaucoma_db`** con **29 entidades** (25 relacionales + 4 de respaldo) y **214 columnas**. Cada columna tiene tipo y longitud (`VARCHAR(100)`, `DECIMAL(5,2)`, `ENUM(...)`) y las marcas **PK**, **FK** (con la columna que referencia), **U** (UNIQUE) y **N** (admite NULL). En la documentación de cada columna se anotan `AUTO_INCREMENT` y `DEFAULT`; en la de cada entidad, sus `CHECK`, `UNIQUE`, índices y `FOREIGN KEY`.
-- **25 relaciones** no identificadoras con su cardinalidad en notación pata de gallo: `1 : 0..*` para una FK simple y `1 : 0..1` para una FK con `UNIQUE` (`patients → clinical_histories` y `patients → glaucoma_records`). Cada relación lleva su verbo (`tiene`, `acumula`, `diagnostica`, …) y su `ON DELETE` en la documentación.
-- **8 diagramas:** `0. Modelo lógico completo` (las 25 tablas relacionales) y uno por módulo (`1. Pacientes y ubicación` … `7. Auditoría y respaldo`). Las entidades tienen el color de su módulo.
+<img src="diagrams/exportaciones_staruml/0_modelo_logico_completo.png" alt="Modelo lógico completo en StarUML" width="100%">
 
-- **Archivo del Modelo:** [`diagrams/oftalmologia_model.mdj`](diagrams/oftalmologia_model.mdj)
-- **Regenerarlo** (usa las mismas tablas y FK que el modelo ER HTML):
-  ```bash
-  python diagrams/generador_staruml.py diagrams/oftalmologia_model.mdj
-  ```
-- **Validarlo contra la base real** (la misma que muestra phpMyAdmin; requiere la base desplegada con `tests/run_all.*`):
-  ```bash
-  python tests/validar_modelo_staruml.py
-  ```
-- **Validar todo el proyecto** (SQL, diccionario de datos, Mermaid, draw.io, modelo ER HTML, StarUML y textos):
-  ```bash
-  python tests/validar_consistencia.py            # informe detallado
-  python tests/validar_consistencia.py --resumen   # una línea por artefacto
-  ```
-  Toma la base real (`information_schema`) como fuente de verdad y revisa en cada artefacto entidades, atributos, tipos, `NULL`, `DEFAULT`, claves, llaves foráneas y cardinalidades, además de las columnas que usan los scripts `02`–`08`. Termina con código 1 si encuentra diferencias.
-  Compara el `.mdj` con `information_schema`: tablas, columnas (nombre, orden, tipo, NULL, PK, UNIQUE, FK y su destino), las 25 relaciones con su cardinalidad y que cada línea de cada diagrama esté unida a sus dos entidades. Usa las mismas variables de conexión que `run_all` (`MYSQL_MODE`, `MYSQL_CONTAINER`, …) y termina con código 1 si encuentra diferencias.
-- **Distribución:** el diagrama `0. Modelo lógico completo` tiene dos ejes, `patients` arriba y `medical_visits` abajo con sus 8 tablas hijas en fila. Sus líneas son rectas y ninguna atraviesa otra entidad. Los diagramas de módulo usan líneas en ángulo recto.
-- **Formas de abrir en StarUML:**
-  ```bash
-  # Opción A: Mediante el script lanzador directo
-  bash open_staruml.sh
+| Diagrama | PNG | SVG |
+|---|---|---|
+| 0. Modelo lógico completo | [PNG](diagrams/exportaciones_staruml/0_modelo_logico_completo.png) | [SVG](diagrams/exportaciones_staruml/0_modelo_logico_completo.svg) |
+| 1. Pacientes y ubicación | [PNG](diagrams/exportaciones_staruml/1_pacientes_y_ubicacion.png) | [SVG](diagrams/exportaciones_staruml/1_pacientes_y_ubicacion.svg) |
+| 2. Profesionales de salud | [PNG](diagrams/exportaciones_staruml/2_profesionales_de_salud.png) | [SVG](diagrams/exportaciones_staruml/2_profesionales_de_salud.svg) |
+| 3. Historia clínica y consultas | [PNG](diagrams/exportaciones_staruml/3_historia_clinica_y_consultas.png) | [SVG](diagrams/exportaciones_staruml/3_historia_clinica_y_consultas.svg) |
+| 4. Exámenes oftalmológicos | [PNG](diagrams/exportaciones_staruml/4_examenes_oftalmologicos.png) | [SVG](diagrams/exportaciones_staruml/4_examenes_oftalmologicos.svg) |
+| 5. Tratamientos y procedimientos | [PNG](diagrams/exportaciones_staruml/5_tratamientos_y_procedimientos.png) | [SVG](diagrams/exportaciones_staruml/5_tratamientos_y_procedimientos.svg) |
+| 6. Seguimiento de glaucoma | [PNG](diagrams/exportaciones_staruml/6_seguimiento_de_glaucoma.png) | [SVG](diagrams/exportaciones_staruml/6_seguimiento_de_glaucoma.svg) |
+| 7. Auditoría y respaldo | [PNG](diagrams/exportaciones_staruml/7_auditoria_y_respaldo.png) | [SVG](diagrams/exportaciones_staruml/7_auditoria_y_respaldo.svg) |
 
-  # Opción B: Ejecutando el comando directo
-  staruml diagrams/oftalmologia_model.mdj &
-  ```
+**Abrir en StarUML:** Windows, **File → Open…**; macOS, `open -a StarUML diagrams/oftalmologia_model.mdj`; Linux, `staruml diagrams/oftalmologia_model.mdj &`.
 
-### 5.2. Modelo Entidad-Relación interactivo (HTML)
-Una sola página con las 25 tablas (+4 de respaldo), sus 214 atributos y las 25 llaves foráneas, organizada en 7 módulos. Las pestañas siguen el orden del diseño:
-1. **Mapa general:** cómo se conectan los módulos y tabla con las 25 relaciones (cardinalidad y `ON DELETE`).
-2. **Modelo conceptual (Chen):** entidades, entidades débiles, rombos de relación y cardinalidades `1 · N · M · 0..1`.
-3. **Modelo lógico relacional:** cada tabla en notación relacional con tipos, nulidad, claves, defaults y restricciones `CHECK`/`UNIQUE`/`FK`.
-4. **Diagrama entidad-relación (pata de gallo):** cada línea une la columna FK con el `id` que referencia.
-5. **Explorador de tablas y atributos:** búsqueda en tablas o atributos y filtros por módulo, tipo de entidad (fuerte, débil, catálogo, asociativa N:M, auditoría, respaldo), clave (PK, FK, UK), tipo de dato y nulidad; vista por tabla o lista de atributos ordenable.
+### Otros modelos
 
-**Navegación cruzada:** al hacer clic en una entidad de cualquier diagrama, en una tabla del mapa general o en «Explorar →» del modelo lógico, se abre su ficha en el explorador; desde cada ficha se vuelve al modelo conceptual, lógico o DER de su módulo.
-
-- **Archivo:** [`diagrams/modelo_entidad_relacion.html`](diagrams/modelo_entidad_relacion.html) (se abre en cualquier navegador)
-- **Versión publicada:** https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis
-- **Regenerarlo** (si cambia el DDL, actualizar primero las tablas `T` y las FK `FKS` del script):
-  ```bash
-  python diagrams/generador_modelo_er.py diagrams/modelo_entidad_relacion.html diagrams/plantilla_modelo_er.html
-  ```
-
-### 5.3. Modelo Conceptual en draw.io
-El diagrama conceptual del dominio clínico también se encuentra disponible en formato nativo de draw.io / diagrams.net:
-- **Archivo draw.io:** [`diagrams/modelo_conceptual.drawio`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/modelo_conceptual.drawio)
-- **Archivo Mermaid:** [`diagrams/conceptual_model.mmd`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/conceptual_model.mmd)
-- Compatible para abrir en [diagrams.net](https://app.diagrams.net/) o mediante la extensión Draw.io en VS Code.
+| Modelo | Archivo |
+|---|---|
+| Conceptual (Mermaid) | [`diagrams/conceptual_model.mmd`](diagrams/conceptual_model.mmd) |
+| Conceptual (draw.io) | [`diagrams/modelo_conceptual.drawio`](diagrams/modelo_conceptual.drawio), se abre en [app.diagrams.net](https://app.diagrams.net/) |
+| Lógico (Mermaid) | [`diagrams/logical_model.mmd`](diagrams/logical_model.mmd) |
+| Físico (Mermaid) | [`diagrams/physical_erd.mmd`](diagrams/physical_erd.mmd) |
 
 ---
 
-## 6. Banco de 250 Ejercicios MySQL Implementados
+## Banco de 250 ejercicios
 
-El proyecto da cumplimiento íntegro y verificable a las 5 partes solicitadas:
+| Parte | Archivo | Ejercicios | Contenido |
+|---|---|:---:|---|
+| I · Consultas | [`sql/03_part1_queries.sql`](sql/03_part1_queries.sql) | 50 | Básicas (1–20); intermedias con `JOIN` (21–40); avanzadas con agregación, `GROUP BY` y `HAVING` (41–50) |
+| II · Subconsultas | [`sql/04_part2_subqueries.sql`](sql/04_part2_subqueries.sql) | 50 | Escalares (1–10), `IN` (11–20), `NOT IN` y `NOT EXISTS` (21–30), correlacionadas (31–40) y avanzadas (41–50) |
+| III · Procedimientos | [`sql/05_part3_procedures.sql`](sql/05_part3_procedures.sql) | 50 | Consulta (1–10), inserción (11–20), modificación (21–30), validaciones con `SIGNAL SQLSTATE` (31–40) y transacciones con `START TRANSACTION`, `COMMIT`, `ROLLBACK` y `EXIT HANDLER` (41–50) |
+| IV · Triggers | [`sql/06_part4_triggers.sql`](sql/06_part4_triggers.sql) | 50 | `BEFORE INSERT` (1–10), `AFTER INSERT` con auditoría JSON (11–20), `BEFORE UPDATE` (21–30), `AFTER UPDATE` con alertas (31–40), `DELETE` con respaldo y auditoría (41–50) |
+| V · Funciones | [`sql/07_part5_functions.sql`](sql/07_part5_functions.sql) | 50 | Básicas (1–10), con consultas (11–20), clínicas y de clasificación (21–30), estadísticas y temporales (31–40), avanzadas (41–50) |
+| Vistas y eventos | [`sql/08_views_and_events.sql`](sql/08_views_and_events.sql) | 8 + 2 | Vistas `vw_*` de analítica clínica; eventos diario y semanal de mantenimiento |
 
-| Componente | Archivo SQL | Ejercicios | Descripción |
-| :--- | :--- | :---: | :--- |
-| **Parte I: Consultas SQL** | [`sql/03_part1_queries.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/03_part1_queries.sql) | **50** | Consultas Básicas (1-20), Intermedias con `JOIN` (21-40) y Avanzadas con agregaciones, `GROUP BY`, `HAVING` y funciones ventana (41-50). |
-| **Parte II: Subconsultas** | [`sql/04_part2_subqueries.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/04_part2_subqueries.sql) | **50** | Subconsultas escalares (1-10), operadores `IN` (11-20), cláusulas `NOT IN` / `NOT EXISTS` (21-30), subconsultas correlacionadas (31-40) y avanzadas (41-50). |
-| **Parte III: Procedimientos** | [`sql/05_part3_procedures.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/05_part3_procedures.sql) | **50** | Procedimientos de consulta y catálogo (1-10), inserción (11-20), actualización (21-30), validaciones con `SIGNAL SQLSTATE` (31-40) y flujos transaccionales con `START TRANSACTION`, `COMMIT` y `ROLLBACK` (41-50). |
-| **Parte IV: Triggers** | [`sql/06_part4_triggers.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/06_part4_triggers.sql) | **50** | Disparadores `BEFORE INSERT` (1-10), `AFTER INSERT` con auditoría (11-20), `BEFORE UPDATE` para integridad (21-30), `AFTER UPDATE` con alertas clínicas (31-40) y `BEFORE/AFTER DELETE` con tablas de backup (41-50). |
-| **Parte V: Funciones** | [`sql/07_part5_functions.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/07_part5_functions.sql) | **50** | Funciones escalares y formato (1-10), métricas clínicas (11-20), lógica diagnóstica y completitud (21-30), cálculos estadísticos temporales (31-40) y fichas de resumen textual (41-50). |
-| **Vistas y Event Scheduler** | [`sql/08_views_and_events.sql`](file:///home/camper/Documents/DB_DEIMER_CARO/sql/08_views_and_events.sql) | **10** | 8 vistas para analítica clínica y 2 eventos programados de mantenimiento preventivo y control de tratamientos. |
+Los 250 ejercicios, con su enunciado y su solución, también están en el documento de entrega [`tallerexamenbd.md`](tallerexamenbd.md).
 
 ---
 
-## 7. Despliegue y Ejecución Automatizada
-
-El proyecto incluye scripts de arranque desatendidos que reconstruyen la base de datos, compilan todos los objetos, ejecutan los 250 ejercicios y comprueban las aserciones de calidad. Hay un lanzador para cada sistema operativo:
-
-| Sistema operativo | Archivo | Comando (desde la raíz del proyecto) |
-| :--- | :--- | :--- |
-| **Linux** | `tests/run_all.sh` | `bash tests/run_all.sh` |
-| **macOS** | `tests/run_all.sh` | `bash tests/run_all.sh` |
-| **Windows (PowerShell)** | `tests/run_all.ps1` | `powershell -ExecutionPolicy Bypass -File tests\run_all.ps1` |
-| **Windows (CMD / doble clic)** | `tests/run_all.cmd` | `tests\run_all.cmd` |
-
-> Linux y macOS comparten el mismo script porque ambos usan bash. En Windows también funciona `bash tests/run_all.sh` desde Git Bash o WSL.
+## Instalación y pruebas
 
 ### Requisitos
-Se necesita **uno** de estos dos programas:
-- **Docker** con el contenedor MySQL en ejecución (por defecto `mysql_db`). No hace falta instalar MySQL en el equipo: los scripts ejecutan el cliente `mysql` **dentro del contenedor** con `docker exec`.
-- **Cliente `mysql`** instalado en el equipo, con acceso a `127.0.0.1:3307`.
 
-Con el modo `auto` (por defecto), si el cliente `mysql` está en el PATH se usa ese; si no, se usa Docker.
+| Requisito | Detalle |
+|---|---|
+| MySQL 8.0 o superior | Contenedor Docker `mysql_db` publicado en `3307` **o** un servidor MySQL accesible |
+| Cliente para ejecutar los scripts | **Docker** (las pruebas usan `docker exec`, sin instalar MySQL) **o** el cliente `mysql` en el `PATH` |
+| Python 3 | Solo para los validadores y los generadores de diagramas |
 
-### Parámetros de conexión configurables
-Todos los lanzadores leen las mismas variables de entorno:
+### Procedimiento
 
-| Variable | Valor por defecto | Descripción |
-| :--- | :--- | :--- |
-| `MYSQL_MODE` | `auto` | `auto`, `local` (cliente mysql del equipo) o `docker` (cliente dentro del contenedor) |
-| `MYSQL_CONTAINER` | `mysql_db` | Nombre del contenedor (solo en modo `docker`) |
-| `MYSQL_HOST` | `127.0.0.1` | Host (solo en modo `local`) |
-| `MYSQL_PORT` | `3307` | Puerto (solo en modo `local`) |
-| `MYSQL_USER` | `root` | Usuario |
-| `MYSQL_PASS` | `root2026` | Contraseña |
-| `MYSQL_DB` | `oftalmologia_glaucoma_db` | Base de datos destino |
+1. **Levante MySQL y phpMyAdmin** desde la carpeta de su `docker-compose`:
+   ```bash
+   docker compose up -d mysql_db phpmyadmin
+   ```
+2. **Clone el repositorio** y entre en él:
+   ```bash
+   git clone <url-del-repositorio> DB_DEIMER_CARO && cd DB_DEIMER_CARO
+   ```
+3. **Despliegue y pruebe** con el lanzador de su sistema. El script crea la base, carga el esquema y los datos, compila los 250 ejercicios y ejecuta las aserciones finales:
+
+| Sistema | Comando |
+|---|---|
+| ![Linux](https://img.shields.io/badge/-Linux-FCC624?logo=linux&logoColor=black) | `bash tests/run_all.sh` |
+| ![macOS](https://img.shields.io/badge/-macOS-000000?logo=apple&logoColor=white) | `bash tests/run_all.sh` |
+| ![Windows](https://img.shields.io/badge/-Windows%20PowerShell-0078D6) | `powershell -ExecutionPolicy Bypass -File tests\run_all.ps1` |
+| ![Windows](https://img.shields.io/badge/-Windows%20CMD-0078D6) | `tests\run_all.cmd` (también con doble clic) |
+| ![Git Bash](https://img.shields.io/badge/-Git%20Bash%20%C2%B7%20WSL-4EAA25?logo=gnubash&logoColor=white) | `bash tests/run_all.sh` |
+
+4. **Valide los modelos y la documentación** contra la base desplegada:
+   ```bash
+   python tests/validar_consistencia.py --resumen
+   ```
+5. **Explore la base** en phpMyAdmin: `http://localhost:8081` (servidor `mysql_db`, usuario `root`).
+
+### Configuración de la conexión
+
+Todos los lanzadores y validadores leen las mismas variables de entorno:
+
+| Variable | Por defecto | Descripción |
+|---|---|---|
+| `MYSQL_MODE` | `auto` | `auto` usa el cliente local si existe y, si no, Docker; `local` o `docker` lo fuerzan |
+| `MYSQL_CONTAINER` | `mysql_db` | Contenedor en modo `docker` |
+| `MYSQL_HOST` / `MYSQL_PORT` | `127.0.0.1` / `3307` | Servidor en modo `local` |
+| `MYSQL_USER` / `MYSQL_PASS` | `root` / `root2026` | Credenciales |
+| `MYSQL_DB` | `oftalmologia_glaucoma_db` | Base de datos |
 
 ```bash
-# Linux / macOS
-MYSQL_MODE=docker MYSQL_CONTAINER=mysql_db bash tests/run_all.sh
+MYSQL_MODE=docker bash tests/run_all.sh                                   # Linux / macOS
 ```
 ```powershell
-# Windows (PowerShell)
-$env:MYSQL_MODE = "docker"; $env:MYSQL_CONTAINER = "mysql_db"
-powershell -ExecutionPolicy Bypass -File tests\run_all.ps1
+$env:MYSQL_MODE = "docker"; powershell -ExecutionPolicy Bypass -File tests\run_all.ps1   # Windows
 ```
 
-### Error `$'\r': command not found` al ejecutar el script de bash
-Este error aparece cuando `run_all.sh` tiene finales de línea de Windows (CRLF). Git en Windows (`core.autocrlf=true`) los convierte al hacer checkout. El archivo [`.gitattributes`](.gitattributes) evita el problema porque obliga a guardar los `.sh` con LF. Si el clon es anterior a ese archivo, vuelva a extraer el script una sola vez (no afecta otros archivos):
+### Resultados de las pruebas
+
+| Entorno | Cómo se probó | Resultado |
+|---|---|---|
+| Windows 11 · PowerShell / CMD | `tests\run_all.cmd` en modo Docker | ✅ 9/9 pasos · aserciones correctas (6 s) |
+| Windows 11 · Git Bash | `bash tests/run_all.sh` en modo Docker | ✅ 9/9 pasos |
+| Linux · bash 5.1 | `run_all.sh` dentro de un contenedor Linux (`mysql:8.4`) en la red de `mysql_db` | ✅ 9/9 pasos |
+| macOS · bash 3.2 | `run_all.sh` con la misma versión de bash que trae macOS (imagen `bash:3.2`) | ✅ 9/9 pasos |
+| Validación de consistencia | `python tests/validar_consistencia.py` | ✅ 0 errores en 33 artefactos |
+| Modelo StarUML | `python tests/validar_modelo_staruml.py` | ✅ 29 entidades, 214 columnas, 25 relaciones |
+| Documento de entrega | `python scripts/verify_tallerexamenbd.py` | ✅ 250 ejercicios con su bloque SQL |
+
+```text
+ [EJECUTANDO] Paso 1: Inicialización de Base de Datos (sql/00_init_database.sql)... [OK]
+ [EJECUTANDO] Paso 2: Creación de Esquema Físico DDL (sql/01_ddl_schema.sql)... [OK]
+ ...
+ [EJECUTANDO] Paso 9: Creación de Vistas y Eventos (sql/08_views_and_events.sql)... [OK]
+TODAS LAS VALIDACIONES COMPLETADAS EXITOSAMENTE
+  DESPLIEGUE Y PRUEBAS COMPLETADAS SATISFACTORIAMENTE AL 100%
+```
+
+### Solución de problemas
+
+| Síntoma | Causa y solución |
+|---|---|
+| `$'\r': command not found` al ejecutar `run_all.sh` | El script tiene finales de línea de Windows. `.gitattributes` lo evita en clones nuevos; en un clon antiguo: `rm tests/run_all.sh && git checkout -- tests/run_all.sh` |
+| `El contenedor 'mysql_db' no está en ejecución` | Inicie el contenedor: `docker start mysql_db` o `docker compose up -d` |
+| macOS sin cliente `mysql` | Use Docker (modo `auto`) o instale el cliente: `brew install mysql-client` |
+| `Plugin caching_sha2_password could not be loaded` | El cliente MariaDB no trae el plugin de MySQL 8: use el cliente oficial de MySQL o el modo `docker` |
+
+---
+
+## Validación de consistencia
+
+`tests/validar_consistencia.py` toma la base desplegada como fuente de verdad (`information_schema`) y comprueba que **todo el repositorio dice lo mismo**:
+
+| Artefacto | Qué se compara |
+|---|---|
+| `sql/01_ddl_schema.sql` y su copia en `tallerexamenbd.md` | Tablas, columnas, tipos, `NULL`, `DEFAULT`, PK, UNIQUE, FK y `CHECK` |
+| `sql/02`–`08`, `tests/verify_solutions.sql` | Que cada columna usada en `INSERT`, `UPDATE`, `NEW.`/`OLD.` y `alias.columna` exista |
+| `docs/03_diccionario_de_datos.md` | Cada columna con su tipo, nulidad, claves y valor por defecto |
+| Diagramas Mermaid, draw.io y este README | Entidades, atributos, tipos y cardinalidad de las 25 relaciones |
+| Modelo ER HTML y el artefacto publicado | Datos del explorador, fichas del modelo lógico, DER, Chen y tabla de relaciones |
+| StarUML `.mdj` y sus exportaciones SVG | Entidades, columnas en orden, tipos, marcas PK/FK/U/N y relaciones de cada diagrama |
+| Textos de `docs/`, README y AGENTS | Nombres de tabla citados y rangos de `CHECK` descritos |
+
+Termina con código 1 si encuentra cualquier diferencia. Para validar también la versión publicada del artefacto, pase la ruta de una copia descargada: `python tests/validar_consistencia.py ruta/al/artefacto.html`.
+
+**Si cambia el DDL:** actualice las tablas (`T`) y llaves (`FKS`) en `diagrams/generador_modelo_er.py`, regenere los modelos y vuelva a validar:
+
 ```bash
-rm tests/run_all.sh && git checkout -- tests/run_all.sh
-```
-Alternativa: en VS Code abra el archivo, haga clic en `CRLF` en la barra inferior, elija `LF` y guarde.
-
-### Resultados de la Verificación:
-```
-Tablas Relacionales Creadas:        29
-Vistas Creadas:                      8
-Procedimientos Almacenados Creados: 50
-Funciones Almacenadas Creadas:      50
-Triggers Creados:                   50
-Eventos Programados:                 2
-Estado de Ejecución:                100% EXITOSO
+python diagrams/generador_modelo_er.py diagrams/modelo_entidad_relacion.html diagrams/plantilla_modelo_er.html
+python diagrams/generador_staruml.py   diagrams/oftalmologia_model.mdj
+python diagrams/generador_mermaid.py   diagrams/physical_erd.mmd
+python tests/validar_consistencia.py --resumen
 ```
 
 ---
 
-## 8. Licencia y Créditos
+## Estructura del repositorio
 
-Proyecto desarrollado por **Deimer Caro** para el Taller Evaluativo de Bases de Datos Relacionales (Oftalmología y Glaucoma). Código abierto para propósitos académicos y de sustentación técnica.
+```
+DB_DEIMER_CARO/
+├── README.md                          # Este documento
+├── AGENTS.md                          # Contexto, decisiones y estado para agentes de IA
+├── tallerexamenbd.md                  # Enunciado del taller y documento de entrega con los 250 ejercicios
+├── .gitattributes                     # LF en .sh/.sql y CRLF en .ps1/.cmd
+├── .gitignore
+│
+├── sql/                               # Scripts en orden de ejecución
+│   ├── 00_init_database.sql           # Base de datos utf8mb4 y event_scheduler
+│   ├── 01_ddl_schema.sql              # 25 tablas, 4 de respaldo, llaves, CHECK e índices
+│   ├── 02_dml_seed_data.sql           # Datos clínicos de prueba
+│   ├── 03_part1_queries.sql           # Parte I: 50 consultas
+│   ├── 04_part2_subqueries.sql        # Parte II: 50 subconsultas
+│   ├── 05_part3_procedures.sql        # Parte III: 50 procedimientos
+│   ├── 06_part4_triggers.sql          # Parte IV: 50 triggers
+│   ├── 07_part5_functions.sql         # Parte V: 50 funciones
+│   └── 08_views_and_events.sql        # 8 vistas y 2 eventos
+│
+├── diagrams/
+│   ├── modelo_entidad_relacion.html   # Modelo ER interactivo (versión local del artefacto)
+│   ├── plantilla_modelo_er.html       # Estilos, navegación y explorador de la página
+│   ├── generador_modelo_er.py         # Fuente única de tablas y llaves; genera el HTML
+│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML (29 entidades, 8 diagramas)
+│   ├── generador_staruml.py           # Genera el .mdj
+│   ├── physical_erd.mmd               # DER físico completo en Mermaid
+│   ├── generador_mermaid.py           # Genera physical_erd.mmd
+│   ├── logical_model.mmd              # Modelo lógico en Mermaid
+│   ├── conceptual_model.mmd           # Modelo conceptual en Mermaid
+│   ├── modelo_conceptual.drawio       # Modelo conceptual en draw.io
+│   └── exportaciones_staruml/         # Los 8 diagramas de StarUML en PNG y SVG
+│
+├── docs/
+│   ├── 01_planteamiento_problema.md   # Problema, objetivos y alcance
+│   ├── 02_proceso_normalizacion_4fn.md# Normalización de 0FN a 4FN
+│   ├── 03_diccionario_de_datos.md     # Diccionario de las 29 tablas
+│   ├── 04_guia_ejecucion_pruebas.md   # Guía de despliegue, phpMyAdmin, StarUML y draw.io
+│   ├── 05_ruta_de_aprendizaje.md      # Ruta de aprendizaje de los temas del proyecto
+│   └── img/                           # Capturas del modelo ER interactivo
+│
+├── scripts/
+│   ├── build_tallerexamenbd.py        # Inserta los SQL en tallerexamenbd.md
+│   └── verify_tallerexamenbd.py       # Comprueba que tallerexamenbd.md tenga los 250 ejercicios
+│
+└── tests/
+    ├── run_all.sh                     # Despliegue y pruebas: Linux, macOS, Git Bash, WSL
+    ├── run_all.ps1                    # Despliegue y pruebas: Windows PowerShell
+    ├── run_all.cmd                    # Atajo para Windows (CMD o doble clic)
+    ├── verify_solutions.sql           # Aserciones finales sobre la base
+    ├── validar_modelo_staruml.py      # Compara el .mdj con la base
+    └── validar_consistencia.py        # Compara todo el repositorio con la base
+```
+
+---
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [01 · Planteamiento del problema](docs/01_planteamiento_problema.md) | Situación clínica, pregunta problema, objetivos y alcance |
+| [02 · Normalización hasta 4FN](docs/02_proceso_normalizacion_4fn.md) | Dependencias funcionales y multivaluadas, de 0FN a 4FN |
+| [03 · Diccionario de datos](docs/03_diccionario_de_datos.md) | Las 29 tablas con tipos, nulidad, claves y valores por defecto |
+| [04 · Guía de ejecución y pruebas](docs/04_guia_ejecucion_pruebas.md) | Contenedor, phpMyAdmin, StarUML, draw.io y validación |
+| [05 · Ruta de aprendizaje](docs/05_ruta_de_aprendizaje.md) | Recorrido por los temas del proyecto: glaucoma, modelado, normalización, MySQL, pruebas y herramientas |
+| [Taller y entrega](tallerexamenbd.md) | Enunciado original y los 250 ejercicios resueltos |
+| [AGENTS.md](AGENTS.md) | Contexto técnico para continuar el proyecto con agentes de IA |
+
+---
+
+<div align="center">
+
+Proyecto académico desarrollado por **Deimer Caro** para el Taller Evaluativo de Bases de Datos Relacionales.
+
+</div>

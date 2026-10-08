@@ -8,8 +8,8 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 
 - **Nombre del Proyecto:** Sistema de Gestión Integral de Historias Clínicas (Oftalmología y Glaucoma)
 - **Autor / Titular:** Deimer Caro
-- **Ubicación en el Filesystem:** `/home/camper/Documents/DB_DEIMER_CARO`
-- **Guía de Requerimientos y Rúbricas:** [`tallerexamenbd.md`](file:///home/camper/Documents/DB_DEIMER_CARO/tallerexamenbd.md)
+- **Ubicación en el Filesystem:** raíz del repositorio `DB_DEIMER_CARO` (Windows: `C:\DB_DEIMER_CARO`; originalmente `/home/camper/Documents/DB_DEIMER_CARO` en Linux)
+- **Guía de Requerimientos y Rúbricas:** [`tallerexamenbd.md`](tallerexamenbd.md)
 - **Objetivo Central:** Diseñar, normalizar rigurosamente hasta la **Cuarta Forma Normal (4FN)**, documentar e implementar en **MySQL 8.0** una base de datos relacional médica de nivel clínico, acompañada de un banco exhaustivo de **250 ejercicios resueltos** (consultas, subconsultas, procedimientos almacenados, triggers y funciones), modelos conceptual/lógico/físico, archivo nativo StarUML y suite de pruebas automatizadas.
 
 ---
@@ -30,7 +30,7 @@ Este documento contiene la especificación técnica completa, el estado de avanc
   mysql -h 127.0.0.1 -P 3307 -u root -proot2026 oftalmologia_glaucoma_db
   ```
 - **Herramienta UML Instalada en el Sistema:**
-  - Binario StarUML: `/usr/bin/staruml`
+  - StarUML: Windows (`C:\Program Files\StarUML\StarUML.exe`, abrir con File → Open), macOS (`open -a StarUML …`) o Linux (`/usr/bin/staruml`). Su API local (puerto `58321`) exporta imágenes de los diagramas abiertos.
   - Archivo de modelo nativo: `diagrams/oftalmologia_model.mdj`
 
 ---
@@ -38,41 +38,59 @@ Este documento contiene la especificación técnica completa, el estado de avanc
 ## 3. Arquitectura del Repositorio de Archivos
 
 ```
-/home/camper/Documents/DB_DEIMER_CARO/
-├── AGENTS.md                          # Este archivo: contexto vivo y directrices de relevo
-├── README.md                          # Documentación maestra de entrega y sustentación
-├── tallerexamenbd.md                  # Enunciado y rúbricas originales del taller
-├── .gitignore                         # Reglas de exclusión Git
+DB_DEIMER_CARO/
+├── README.md                          # Este documento
+├── AGENTS.md                          # Contexto, decisiones y estado para agentes de IA
+├── tallerexamenbd.md                  # Enunciado del taller y documento de entrega con los 250 ejercicios
+├── .gitattributes                     # LF en .sh/.sql y CRLF en .ps1/.cmd
+├── .gitignore
 │
-├── diagrams/                          # Modelos visuales y de herramientas
-│   ├── oftalmologia_model.mdj         # Metamodelo nativo en formato JSON para StarUML 5.x
-│   ├── conceptual_model.mmd           # Diagrama Conceptual (Mermaid erDiagram)
-│   ├── logical_model.mmd              # Diagrama Lógico Relacional (Mermaid)
-│   └── physical_erd.mmd               # Diagrama Físico / DER Completo (Mermaid)
+├── sql/                               # Scripts en orden de ejecución
+│   ├── 00_init_database.sql           # Base de datos utf8mb4 y event_scheduler
+│   ├── 01_ddl_schema.sql              # 25 tablas, 4 de respaldo, llaves, CHECK e índices
+│   ├── 02_dml_seed_data.sql           # Datos clínicos de prueba
+│   ├── 03_part1_queries.sql           # Parte I: 50 consultas
+│   ├── 04_part2_subqueries.sql        # Parte II: 50 subconsultas
+│   ├── 05_part3_procedures.sql        # Parte III: 50 procedimientos
+│   ├── 06_part4_triggers.sql          # Parte IV: 50 triggers
+│   ├── 07_part5_functions.sql         # Parte V: 50 funciones
+│   └── 08_views_and_events.sql        # 8 vistas y 2 eventos
 │
-├── docs/                              # Documentación teórica y técnica
-│   ├── 01_planteamiento_problema.md   # Justificación clínica, alcance y entidades
-│   ├── 02_proceso_normalizacion_4fn.md# Justificación paso a paso de 0FN a 4FN con MVDs
-│   ├── 03_diccionario_de_datos.md     # Diccionario de datos de las 25 tablas relacionales
-│   └── 04_guia_ejecucion_pruebas.md   # Guía paso a paso de despliegue y pruebas
+├── diagrams/
+│   ├── modelo_entidad_relacion.html   # Modelo ER interactivo (versión local del artefacto)
+│   ├── plantilla_modelo_er.html       # Estilos, navegación y explorador de la página
+│   ├── generador_modelo_er.py         # Fuente única de tablas y llaves; genera el HTML
+│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML (29 entidades, 8 diagramas)
+│   ├── generador_staruml.py           # Genera el .mdj
+│   ├── physical_erd.mmd               # DER físico completo en Mermaid
+│   ├── generador_mermaid.py           # Genera physical_erd.mmd
+│   ├── logical_model.mmd              # Modelo lógico en Mermaid
+│   ├── conceptual_model.mmd           # Modelo conceptual en Mermaid
+│   ├── modelo_conceptual.drawio       # Modelo conceptual en draw.io
+│   └── exportaciones_staruml/         # Los 8 diagramas de StarUML en PNG y SVG
 │
-├── sql/                               # Scripts SQL organizados secuencialmente
-│   ├── 00_init_database.sql           # CREATE DATABASE utf8mb4, DROP IF EXISTS
-│   ├── 01_ddl_schema.sql              # Creación de tablas, PKs, FKs, CHECKs, UNIQUEs, auditoría
-│   ├── 02_dml_seed_data.sql           # Dataset semilla coherente con oftalmología y glaucoma
-│   ├── 03_part1_queries.sql           # 50 Consultas SQL (Básicas, Intermedias, Avanzadas)
-│   ├── 04_part2_subqueries.sql        # 50 Subconsultas SQL (Escalares, IN, EXISTS, Correlacionadas)
-│   ├── 05_part3_procedures.sql        # 50 Procedimientos Almacenados (CRUD, Control, Transacciones)
-│   ├── 06_part4_triggers.sql          # 50 Triggers (Auditoría, Reglas de negocio, Validaciones)
-│   ├── 07_part5_functions.sql         # 50 Funciones Almacenadas (Cálculos clínicos, KPIs)
-│   └── 08_views_and_events.sql        # Vistas requeridas y Event Scheduler de mantenimiento
+├── docs/
+│   ├── 01_planteamiento_problema.md   # Problema, objetivos y alcance
+│   ├── 02_proceso_normalizacion_4fn.md# Normalización de 0FN a 4FN
+│   ├── 03_diccionario_de_datos.md     # Diccionario de las 29 tablas
+│   ├── 04_guia_ejecucion_pruebas.md   # Guía de despliegue, phpMyAdmin, StarUML y draw.io
+│   ├── 05_ruta_de_aprendizaje.md      # Ruta de aprendizaje de los temas del proyecto
+│   └── img/                           # Capturas del modelo ER interactivo
 │
-└── tests/                             # Verificación automatizada
-    ├── run_all.sh                     # Lanzador Linux / macOS / Git Bash (debe conservar LF)
-    ├── run_all.ps1                    # Lanzador Windows PowerShell (UTF-8 con BOM, CRLF)
-    ├── run_all.cmd                    # Atajo Windows que ejecuta run_all.ps1
-    └── verify_solutions.sql           # Consultas de verificación y aserciones de prueba
+├── scripts/
+│   ├── build_tallerexamenbd.py        # Inserta los SQL en tallerexamenbd.md
+│   └── verify_tallerexamenbd.py       # Comprueba que tallerexamenbd.md tenga los 250 ejercicios
+│
+└── tests/
+    ├── run_all.sh                     # Despliegue y pruebas: Linux, macOS, Git Bash, WSL
+    ├── run_all.ps1                    # Despliegue y pruebas: Windows PowerShell
+    ├── run_all.cmd                    # Atajo para Windows (CMD o doble clic)
+    ├── verify_solutions.sql           # Aserciones finales sobre la base
+    ├── validar_modelo_staruml.py      # Compara el .mdj con la base
+    └── validar_consistencia.py        # Compara todo el repositorio con la base
 ```
+
+> `diagrams/generador_modelo_er.py` es la **fuente única** de tablas (`T`) y llaves (`FKS`): de ella salen el HTML, el `.mdj` y `physical_erd.mmd`. La base desplegada es la fuente de verdad que usan los validadores.
 
 ---
 
@@ -101,12 +119,13 @@ Este documento contiene la especificación técnica completa, el estado de avanc
   - [x] `sql/07_part5_functions.sql` (50 funciones compiladas con éxito).
   - [x] `sql/08_views_and_events.sql` (8 Vistas y 2 Eventos en ejecución).
 - [x] **Fase 5 (Tests y Verificación):** `tests/run_all.sh` y script de comprobación pasando al 100%.
-- [x] **Fase 8 (Modelo ER interactivo):** `diagrams/modelo_entidad_relacion.html` (mapa de módulos, Chen, lógico relacional y DER pata de gallo; 25 tablas + 4 de respaldo, 25 FK) generado por `diagrams/generador_modelo_er.py` con `diagrams/plantilla_modelo_er.html`. Si cambia el DDL, actualizar `T` y `FKS` en el generador y regenerar. Publicado en https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis
-- [x] **Fase 11 (Consistencia global):** `python tests/validar_consistencia.py` compara con la base real (fuente de verdad) el DDL, la copia del DDL en `tallerexamenbd.md`, las referencias a columnas de los scripts 02–08 y `verify_solutions.sql`, el diccionario de datos, `physical_erd.mmd` (ahora generado por `diagrams/generador_mermaid.py`), `logical_model.mmd`, el DER del README, los modelos conceptuales (`.mmd` y `.drawio`), el modelo ER HTML, el `.mdj` y las cifras citadas en los textos. Estado: 0 errores. Las exportaciones de StarUML (8 diagramas en PNG y SVG) están en `diagrams/exportaciones_staruml/` y el validador revisa cada SVG contra su diagrama del `.mdj` y la base; también valida el HTML del modelo ER y, si se le pasa la ruta de la copia descargada, el artefacto publicado; los SVG antiguos (`erd_clean.svg`, `erd_exported.svg`) se retiraron porque eran del modelo incompleto. **Tras cambiar el DDL: actualizar `T`/`FKS` en `generador_modelo_er.py`, regenerar HTML, `.mdj` y `.mmd`, y volver a ejecutar el validador.**
-- [x] **Fase 10 (Modelo lógico StarUML):** `diagrams/oftalmologia_model.mdj` regenerado por `diagrams/generador_staruml.py` (reutiliza `T`, `FKS`, `DER_LAYOUT` de `generador_modelo_er.py`): 29 ERDEntity, 214 ERDColumn con tipo/longitud/PK/FK(referenceTo)/UNIQUE/NULL, 25 ERDRelationship (1:0..* y 1:0..1) y 8 diagramas. Verificado abriéndolo en StarUML y exportando cada diagrama con su API local (puerto 58321). Validación repetible contra la base real: `python tests/validar_modelo_staruml.py` (entidades, columnas, claves, FK, cardinalidades y conexión de cada línea de los diagramas). El MCP `staruml-mcp-server` solo importa Mermaid (no admite `DECIMAL(5,2)` ni `referenceTo`), por eso se genera el .mdj nativo.
-- [x] **Fase 9 (Explorador fusionado):** el explorador de tablas, entidades y atributos es la 5.ª pestaña de `diagrams/modelo_entidad_relacion.html` (filtros por módulo, tipo de entidad, clave, tipo de dato y nulidad; clic en una entidad de los diagramas abre su ficha). Su JS/CSS vive en `diagrams/plantilla_modelo_er.html` (prefijo `xp-`) y sus datos los genera `explorer_json()` en `generador_modelo_er.py`. No existe página aparte.
-- [x] **Fase 7 (Arranque multiplataforma):** lanzadores `run_all.sh` (Linux/macOS), `run_all.ps1` y `run_all.cmd` (Windows) con modo `auto|local|docker` (por defecto usa `docker exec` sobre el contenedor `mysql_db` si no hay cliente `mysql` local). `.gitattributes` fuerza LF en `.sh`/`.sql` y CRLF en `.ps1`/`.cmd`.
 - [x] **Fase 6 (README.md Maestro y Commit Git):** `README.md` completo y repositorio con commit inicial en `main`.
+- [x] **Fase 7 (Arranque multiplataforma):** lanzadores `run_all.sh` (Linux/macOS), `run_all.ps1` y `run_all.cmd` (Windows) con modo `auto|local|docker` (por defecto usa `docker exec` sobre el contenedor `mysql_db` si no hay cliente `mysql` local). `.gitattributes` fuerza LF en `.sh`/`.sql` y CRLF en `.ps1`/`.cmd`.
+- [x] **Fase 8 (Modelo ER interactivo):** `diagrams/modelo_entidad_relacion.html` (mapa de módulos, Chen, lógico relacional y DER pata de gallo; 25 tablas + 4 de respaldo, 25 FK) generado por `diagrams/generador_modelo_er.py` con `diagrams/plantilla_modelo_er.html`. Si cambia el DDL, actualizar `T` y `FKS` en el generador y regenerar. Publicado en https://claude.ai/artifact/H6ik4gABMoRhG7E4DRqsis
+- [x] **Fase 9 (Explorador fusionado):** el explorador de tablas, entidades y atributos es la 5.ª pestaña de `diagrams/modelo_entidad_relacion.html` (filtros por módulo, tipo de entidad, clave, tipo de dato y nulidad; clic en una entidad de los diagramas abre su ficha). Su JS/CSS vive en `diagrams/plantilla_modelo_er.html` (prefijo `xp-`) y sus datos los genera `explorer_json()` en `generador_modelo_er.py`. No existe página aparte.
+- [x] **Fase 10 (Modelo lógico StarUML):** `diagrams/oftalmologia_model.mdj` regenerado por `diagrams/generador_staruml.py` (reutiliza `T`, `FKS`, `DER_LAYOUT` de `generador_modelo_er.py`): 29 ERDEntity, 214 ERDColumn con tipo/longitud/PK/FK(referenceTo)/UNIQUE/NULL, 25 ERDRelationship (1:0..* y 1:0..1) y 8 diagramas. Verificado abriéndolo en StarUML y exportando cada diagrama con su API local (puerto 58321). Validación repetible contra la base real: `python tests/validar_modelo_staruml.py` (entidades, columnas, claves, FK, cardinalidades y conexión de cada línea de los diagramas). El MCP `staruml-mcp-server` solo importa Mermaid (no admite `DECIMAL(5,2)` ni `referenceTo`), por eso se genera el .mdj nativo.
+- [x] **Fase 11 (Consistencia global):** `python tests/validar_consistencia.py` compara con la base real (fuente de verdad) el DDL, la copia del DDL en `tallerexamenbd.md`, las referencias a columnas de los scripts 02–08 y `verify_solutions.sql`, el diccionario de datos, `physical_erd.mmd` (ahora generado por `diagrams/generador_mermaid.py`), `logical_model.mmd`, el DER del README, los modelos conceptuales (`.mmd` y `.drawio`), el modelo ER HTML, el `.mdj` y las cifras citadas en los textos. Estado: 0 errores. Las exportaciones de StarUML (8 diagramas en PNG y SVG) están en `diagrams/exportaciones_staruml/` y el validador revisa cada SVG contra su diagrama del `.mdj` y la base; también valida el HTML del modelo ER y, si se le pasa la ruta de la copia descargada, el artefacto publicado; los SVG antiguos (`erd_clean.svg`, `erd_exported.svg`) se retiraron porque eran del modelo incompleto. **Tras cambiar el DDL: actualizar `T`/`FKS` en `generador_modelo_er.py`, regenerar HTML, `.mdj` y `.mmd`, y volver a ejecutar el validador.**
+- [x] **Fase 12 (README, ruta de aprendizaje y limpieza):** README reestructurado (tecnologías, arquitectura, modelo, instalación y pruebas por sistema operativo, enlace al artefacto e imágenes en `docs/img/`), ruta de aprendizaje en `docs/05_ruta_de_aprendizaje.md`, eliminados `diagrams/erd_exported.png` (duplicado de `exportaciones_staruml/0_modelo_logico_completo.png`) y `open_staruml.sh` (lanzador solo para Linux con ruta fija). Pruebas: Windows (PowerShell/CMD y Git Bash), Linux (contenedor `mysql:8.4`, bash 5.1) y bash 3.2 (versión de macOS) pasan los 9 pasos; validadores en 0 errores.
 
 ---
 
