@@ -9,3 +9,4 @@ Thumbs.db
 
 # Logs de prueba
 *.log
+__pycache__/
