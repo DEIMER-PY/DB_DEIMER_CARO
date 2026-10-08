@@ -304,8 +304,10 @@ falt = [t for t in TABLES if t not in lm_ents and not t.endswith('_backup') and 
 if falt: R.e(sec, f'faltan entidades: {falt}')
 
 sec = 'README.md (diagrama mermaid)'; R.section(sec, 'DER del README: relaciones y cardinalidad')
-rm = re.search(r'```mermaid\n(.*?)```', rd('README.md'), re.S)
-if rm:
+rm = next((m for m in re.finditer(r'```mermaid\n(.*?)```', rd('README.md'), re.S) if 'erDiagram' in m.group(1)), None)
+if not rm:
+    R.e(sec, 'el README no tiene un bloque mermaid con erDiagram')
+else:
     check_mermaid_rels(sec, rm.group(1))
     for name, body in re.findall(r'^\s*(\w+)\s*\{(.*?)\}', rm.group(1), re.S | re.M):
         t = name.lower()
@@ -501,7 +503,8 @@ for extra in sys.argv[1:]:
 
 # ============================================================================ 8. textos: nombres de tabla y rangos CHECK
 KNOWN = set(TABLES) | set(VIEWS) | ALLCOLS
-for f in ['docs/02_proceso_normalizacion_4fn.md', 'docs/04_guia_ejecucion_pruebas.md', 'README.md', 'AGENTS.md', 'docs/01_planteamiento_problema.md']:
+for f in ['docs/01_planteamiento_problema.md', 'docs/02_proceso_normalizacion_4fn.md', 'docs/04_guia_ejecucion_pruebas.md',
+          'docs/05_ruta_de_aprendizaje.md', 'README.md', 'AGENTS.md']:
     sec = f + ' (texto)'; R.section(sec, 'tablas citadas y rangos de CHECK descritos')
     s = rd(f)
     for name in sorted(set(re.findall(r'`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`', s))):
