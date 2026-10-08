@@ -11,7 +11,7 @@ Esta guía técnica proporciona el procedimiento detallado paso a paso para:
 
 El proyecto fue diseñado para ejecutarse en el contenedor MySQL + phpMyAdmin compartido para el entorno de desarrollo:
 
-- **Ubicación del contenedor en el equipo:** `/home/camper/Documents/mysqlcontainer/`
+- **Ubicación del contenedor en el equipo:** `<carpeta-del-contenedor-mysql>/`
 - **Motor:** MySQL 8.4 Server en el contenedor `mysql_db` (puerto host: **`3307`**)
 - **Interfaz Web:** phpMyAdmin en el contenedor `phpmyadmin` (puerto host: **`8081`**)
 - **Credenciales:**
@@ -27,7 +27,7 @@ El proyecto fue diseñado para ejecutarse en el contenedor MySQL + phpMyAdmin co
 Abra una terminal y ejecute:
 
 ```bash
-cd /home/camper/Documents/mysqlcontainer
+cd <carpeta-del-contenedor-mysql>
 docker compose up -d mysql_db phpmyadmin
 ```
 
@@ -126,7 +126,7 @@ El script ejecutará automáticamente en el contenedor:
 ### Paso 4: Detener o Reiniciar el Contenedor
 - Para detener el contenedor preservando los datos:
   ```bash
-  cd /home/camper/Documents/mysqlcontainer
+  cd <carpeta-del-contenedor-mysql>
   docker compose stop
   ```
 - Para volver a levantarlo en cualquier momento:
@@ -143,29 +143,25 @@ El script ejecutará automáticamente en el contenedor:
 
 ## 4.2. Inspección y Manejo de StarUML
 
-El proyecto incluye el archivo nativo [`diagrams/oftalmologia_model.mdj`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/oftalmologia_model.mdj) completamente modelado.
+El proyecto incluye el modelo lógico nativo [`diagrams/oftalmologia_model.mdj`](../diagrams/oftalmologia_model.mdj), generado desde el DDL con `python diagrams/generador_staruml.py diagrams/oftalmologia_model.mdj`.
 
 ### Paso 1: Abrir el Modelo en StarUML
-Abra una terminal y ejecute cualquiera de las dos alternativas:
 
-```bash
-# Alternativa A: Mediante el script lanzador
-cd /home/camper/Documents/DB_DEIMER_CARO
-bash open_staruml.sh
-
-# Alternativa B: Comando directo
-staruml /home/camper/Documents/DB_DEIMER_CARO/diagrams/oftalmologia_model.mdj &
-```
+| Sistema | Cómo abrirlo |
+|---|---|
+| **Windows** | Abra StarUML → **File** → **Open…** → `diagrams\oftalmologia_model.mdj` (o doble clic sobre el archivo) |
+| **macOS** | `open -a StarUML diagrams/oftalmologia_model.mdj` |
+| **Linux** | `staruml diagrams/oftalmologia_model.mdj &` |
 
 ### Paso 2: Explorar los Diagramas Incluidos
-En el panel derecho superior (**Model Explorer**):
-1. Expanda el proyecto `DB_DEIMER_CARO`.
-2. Expanda el paquete de datos `OftalmologiaGlaucomaModel`.
-3. Encontrará los dos diagramas principales:
-   - **`Diagrama Entidad-Relacion (Fisico 4FN)`**:
-     - Diagrama físico completo con **las 25 tablas**, tipos de datos SQL, llaves primarias (`PK`), llaves foráneas (`FK`), columnas únicas (`UK`) y cardinalidad en los extremos de las relaciones.
-   - **`Modelo Logico Relacional`**:
-     - Diagrama enfocado en las entidades lógicas del dominio y su interconexión relacional.
+En el panel **Model Explorer** expanda el proyecto `TALLERDB_DEIMER_CARO` y el modelo de datos `oftalmologia_glaucoma_db`. Encontrará 29 entidades (25 relacionales + 4 de respaldo), 25 relaciones y 8 diagramas:
+
+| Diagrama | Contenido |
+|---|---|
+| `0. Modelo lógico completo` | Las 25 tablas relacionales y sus 25 relaciones. Dos ejes: `patients` arriba y `medical_visits` abajo. |
+| `1. Pacientes y ubicación` … `7. Auditoría y respaldo` | Un diagrama por módulo, con las tablas de otros módulos que participan en sus relaciones. |
+
+Cada columna muestra sus marcas: **PK** (clave primaria), **FK** (foránea), **U** (UNIQUE) y **N** (admite NULL), además de su tipo exacto (`VARCHAR(100)`, `DECIMAL(5,2)`, `ENUM(...)`). La documentación de cada entidad lista sus `CHECK`, `UNIQUE`, índices y `FOREIGN KEY`.
 
 ### Paso 3: Verificación y Modificación de Cardinalidades
 En StarUML, las cardinalidades están modeladas mediante relaciones `ERDRelationship`:
@@ -179,7 +175,7 @@ En StarUML, las cardinalidades están modeladas mediante relaciones `ERDRelation
 ### Paso 4: Exportar los Diagramas
 Si desea exportar imágenes desde la interfaz de StarUML:
 - Vaya al menú superior: **File** -> **Export Diagram As** -> **PNG...** (o **SVG...** / **PDF...**).
-- Los 8 diagramas ya están exportados en `diagrams/exportaciones_staruml/`, en **PNG** y **SVG** con el mismo nombre (`0_modelo_logico_completo`, `1_pacientes_y_ubicacion`, …). El diagrama completo también está en `diagrams/erd_exported.png`.
+- Los 8 diagramas ya están exportados en `diagrams/exportaciones_staruml/`, en **PNG** y **SVG** con el mismo nombre (`0_modelo_logico_completo`, `1_pacientes_y_ubicacion`, …).
 - Para volver a exportar los SVG tras regenerar el modelo: **File** -> **Export All Diagrams As** -> **SVG...**, elegir `diagrams/exportaciones_staruml` y renombrar cada archivo al nombre corto de su PNG. `tests/validar_consistencia.py` comprueba cada SVG contra su diagrama y contra la base.
 - La exportación por línea de comandos (`staruml image …`) no está disponible en la versión de StarUML para Windows; use el menú anterior.
 - Para comprobar que el modelo coincide con la base real (la misma que muestra phpMyAdmin):
@@ -196,12 +192,12 @@ El modelo conceptual del sistema clínico puede visualizarse y editarse en draw.
 
 ### Opción 1: Abrir el archivo `.drawio` Preconfigurado
 El repositorio contiene el archivo XML nativo listo para usar:
-- Archivo: [`diagrams/modelo_conceptual.drawio`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/modelo_conceptual.drawio)
+- Archivo: [`diagrams/modelo_conceptual.drawio`](../diagrams/modelo_conceptual.drawio)
 
 #### Pasos:
 1. Abra su navegador e ingrese a [https://app.diagrams.net/](https://app.diagrams.net/).
 2. Seleccione **"Abrir diagrama existente" (Open Existing Diagram)**.
-3. Navegue y seleccione el archivo: `/home/camper/Documents/DB_DEIMER_CARO/diagrams/modelo_conceptual.drawio`.
+3. Navegue y seleccione el archivo: `diagrams/modelo_conceptual.drawio`.
 4. El diagrama se cargará de inmediato con:
    - Nodos categorizados por color (Azul: Paciente e Historia, Verde: Consultas, Naranja: Exámenes Oftalmológicos, Morado: Glaucoma, Rojo: Tratamientos, Gris: Catálogos).
    - Relaciones con cardinalidades explícitas (`1:1`, `1:N`) y verbos clínicos.
@@ -214,7 +210,7 @@ draw.io permite generar diagramas automáticamente a partir de código Mermaid:
 1. Abra [https://app.diagrams.net/](https://app.diagrams.net/) y cree un diagrama en blanco.
 2. En el menú superior de draw.io, haga clic en:
    **Disposición (Arrange)** -> **Insertar (Insert)** -> **Avanzado (Advanced)** -> **Mermaid**.
-3. Copie y pegue el contenido del archivo [`diagrams/conceptual_model.mmd`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/conceptual_model.mmd):
+3. Copie y pegue el contenido del archivo [`diagrams/conceptual_model.mmd`](../diagrams/conceptual_model.mmd):
    ```mermaid
    flowchart TD
        PACIENTE["PACIENTE\n(Datos Personales, Contacto)"]
