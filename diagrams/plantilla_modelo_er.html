@@ -1,0 +1,476 @@
+<title>Modelo ER Oftalmología y Glaucoma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: una vista a la vez. Pestañas de modelo arriba, selector de módulo debajo, el diagrama ocupa el ancho con scroll propio. */
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --fg:#13202B; --muted:#55687A; --line:#D3DCE4; --line-strong:#B8C4CF;
+  --accent:#1F4E78; --accent-soft:#E2ECF5; --edge:#3A4A5A; --alt:#F3F6F9; --hit:#FFF4CC; --hit-fg:#5A4300;
+  --pk:#8A5A00; --pk-bg:#FBEFD6; --fk:#136B64; --fk-bg:#DCF1EE; --uk:#5B3E8F; --uk-bg:#ECE5F7;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E151C; --surface:#151F29; --fg:#E2E9EF; --muted:#93A5B6; --line:#2A3A49; --line-strong:#3A4C5E;
+  --accent:#86B6E2; --accent-soft:#1B2D3F; --edge:#A9BACB; --alt:#1A2631; --hit:#3A3214; --hit-fg:#F2D98A;
+  --pk:#E9B85A; --pk-bg:#3A2C10; --fk:#5FC7BA; --fk-bg:#123430; --uk:#C3A8F0; --uk-bg:#2A2140; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --surface:#151F29; --fg:#E2E9EF; --muted:#93A5B6; --line:#2A3A49; --line-strong:#3A4C5E;
+  --accent:#86B6E2; --accent-soft:#1B2D3F; --edge:#A9BACB; --alt:#1A2631; --hit:#3A3214; --hit-fg:#F2D98A;
+  --pk:#E9B85A; --pk-bg:#3A2C10; --fk:#5FC7BA; --fk-bg:#123430; --uk:#C3A8F0; --uk-bg:#2A2140; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body);margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+.mono,code{font-family:var(--mono);font-size:.86em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.hero{padding-block:32px 18px;display:grid;gap:10px}
+.eyebrow{font:600 12px/1.4 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hero h1{font-size:clamp(28px,4vw,42px);font-weight:700;color:var(--accent)}
+.hero p{max-width:74ch;margin:0;color:var(--muted)}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-block:1px solid var(--line)}
+.bar .wrap{display:grid;gap:8px;padding-block:10px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tab{flex:none;border:1px solid transparent;background:none;padding:7px 14px;border-radius:7px;font-weight:600;color:var(--muted);cursor:pointer}
+.tab:hover{color:var(--accent);background:var(--accent-soft)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--surface)}
+.mods{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mods[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13.5px;cursor:pointer}
+.chip:hover{border-color:var(--mc)}
+.chip[aria-pressed="true"]{border-color:var(--mc);box-shadow:inset 0 0 0 1px var(--mc);font-weight:600}
+.dotc,.mdot{width:10px;height:10px;border-radius:50%;background:var(--mc);flex:none}
+.mdot{display:inline-block;margin-right:6px;vertical-align:-1px}
+.zoom{margin-left:auto;display:flex;gap:4px}
+.zoom button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer}
+.zoom button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+
+main.wrap{padding-block:22px 64px;display:grid;gap:18px}
+.view{display:grid;gap:14px;min-width:0}
+.view > p.lead{margin:0;color:var(--muted);max-width:80ch}
+.pane{display:grid;gap:12px;min-width:0}
+.pane h3{font-size:22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mn{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;background:var(--mc,var(--accent));color:#fff;font:600 14px var(--mono)}
+.cnt{font:400 13px var(--body);color:var(--muted)}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:auto;padding:8px;max-height:calc(100vh - 210px);min-height:240px}
+.diagram svg{display:block;font-family:var(--mono)}
+.fit .diagram svg{max-width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--muted);align-items:center}
+.legend svg{vertical-align:middle;margin-right:6px;color:var(--fg)}
+.legend b{font-family:var(--mono);font-size:12px}
+.kpk{color:var(--pk)}.kfk{color:var(--fk)}.kmu{color:var(--muted)}
+
+/* clases de los SVG */
+.sf{fill:var(--surface)} .fg{fill:var(--fg)} .mu{fill:var(--muted)} .pk{fill:var(--pk)} .fk{fill:var(--fk)} .alt{fill:var(--alt)}
+.box{fill:var(--surface);stroke:var(--line-strong);stroke-width:1} .stub{stroke-dasharray:5 4}
+.edge{fill:none;stroke:var(--edge);stroke-width:1.4} .nonid{stroke-dasharray:6 4}
+.edge:hover{stroke:var(--accent);stroke-width:2.6}
+.mk{fill:none;stroke:var(--edge);stroke-width:1.4} .mkc{fill:var(--surface);stroke:var(--edge);stroke-width:1.4}
+.rel{fill:var(--surface);stroke:var(--fg);stroke-width:1.6} .cl{stroke:var(--edge);stroke-width:1.3;fill:none}
+.attr{fill:var(--surface);stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3} .dot{stroke:var(--muted);stroke-dasharray:2 3;fill:none}
+.ttl{font-family:var(--display);font-weight:700}
+.cd{paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,560px),1fr));gap:14px;align-items:start}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:8px;min-width:0}
+.tcard header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.tcard h4{font:600 15px var(--mono)}
+.tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.desc{margin:0;color:var(--muted);font-size:14px}
+.rn{display:block;background:var(--bg);border-radius:6px;padding:8px 10px;line-height:1.7;overflow-wrap:anywhere}
+.rn .pk{fill:none;color:var(--pk);text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.rn .fk{fill:none;color:var(--fk);font-style:italic}
+.rn .fk::after{content:"#"}
+.scroll{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font:600 11.5px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.t{color:var(--muted)} td.r{color:var(--fk)} td.dsc{color:var(--muted);min-width:16ch}
+td.num{color:var(--muted);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.86em}
+td .fkc{color:var(--fk);font-style:italic}
+.k{display:inline-block;font:600 10.5px var(--mono);border-radius:4px;padding:1px 5px;margin-right:3px}
+.k-pk{background:var(--pk-bg);color:var(--pk)} .k-fk{background:var(--fk-bg);color:var(--fk)}
+.k-uk{background:var(--uk-bg);color:var(--uk)}
+ul.cons{margin:0;padding:8px 0 0 18px;border-top:1px dashed var(--line);display:grid;gap:2px;color:var(--muted)}
+ul.cons li{overflow-wrap:anywhere}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;min-width:0}
+.panel h3{font-size:18px}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+/* navegación cruzada */
+.diagram g.ent{cursor:pointer}
+.diagram g.ent:hover text{text-decoration:underline}
+.xlink{all:unset;cursor:pointer;color:var(--accent);font-size:12.5px;text-decoration:underline;text-underline-offset:2px}
+td.mono .xlink{font:inherit;color:inherit}
+.xlink:hover{color:var(--fk)} .xlink:focus-visible{outline:2px solid var(--accent)}
+.hdr{display:inline-flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+mark{background:var(--hit);color:var(--hit-fg);border-radius:3px;padding:0 1px}
+
+/* explorador */
+.xp-layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.xp-layout{grid-template-columns:minmax(0,1fr)}}
+.xp-filters{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:16px;max-height:calc(100vh - 92px);overflow:auto}
+@media (max-width:900px){.xp-filters{position:static;max-height:none}}
+.xp-fgroup{display:grid;gap:7px;border:0;margin:0;padding:0;min-width:0}
+.xp-fgroup > legend,.xp-flabel{font:600 11.5px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0;margin-bottom:7px}
+.xp-search{position:relative}
+.xp-search input{width:100%;border:1px solid var(--line-strong);background:var(--bg);border-radius:8px;padding:9px 34px 9px 12px;font-size:15px}
+.xp-search input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.xp-search button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px 6px}
+.xp-seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.xp-seg button{border:0;background:var(--surface);padding:6px 4px;font-size:13px;cursor:pointer;color:var(--muted)}
+.xp-seg button + button{border-left:1px solid var(--line)}
+.xp-seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface);font-weight:600}
+.xp-opts{display:flex;flex-wrap:wrap;gap:6px}
+.xp-opt{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.xp-opt:hover{border-color:var(--mc,var(--accent))}
+.xp-opt[aria-pressed="true"]{border-color:var(--mc,var(--accent));box-shadow:inset 0 0 0 1px var(--mc,var(--accent));font-weight:600}
+.xp-opt .n{font:500 11px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.xp select{width:100%;border:1px solid var(--line-strong);background:var(--bg);border-radius:8px;padding:7px 10px}
+.xp-check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.xp-check input{width:16px;height:16px;accent-color:var(--accent)}
+.xp-reset{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600}
+.xp-reset:hover{border-color:var(--accent);color:var(--accent)}
+.xp-results{display:grid;gap:14px;min-width:0}
+.xp-rbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.xp-count{font-size:14px;color:var(--muted)} .xp-count b{color:var(--fg);font-variant-numeric:tabular-nums}
+.xp-views{display:flex;gap:4px}
+.xp-views button{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:5px 12px;font-size:13.5px;cursor:pointer}
+.xp-views button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+.xp-focus{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 6px 3px 12px;font-size:13.5px}
+.xp-focus button{border:0;background:var(--surface);border-radius:999px;width:22px;height:22px;cursor:pointer;color:var(--accent);line-height:1}
+.xp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,500px),1fr));gap:14px;align-items:start}
+.xp-card{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--mc);border-radius:8px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+.xp-card header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.xp-card h4{font:600 16px var(--mono)}
+.xp-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.xp .tag.mod{color:var(--mc);border-color:var(--mc);white-space:nowrap}
+.xp th button{all:unset;cursor:pointer}
+.xp th button:focus-visible{outline:2px solid var(--accent)}
+.xp th[aria-sort] button::after{content:" ↕";color:var(--line-strong)}
+.xp th[aria-sort="ascending"] button::after{content:" ↑";color:var(--accent)}
+.xp th[aria-sort="descending"] button::after{content:" ↓";color:var(--accent)}
+.xp td{padding:4px 8px}
+.xp tr.hit td{background:var(--hit)}
+.xp tr.dim td{opacity:.45}
+.xp td.t{color:var(--muted);font-family:var(--mono);font-size:12.5px;overflow-wrap:break-word;min-width:12ch}
+.xp td.n{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.xp td.d{color:var(--muted);min-width:14ch}
+.xp-lnk{all:unset;cursor:pointer;color:var(--fk);font-family:var(--mono);font-size:12.5px;text-decoration:underline;text-underline-offset:2px}
+.xp-lnk:hover{color:var(--accent)} .xp-lnk:focus-visible{outline:2px solid var(--accent)}
+.xp-rels{display:grid;gap:4px;font-size:13px;border-top:1px dashed var(--line);padding-top:8px;color:var(--muted)}
+.xp-rels div{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.xp-rels b{font:600 11px var(--body);letter-spacing:.06em;text-transform:uppercase;min-width:11ch}
+.xp-small{font-size:12.5px;color:var(--muted)}
+.xp-foot{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;align-items:center}
+.xp-foot .go{display:flex;gap:14px;flex-wrap:wrap}
+.xp-list{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.xp-empty{background:var(--surface);border:1px dashed var(--line-strong);border-radius:10px;padding:32px 20px;text-align:center;display:grid;gap:10px;justify-items:center;color:var(--muted)}
+.xp-empty h4{color:var(--fg);font-size:20px}
+
+@media (max-width:640px){.zoom{margin-left:0}}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">MySQL 8.0 · oftalmologia_glaucoma_db · 25 tablas + 4 de respaldo · 4FN · 7 módulos</div>
+    <h1>Oftalmología y Glaucoma</h1>
+    <p>Modelo entidad-relación de la base de datos de historias clínicas de Deimer Caro. Las pestañas siguen el orden del diseño: mapa de módulos, modelo conceptual, modelo lógico y DER; el explorador permite buscar y filtrar tablas, entidades y atributos. Haz clic en cualquier entidad de un diagrama para abrir su ficha en el explorador.</p>
+  </header>
+</div>
+
+<div class="bar"><div class="wrap">
+  <div class="tabs" role="tablist" aria-label="Modelo">
+    <button class="tab" role="tab" data-kind="map" type="button">Mapa general</button>
+    <button class="tab" role="tab" data-kind="chen" type="button">1 · Modelo conceptual</button>
+    <button class="tab" role="tab" data-kind="rel" type="button">2 · Modelo lógico relacional</button>
+    <button class="tab" role="tab" data-kind="der" type="button">3 · Diagrama entidad-relación</button>
+    <button class="tab" role="tab" data-kind="exp" type="button">Explorador de tablas y atributos</button>
+  </div>
+  <div class="mods" id="mods">{{CHIPS}}
+    <div class="zoom" id="zoom"><button type="button" data-z="fit">Ajustar al ancho</button><button type="button" data-z="full">Tamaño real</button></div>
+  </div>
+</div></div>
+
+<main class="wrap">
+  <section class="view" data-view="map">
+    <p class="lead">Los siete módulos y cómo se conectan. Cada línea nombra la tabla referenciada (→) y la tabla que guarda la llave foránea. Todo gira alrededor de <code>patients</code> y <code>medical_visits</code>: la consulta es el eje del que dependen exámenes, diagnósticos, tratamientos y controles.</p>
+    <div class="diagram">{{MAP}}</div>
+    {{FKTABLE}}
+  </section>
+
+  <section class="view" data-view="chen" hidden>
+    <p class="lead">Notación de Chen. La relación N:M entre consultas y diagnósticos aparece como rombo con sus atributos; en el modelo lógico se convierte en la tabla <code>visit_diagnoses</code>. Las entidades débiles dependen de su dueño y se borran en cascada con él.</p>
+    <div class="legend">
+ <span><svg width="40" height="22"><rect x="1" y="2" width="38" height="18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>entidad</span>
+ <span><svg width="40" height="22"><rect x="1" y="2" width="38" height="18" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="5" width="32" height="12" fill="none" stroke="currentColor"/></svg>entidad débil</span>
+ <span><svg width="34" height="22"><polygon points="17,1 33,11 17,21 1,11" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>relación</span>
+ <span><svg width="40" height="22"><rect x="1" y="3" width="38" height="16" rx="8" fill="none" stroke="currentColor" stroke-dasharray="4 3"/></svg>atributos de la relación</span>
+ <span><svg width="40" height="22"><rect x="1" y="2" width="38" height="18" fill="none" stroke="currentColor" stroke-dasharray="6 4"/></svg>entidad de otro módulo</span>
+ <span><b>1 · N · M · 0..1</b> cardinalidad junto a cada entidad</span>
+</div>
+    {{CHEN}}
+  </section>
+
+  <section class="view" data-view="rel" hidden>
+    <p class="lead">Cada tabla en notación relacional: la clave primaria va subrayada y las foráneas en cursiva con #. Debajo, tipos MySQL, nulidad, claves, referencias, valores por defecto y restricciones tal como están en <code>sql/01_ddl_schema.sql</code>.</p>
+    {{REL}}
+  </section>
+
+  <section class="view" data-view="der" hidden>
+    <p class="lead">Notación pata de gallo. Cada línea sale de la columna FK y llega al <code>id</code> que referencia. Todas las relaciones son no identificadoras (línea punteada) porque cada tabla tiene su propia clave sustituta <code>id</code>. Las tablas de borde punteado pertenecen a otro módulo.</p>
+    <div class="legend">
+ <span><svg width="46" height="18"><line class="edge nonid" x1="2" y1="9" x2="44" y2="9"/></svg>no identificadora</span>
+ <span><svg width="30" height="18"><line class="mk" x1="2" y1="9" x2="28" y2="9"/><line class="mk" x1="8" y1="3" x2="8" y2="15"/><line class="mk" x1="13" y1="3" x2="13" y2="15"/></svg>exactamente uno</span>
+ <span><svg width="30" height="18"><line class="mk" x1="2" y1="9" x2="28" y2="9"/><line class="mk" x1="8" y1="3" x2="8" y2="15"/><circle class="mkc" cx="17" cy="9" r="4.2"/></svg>cero o uno</span>
+ <span><svg width="30" height="18"><line class="mk" x1="2" y1="9" x2="28" y2="9"/><path class="mk" d="M2,3 L14,9 L2,15"/><circle class="mkc" cx="20" cy="9" r="4.2"/></svg>cero o muchos</span>
+ <span><b class="kpk">PK</b> clave primaria · <b class="kfk">FK</b> foránea · <b class="kmu">UK</b> única · <b class="kmu">?</b> admite NULL</span>
+ <span><svg width="34" height="18"><rect class="box stub" x="1" y="2" width="32" height="14" rx="3"/></svg>tabla de otro módulo (solo su clave)</span>
+</div>
+    {{DER}}
+  </section>
+
+  <section class="view xp" data-view="exp" hidden>
+    <p class="lead">Busca una tabla o un atributo y combina filtros por módulo, tipo de entidad, clave, tipo de dato y nulidad. Haz clic en una referencia para saltar a la tabla relacionada, o en «Ver en el DER» para volver a los diagramas.</p>
+    <div class="xp-layout">
+      <aside class="xp-filters" aria-label="Filtros del explorador">
+        <div class="xp-fgroup">
+          <label class="xp-flabel" for="xp-q">Buscar</label>
+          <div class="xp-search"><input id="xp-q" type="search" placeholder="patient, pressure, eye, CIE-10…" autocomplete="off"><button type="button" id="xp-qclear" aria-label="Borrar búsqueda" hidden>×</button></div>
+          <div class="xp-seg" role="group" aria-label="Buscar en" id="xp-scope"><button type="button" data-v="all">Todo</button><button type="button" data-v="tables">Tablas</button><button type="button" data-v="attrs">Atributos</button></div>
+        </div>
+        <fieldset class="xp-fgroup"><legend>Módulo</legend><div class="xp-opts" id="xp-mods"></div></fieldset>
+        <fieldset class="xp-fgroup"><legend>Tipo de entidad</legend><div class="xp-opts" id="xp-kinds"></div></fieldset>
+        <fieldset class="xp-fgroup"><legend>Clave del atributo</legend><div class="xp-opts" id="xp-keys"></div></fieldset>
+        <div class="xp-fgroup"><label class="xp-flabel" for="xp-type">Tipo de dato</label><select id="xp-type"></select></div>
+        <fieldset class="xp-fgroup"><legend>Nulidad</legend><div class="xp-opts" id="xp-null"></div></fieldset>
+        <label class="xp-check"><input type="checkbox" id="xp-only"> Mostrar solo atributos que coinciden</label>
+        <button type="button" class="xp-reset" id="xp-reset">Quitar todos los filtros</button>
+      </aside>
+      <section class="xp-results" aria-live="polite">
+        <div class="xp-rbar">
+          <div class="xp-count" id="xp-count"></div>
+          <div class="xp-views" role="group" aria-label="Vista" id="xp-views"><button type="button" data-v="cards">Por tabla</button><button type="button" data-v="list">Lista de atributos</button></div>
+        </div>
+        <div id="xp-focus" hidden></div>
+        <div id="xp-out"></div>
+      </section>
+    </div>
+  </section>
+
+  <footer>Fuente: sql/01_ddl_schema.sql (estructura), sql/06_part4_triggers.sql (auditoría y respaldos), docs/02_proceso_normalizacion_4fn.md y docs/03_diccionario_de_datos.md.</footer>
+</main>
+
+<script>
+(function(){
+  var kind = "map", mod = "m1", zoom = "fit";
+  try { var s = JSON.parse(localStorage.getItem("er-oftalmo-view") || "{}"); kind = s.kind || kind; mod = s.mod || mod; zoom = s.zoom || zoom; } catch(e) {}
+  function fromHash(){ var h = (location.hash || "").slice(1).match(/^(map|chen|rel|der|exp)(?:-(m[1-7]))?$/); if (h) { kind = h[1]; if (h[2]) mod = h[2]; return true; } return false; }
+  fromHash();
+  function render(){
+    document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", b.dataset.kind === kind); });
+    document.querySelectorAll(".view").forEach(function(v){ v.hidden = v.dataset.view !== kind; });
+    document.getElementById("mods").hidden = kind === "map" || kind === "exp";
+    document.querySelectorAll(".chip").forEach(function(c){ c.setAttribute("aria-pressed", c.dataset.mod === mod); });
+    document.querySelectorAll(".pane").forEach(function(p){ p.hidden = p.dataset.mod !== mod; });
+    document.getElementById("zoom").hidden = kind === "rel" || kind === "exp";
+    document.querySelectorAll("#zoom button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.z === zoom); });
+    document.body.classList.toggle("fit", zoom === "fit");
+    try { localStorage.setItem("er-oftalmo-view", JSON.stringify({kind: kind, mod: mod, zoom: zoom})); } catch(e) {}
+  }
+  document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ kind = b.dataset.kind; render(); }); });
+  document.querySelectorAll(".chip").forEach(function(c){ c.addEventListener("click", function(){ mod = c.dataset.mod; render(); }); });
+  document.querySelectorAll("#zoom button").forEach(function(b){ b.addEventListener("click", function(){ zoom = b.dataset.z; render(); }); });
+  render();
+  // navegación entre vistas: la usan el explorador y los diagramas
+  window.erNav = function(k, m){ kind = k; if (m) mod = m; render(); var b = document.querySelector(".bar"); window.scrollTo({top: b ? b.offsetTop : 0}); };
+  window.addEventListener("hashchange", function(){ if (fromHash()) render(); });
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("[data-t]");
+    if (el && window.xpFocus) { e.preventDefault(); window.erNav("exp"); window.xpFocus(el.getAttribute("data-t")); }
+  });
+})();
+</script>
+<script id="xp-data" type="application/json">{{DATA}}</script>
+<script>
+(function(){
+  // Explorador de tablas, entidades y atributos
+  var D = JSON.parse(document.getElementById("xp-data").textContent);
+  var KINDS = {fuerte:"Fuerte", debil:"Débil", catalogo:"Catálogo", asociativa:"Asociativa N:M", auditoria:"Auditoría", respaldo:"Respaldo"};
+  var KEYS = {PK:"PK primaria", FK:"FK foránea", UK:"UK única"};
+  var NULLS = {any:"Cualquiera", "null":"Admite NULL", notnull:"NOT NULL"};
+  var $ = function(id){ return document.getElementById(id); };
+
+  var defaults = function(){ return {q:"", scope:"all", mods:[], kinds:[], keys:[], type:"", nul:"any", only:false, view:"cards", focus:"", sort:"table", dir:1}; };
+  var S = defaults();
+  try { var saved = JSON.parse(localStorage.getItem("er-explorer") || "null"); if (saved) for (var k in saved) if (k in S) S[k] = saved[k]; } catch(e) {}
+  function save(){ try { localStorage.setItem("er-explorer", JSON.stringify(S)); } catch(e) {} }
+
+  var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); };
+  var norm = function(s){ return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); };
+  function hl(s){
+    var q = norm(S.q.trim()); s = String(s);
+    if (!q) return esc(s);
+    var n = norm(s), out = "", i = 0, j;
+    while ((j = n.indexOf(q, i)) !== -1) { out += esc(s.slice(i, j)) + "<mark>" + esc(s.slice(j, j + q.length)) + "</mark>"; i = j + q.length; }
+    return out + esc(s.slice(i));
+  }
+
+  // --------------------------------------------------------------- filtrado
+  function tableText(t, q){ return norm(t.name + " " + t.desc + " " + t.tag).indexOf(q) !== -1; }
+  function colText(c, q){ return norm([c.name, c.desc, c.type, c.ref, c.default].join(" ")).indexOf(q) !== -1; }
+  function attrFiltersActive(){ return S.keys.length || S.type || S.nul !== "any"; }
+  function colPass(c){
+    if (S.keys.length && !S.keys.some(function(k){ return c.keys.indexOf(k) !== -1; })) return false;
+    if (S.type && c.base !== S.type) return false;
+    if (S.nul === "null" && !c.null) return false;
+    if (S.nul === "notnull" && c.null) return false;
+    return true;
+  }
+  function evaluate(t){
+    if (S.focus && t.name !== S.focus) return null;
+    if (S.mods.length && S.mods.indexOf(t.mod) === -1) return null;
+    if (S.kinds.length && S.kinds.indexOf(t.kind) === -1) return null;
+    var q = norm(S.q.trim());
+    var tt = q ? tableText(t, q) : false;
+    if (q && S.scope === "tables" && !tt) return null;
+    var textOnCols = q && S.scope !== "tables";
+    var matched = t.cols.filter(function(c){
+      if (!colPass(c)) return false;
+      if (!textOnCols) return true;
+      return colText(c, q) || (S.scope === "all" && tt);
+    });
+    var needAttr = attrFiltersActive() || (textOnCols && !(S.scope === "all" && tt));
+    if (needAttr && !matched.length) return null;
+    // solo se resaltan los atributos que contienen el texto buscado
+    var hits = textOnCols ? matched.filter(function(c){ return colText(c, q); }) : [];
+    return {t: t, matched: matched, hits: hits, filtering: attrFiltersActive() || textOnCols};
+  }
+
+  // --------------------------------------------------------------- facetas
+  function countBy(fn){ var m = {}; D.tables.forEach(function(t){ var k = fn(t); m[k] = (m[k] || 0) + 1; }); return m; }
+  var modCount = countBy(function(t){ return t.mod; });
+  var kindCount = countBy(function(t){ return t.kind; });
+  var allCols = []; D.tables.forEach(function(t){ t.cols.forEach(function(c){ allCols.push(c); }); });
+  var typeCount = {}; allCols.forEach(function(c){ typeCount[c.base] = (typeCount[c.base] || 0) + 1; });
+  var keyCount = {PK:0, FK:0, UK:0}; allCols.forEach(function(c){ c.keys.forEach(function(k){ keyCount[k]++; }); });
+
+  function optHTML(group, value, label, n, color){
+    return '<button type="button" class="xp-opt" data-g="' + group + '" data-v="' + esc(value) + '"' + (color ? ' style="--mc:' + color + '"' : "") + '>' +
+      (color ? '<span class="dotc"></span>' : "") + esc(label) + (n != null ? ' <span class="n">' + n + "</span>" : "") + "</button>";
+  }
+  $("xp-mods").innerHTML = Object.keys(D.mods).map(function(m){ return optHTML("mods", m, m.slice(1) + ". " + D.mods[m].name, modCount[m], D.mods[m].color); }).join("");
+  $("xp-kinds").innerHTML = Object.keys(KINDS).map(function(k){ return optHTML("kinds", k, KINDS[k], kindCount[k] || 0); }).join("");
+  $("xp-keys").innerHTML = Object.keys(KEYS).map(function(k){ return optHTML("keys", k, KEYS[k], keyCount[k]); }).join("");
+  $("xp-null").innerHTML = Object.keys(NULLS).map(function(k){ return optHTML("nul", k, NULLS[k]); }).join("");
+  $("xp-type").innerHTML = '<option value="">Todos los tipos (' + allCols.length + ')</option>' +
+    Object.keys(typeCount).sort().map(function(t){ return '<option value="' + t + '">' + t + " (" + typeCount[t] + ")</option>"; }).join("");
+
+  // --------------------------------------------------------------- render
+  function keyBadges(c){ return c.keys.map(function(k){ return '<span class="k k-' + k.toLowerCase() + '">' + k + "</span>"; }).join(""); }
+  function tlink(name){ return '<button type="button" class="xp-lnk" data-focus="' + esc(name) + '">' + hl(name) + "</button>"; }
+  function refCell(c){ return c.ref ? tlink(c.ref.split(".")[0]) + '<span class="mono">.' + esc(c.ref.split(".")[1]) + "</span>" : ""; }
+
+  function card(r){
+    var t = r.t, mod = D.mods[t.mod];
+    var rows = t.cols.map(function(c){
+      var inMatch = r.matched.indexOf(c) !== -1;
+      if (S.only && r.filtering && !inMatch) return "";
+      var cls = r.hits.indexOf(c) !== -1 ? "hit" : (r.filtering && !inMatch ? "dim" : "");
+      return '<tr class="' + cls + '"><td class="n">' + hl(c.name) + '</td><td class="t">' + hl(c.type) + "</td><td>" + (c.null ? "Sí" : "No") +
+        "</td><td>" + keyBadges(c) + "</td><td>" + refCell(c) + '</td><td class="t">' + hl(c.default) + '</td><td class="d">' + hl(c.desc) + "</td></tr>";
+    }).join("");
+    var hiddenN = S.only && r.filtering ? t.cols.length - r.matched.length : 0;
+    var refs = t.refs.map(function(f){ return '<span><span class="mono">' + esc(f.col) + "</span> → " + tlink(f.to) + " (" + esc(f.verb) + ", " + f.card + ")</span>"; }).join(" · ");
+    var refBy = t.refBy.map(function(f){ return "<span>" + tlink(f.frm) + '<span class="mono">.' + esc(f.col) + "</span> (" + esc(f.verb) + ", " + f.card + ")</span>"; }).join(" · ");
+    return '<article class="xp-card" style="--mc:' + mod.color + '"><header><h4>' + hl(t.name) + '</h4><div class="xp-meta"><span class="tag mod">' + t.mod.slice(1) + ". " + esc(mod.name) +
+      '</span><span class="tag">' + esc(KINDS[t.kind]) + '</span></div></header><p class="desc">' + hl(t.desc) + "</p>" +
+      '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Tipo</th><th>Nulo</th><th>Clave</th><th>Referencia</th><th>Default</th><th>Descripción</th></tr></thead><tbody>' + rows + "</tbody></table></div>" +
+      (hiddenN ? '<div class="xp-small">' + hiddenN + " atributo" + (hiddenN > 1 ? "s ocultos" : " oculto") + " por los filtros</div>" : "") +
+      ((refs || refBy) ? '<div class="xp-rels">' + (refs ? "<div><b>Referencia a</b>" + refs + "</div>" : "") + (refBy ? "<div><b>Referenciada por</b>" + refBy + "</div>" : "") + "</div>" : "") +
+      '<div class="xp-foot"><span class="xp-small">' + t.cols.length + ' atributos</span><span class="go">' +
+      '<button type="button" class="xlink" data-go="chen" data-mod="' + t.mod + '">Ver en el modelo conceptual</button>' +
+      '<button type="button" class="xlink" data-go="rel" data-mod="' + t.mod + '">Ver en el modelo lógico</button>' +
+      '<button type="button" class="xlink" data-go="der" data-mod="' + t.mod + '">Ver en el DER →</button></span></div></article>';
+  }
+
+  var SORTS = {table: function(a){ return a.t.name; }, attr: function(a){ return a.c.name; }, type: function(a){ return a.c.type; }, mod: function(a){ return a.t.mod + a.t.name; }};
+  function list(res){
+    var rows = [];
+    res.forEach(function(r){ (r.filtering ? r.matched : r.t.cols).forEach(function(c){ rows.push({t: r.t, c: c, hit: r.hits.indexOf(c) !== -1}); }); });
+    var f = SORTS[S.sort] || SORTS.table;
+    rows.sort(function(a, b){ var x = f(a), y = f(b); return (x < y ? -1 : x > y ? 1 : 0) * S.dir || (a.t.cols.indexOf(a.c) - b.t.cols.indexOf(b.c)); });
+    var th = function(key, label){ return '<th aria-sort="' + (S.sort === key ? (S.dir > 0 ? "ascending" : "descending") : "none") + '"><button type="button" data-sort="' + key + '">' + label + "</button></th>"; };
+    return '<div class="xp-list"><div class="scroll"><table><thead><tr>' + th("table", "Tabla") + th("attr", "Atributo") + th("type", "Tipo") +
+      "<th>Nulo</th><th>Clave</th><th>Referencia</th><th>Default</th><th>Descripción</th>" + th("mod", "Módulo") + "</tr></thead><tbody>" +
+      rows.map(function(x){
+        var c = x.c, m = D.mods[x.t.mod];
+        return '<tr class="' + (x.hit ? "hit" : "") + '"><td>' + tlink(x.t.name) + '</td><td class="n">' + hl(c.name) + '</td><td class="t">' + hl(c.type) + "</td><td>" + (c.null ? "Sí" : "No") +
+          "</td><td>" + keyBadges(c) + "</td><td>" + refCell(c) + '</td><td class="t">' + hl(c.default) + '</td><td class="d">' + hl(c.desc) +
+          '</td><td style="white-space:nowrap"><span class="mdot" style="--mc:' + m.color + '"></span>' + x.t.mod.slice(1) + "</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
+  }
+
+  function render(){
+    var res = D.tables.map(evaluate).filter(Boolean);
+    var nAttr = res.reduce(function(s, r){ return s + (r.filtering ? r.matched.length : r.t.cols.length); }, 0);
+    $("xp-count").innerHTML = "<b>" + res.length + "</b> de " + D.tables.length + " tablas · <b>" + nAttr + "</b> de " + allCols.length + " atributos";
+    var fb = $("xp-focus");
+    fb.hidden = !S.focus;
+    fb.innerHTML = S.focus ? '<span class="xp-focus">Mostrando solo <b class="mono">' + esc(S.focus) + '</b><button type="button" id="xp-unfocus" aria-label="Ver todas las tablas">×</button></span>' : "";
+    $("xp-out").innerHTML = !res.length
+      ? '<div class="xp-empty"><h4>Ninguna tabla coincide</h4><p>Prueba con otro texto o quita alguno de los filtros activos.</p><button type="button" class="xp-reset" data-xreset>Quitar todos los filtros</button></div>'
+      : (S.view === "list" ? list(res) : '<div class="xp-cards">' + res.map(card).join("") + "</div>");
+    if ($("xp-q").value !== S.q) $("xp-q").value = S.q;
+    $("xp-qclear").hidden = !S.q;
+    document.querySelectorAll("#xp-scope button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.v === S.scope); });
+    document.querySelectorAll("#xp-views button").forEach(function(b){ b.setAttribute("aria-pressed", b.dataset.v === S.view); });
+    document.querySelectorAll(".xp-opt").forEach(function(b){
+      var g = b.dataset.g, v = b.dataset.v;
+      b.setAttribute("aria-pressed", g === "nul" ? S.nul === v : S[g].indexOf(v) !== -1);
+    });
+    $("xp-type").value = S.type;
+    $("xp-only").checked = S.only;
+    save();
+  }
+
+  // --------------------------------------------------------------- eventos
+  var qi = $("xp-q"), timer;
+  qi.addEventListener("input", function(){ clearTimeout(timer); timer = setTimeout(function(){ S.q = qi.value; S.focus = ""; render(); }, 120); });
+  $("xp-qclear").addEventListener("click", function(){ S.q = ""; render(); qi.focus(); });
+  $("xp-scope").addEventListener("click", function(e){ var b = e.target.closest("button"); if (b) { S.scope = b.dataset.v; render(); } });
+  $("xp-views").addEventListener("click", function(e){ var b = e.target.closest("button"); if (b) { S.view = b.dataset.v; render(); } });
+  document.querySelector(".xp-filters").addEventListener("click", function(e){
+    var b = e.target.closest(".xp-opt"); if (!b) return;
+    var g = b.dataset.g, v = b.dataset.v;
+    if (g === "nul") S.nul = v;
+    else { var i = S[g].indexOf(v); if (i === -1) S[g].push(v); else S[g].splice(i, 1); }
+    render();
+  });
+  $("xp-type").addEventListener("change", function(e){ S.type = e.target.value; render(); });
+  $("xp-only").addEventListener("change", function(e){ S.only = e.target.checked; render(); });
+  function resetAll(){ var v = S.view; S = defaults(); S.view = v; render(); }
+  $("xp-reset").addEventListener("click", resetAll);
+  document.querySelector(".xp").addEventListener("click", function(e){
+    var f = e.target.closest("[data-focus]");
+    if (f) { S.focus = f.dataset.focus; S.view = "cards"; render(); var r = document.querySelector(".xp-results"); window.scrollTo({top: Math.max(0, r.getBoundingClientRect().top + window.scrollY - 90), behavior: "smooth"}); return; }
+    if (e.target.closest("#xp-unfocus")) { S.focus = ""; render(); return; }
+    if (e.target.closest("[data-xreset]")) { resetAll(); return; }
+    var go = e.target.closest("[data-go]");
+    if (go && window.erNav) { window.erNav(go.dataset.go, go.dataset.mod); return; }
+    var s = e.target.closest("[data-sort]");
+    if (s) { if (S.sort === s.dataset.sort) S.dir = -S.dir; else { S.sort = s.dataset.sort; S.dir = 1; } render(); }
+  });
+
+  // usado al hacer clic en una entidad de los diagramas
+  window.xpFocus = function(name){ S = defaults(); S.focus = name; render(); };
+  render();
+})();
+
+</script>
