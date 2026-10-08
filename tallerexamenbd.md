@@ -2106,7 +2106,7 @@ La solución integral implementada y verificada en MySQL 8.0 se estructura en la
 3. **`02_dml_seed_data.sql`**: Carga el dataset clínico completo de prueba con pacientes, antecedentes, visitas, exámenes paraclínicos, tratamientos y controles de glaucoma.
 4. **`03_part1_queries.sql`**: Ejecuta las 50 consultas SQL (básicas, intermedias y avanzadas).
 5. **`04_part2_subqueries.sql`**: Ejecuta las 50 subconsultas SQL (escalares, IN, NOT EXISTS, correlacionadas y avanzadas).
-6. **`05_part3_procedures.sql`**: Compila los 50 Procedimientos Almacenados (CRUD, reglas de negocio, validaciones y transacciones ACID con SAVEPOINT y ROLLBACK).
+6. **`05_part3_procedures.sql`**: Compila los 50 Procedimientos Almacenados (CRUD, reglas de negocio, validaciones con SIGNAL SQLSTATE y transacciones ACID con START TRANSACTION, COMMIT y ROLLBACK).
 7. **`06_part4_triggers.sql`**: Compila los 50 Triggers (BEFORE/AFTER INSERT/UPDATE/DELETE con auditoría inmutable en JSON).
 8. **`07_part5_functions.sql`**: Compila las 50 Funciones Almacenadas clínicas, diagnósticas, estadísticas y de cálculo cardiovascular/ocular.
 9. **`08_views_and_events.sql`**: Compila las 8 Vistas analíticas y los 2 Eventos programados de mantenimiento en el motor.
