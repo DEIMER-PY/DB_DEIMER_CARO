@@ -29,10 +29,14 @@ Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabili
 ├── .gitignore                         # Exclusiones estándar de Git
 │
 ├── diagrams/                          # Modelos visuales y de herramientas UML
-│   ├── oftalmologia_model.mdj         # Proyecto nativo para StarUML 5.x
+│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML: 29 entidades, 25 relaciones, 8 diagramas
+│   ├── generador_staruml.py           # Script que genera el .mdj desde los datos del DDL
 │   ├── conceptual_model.mmd           # Diagrama Conceptual (Mermaid)
 │   ├── logical_model.mmd              # Diagrama Lógico Relacional (Mermaid)
-│   ├── physical_erd.mmd               # Diagrama Físico DER Completo (Mermaid)
+│   ├── physical_erd.mmd               # DER físico completo en Mermaid (29 entidades, 214 atributos, 25 relaciones)
+│   ├── generador_mermaid.py           # Script que genera physical_erd.mmd desde los datos del DDL
+│   ├── erd_exported.png               # Imagen del diagrama completo exportada desde StarUML
+│   ├── exportaciones_staruml/         # Los 8 diagramas de StarUML exportados en PNG y SVG
 │   ├── modelo_entidad_relacion.html   # Modelo ER interactivo: conceptual, lógico, DER y explorador
 │   ├── generador_modelo_er.py         # Script que genera el HTML del modelo ER
 │   └── plantilla_modelo_er.html       # Plantilla (estilos, navegación y explorador) del modelo ER
@@ -60,7 +64,9 @@ Para resolver los riesgos de inconsistencia, redundancia y pérdida de trazabili
     ├── run_all.sh                     # Lanzador Linux / macOS (y Git Bash / WSL)
     ├── run_all.ps1                    # Lanzador Windows (PowerShell)
     ├── run_all.cmd                    # Atajo Windows (CMD o doble clic) que ejecuta run_all.ps1
-    └── verify_solutions.sql           # Consultas de verificación y aserciones de integridad
+    ├── verify_solutions.sql           # Consultas de verificación y aserciones de integridad
+    ├── validar_modelo_staruml.py      # Compara el .mdj de StarUML con la base real
+    └── validar_consistencia.py        # Compara TODOS los modelos, diagramas, documentos y SQL con la base real
 ```
 
 ---
@@ -81,7 +87,7 @@ erDiagram
     PATIENTS ||--o{ PATIENT_ALLERGIES : "1:N (4FN)"
     PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "1:N (4FN)"
     PATIENTS ||--o{ PATIENT_ANTECEDENTS : "1:N (4FN)"
-    PATIENTS ||--o{ GLAUCOMA_RECORDS : "1:1 registra"
+    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:0..1 registra"
 
     CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N contiene"
     CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : "1:N adjunta"
@@ -136,13 +142,30 @@ El proceso formal se encuentra detallado en [`docs/02_proceso_normalizacion_4fn.
 
 ## 5. Modelado Visual: StarUML y draw.io
 
-### 5.1. StarUML (DER Físico y Modelo Lógico con Cardinalidad)
-El proyecto incluye un modelo nativo completo en formato StarUML 6.x (`diagrams/oftalmologia_model.mdj`), con **todas las 25 entidades relacionales**, atributos tipificados, restricciones PK/FK y **líneas de relación con cardinalidad explícita (notación Crow's Foot)**:
+### 5.1. StarUML (Modelo Lógico con Cardinalidad)
+El modelo nativo de StarUML (`diagrams/oftalmologia_model.mdj`) se genera desde el DDL (`sql/01_ddl_schema.sql`) y contiene:
 
-- **Archivo del Modelo:** [`diagrams/oftalmologia_model.mdj`](file:///home/camper/Documents/DB_DEIMER_CARO/diagrams/oftalmologia_model.mdj)
-- **Diagramas incluidos:**
-  1. **Diagrama Entidad-Relación (Físico 4FN):** Contiene las 25 tablas con todas las columnas, índices, llaves foráneas y cardinalidad completa (`1:1`, `1:N`, `0..*`, `0..1`).
-  2. **Modelo Lógico Relacional:** Diagrama estructural con las entidades lógicas y dependencias relacionales directas.
+- **ERDDataModel `oftalmologia_glaucoma_db`** con **29 entidades** (25 relacionales + 4 de respaldo) y **214 columnas**. Cada columna tiene tipo y longitud (`VARCHAR(100)`, `DECIMAL(5,2)`, `ENUM(...)`) y las marcas **PK**, **FK** (con la columna que referencia), **U** (UNIQUE) y **N** (admite NULL). En la documentación de cada columna se anotan `AUTO_INCREMENT` y `DEFAULT`; en la de cada entidad, sus `CHECK`, `UNIQUE`, índices y `FOREIGN KEY`.
+- **25 relaciones** no identificadoras con su cardinalidad en notación pata de gallo: `1 : 0..*` para una FK simple y `1 : 0..1` para una FK con `UNIQUE` (`patients → clinical_histories` y `patients → glaucoma_records`). Cada relación lleva su verbo (`tiene`, `acumula`, `diagnostica`, …) y su `ON DELETE` en la documentación.
+- **8 diagramas:** `0. Modelo lógico completo` (las 25 tablas relacionales) y uno por módulo (`1. Pacientes y ubicación` … `7. Auditoría y respaldo`). Las entidades tienen el color de su módulo.
+
+- **Archivo del Modelo:** [`diagrams/oftalmologia_model.mdj`](diagrams/oftalmologia_model.mdj)
+- **Regenerarlo** (usa las mismas tablas y FK que el modelo ER HTML):
+  ```bash
+  python diagrams/generador_staruml.py diagrams/oftalmologia_model.mdj
+  ```
+- **Validarlo contra la base real** (la misma que muestra phpMyAdmin; requiere la base desplegada con `tests/run_all.*`):
+  ```bash
+  python tests/validar_modelo_staruml.py
+  ```
+- **Validar todo el proyecto** (SQL, diccionario de datos, Mermaid, draw.io, modelo ER HTML, StarUML y textos):
+  ```bash
+  python tests/validar_consistencia.py            # informe detallado
+  python tests/validar_consistencia.py --resumen   # una línea por artefacto
+  ```
+  Toma la base real (`information_schema`) como fuente de verdad y revisa en cada artefacto entidades, atributos, tipos, `NULL`, `DEFAULT`, claves, llaves foráneas y cardinalidades, además de las columnas que usan los scripts `02`–`08`. Termina con código 1 si encuentra diferencias.
+  Compara el `.mdj` con `information_schema`: tablas, columnas (nombre, orden, tipo, NULL, PK, UNIQUE, FK y su destino), las 25 relaciones con su cardinalidad y que cada línea de cada diagrama esté unida a sus dos entidades. Usa las mismas variables de conexión que `run_all` (`MYSQL_MODE`, `MYSQL_CONTAINER`, …) y termina con código 1 si encuentra diferencias.
+- **Distribución:** el diagrama `0. Modelo lógico completo` tiene dos ejes, `patients` arriba y `medical_visits` abajo con sus 8 tablas hijas en fila. Sus líneas son rectas y ninguna atraviesa otra entidad. Los diagramas de módulo usan líneas en ángulo recto.
 - **Formas de abrir en StarUML:**
   ```bash
   # Opción A: Mediante el script lanzador directo

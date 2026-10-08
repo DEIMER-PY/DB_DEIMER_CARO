@@ -198,8 +198,9 @@ Evaluación del ángulo iridocorneal para clasificación de glaucoma de ángulo 
 | `visit_id` | BIGINT | NO | FK | - | Referencia a `medical_visits(id)` |
 | `eye` | ENUM('OD','OI') | NO | - | - | Ojo evaluado (OD u OI) |
 | `angle_grade` | ENUM('GRADO 0','GRADO I','GRADO II','GRADO III','GRADO IV') | NO | - | - | Grado según escala de Shaffer |
-| `pigmentation` | ENUM('LEVE','MODERADA','SEVERA') | SI | - | 'LEVE' | Pigmentación trabecular |
+| `pigmentation` | ENUM('LEVE','MODERADA','SEVERA') | NO | - | 'LEVE' | Pigmentación trabecular |
 | `findings` | TEXT | SI | - | NULL | Sinequias anteriores, neovascularización, etc. |
+| `exam_date` | DATETIME | NO | - | CURRENT_TIMESTAMP | Fecha del examen |
 
 ### 17. `oct_exams`
 Tomografía de coherencia óptica del nervio óptico y capa de fibras nerviosas.
@@ -317,6 +318,7 @@ Archivos adjuntos (imágenes retinográficas, PDF de perimetría, firmas digital
 | `file_type` | VARCHAR(50) | NO | - | - | Tipo MIME (application/pdf, image/jpeg) |
 | `file_path` | VARCHAR(255) | NO | - | - | Ruta en el sistema de almacenamiento |
 | `uploaded_at` | DATETIME | NO | - | CURRENT_TIMESTAMP | Fecha de carga del documento |
+| `deleted_by` | VARCHAR(100) | SI | - | NULL | Usuario que marcó el documento como eliminado |
 
 ### 25. `audit_logs`
 Bitácora inmutable de eventos, modificaciones y auditoría de seguridad.
@@ -328,5 +330,18 @@ Bitácora inmutable de eventos, modificaciones y auditoría de seguridad.
 | `action` | ENUM('INSERT','UPDATE','DELETE','ALERT')| NO | - | - | Operación ejecutada |
 | `old_values` | JSON | SI | - | NULL | Estado anterior en formato JSON |
 | `new_values` | JSON | SI | - | NULL | Estado posterior en formato JSON |
-| `performed_by` | VARCHAR(100) | NO | - | CURRENT_USER | Usuario de base de datos o sistema |
+| `performed_by` | VARCHAR(100) | NO | - | 'SYSTEM' | Usuario o proceso que ejecutó el cambio (los triggers lo informan) |
 | `changed_at` | DATETIME | NO | - | CURRENT_TIMESTAMP | Timestamp exacto del cambio |
+
+---
+
+## 3.10. Tablas de Respaldo
+
+Las cuatro tablas de respaldo se crean con `CREATE TABLE … LIKE`, por lo que tienen **exactamente las mismas columnas, tipos, `NULL`, `DEFAULT`, `PRIMARY KEY`, índices `UNIQUE` y `CHECK`** que su tabla de origen. `LIKE` **no copia las llaves foráneas**, así que no tienen relaciones. Las llenan triggers `BEFORE DELETE` con la fila que se va a borrar.
+
+| # | Tabla | Copia de | Trigger que la llena |
+|---|---|---|---|
+| 26 | `patients_backup` | `patients` (13 columnas) | `trg_bd_patients_backup` |
+| 27 | `medical_visits_backup` | `medical_visits` (11 columnas) | `trg_bd_visits_backup` |
+| 28 | `treatments_backup` | `treatments` (10 columnas) | `trg_bd_treatments_backup` |
+| 29 | `oct_exams_backup` | `oct_exams` (10 columnas) | `trg_bd_oct_delete_backup` |

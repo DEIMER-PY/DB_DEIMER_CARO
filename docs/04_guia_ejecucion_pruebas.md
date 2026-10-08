@@ -179,9 +179,13 @@ En StarUML, las cardinalidades están modeladas mediante relaciones `ERDRelation
 ### Paso 4: Exportar los Diagramas
 Si desea exportar imágenes desde la interfaz de StarUML:
 - Vaya al menú superior: **File** -> **Export Diagram As** -> **PNG...** (o **SVG...** / **PDF...**).
-- También puede exportarlos por línea de comandos sin abrir la interfaz:
+- Los 8 diagramas ya están exportados en `diagrams/exportaciones_staruml/`, en **PNG** y **SVG** con el mismo nombre (`0_modelo_logico_completo`, `1_pacientes_y_ubicacion`, …). El diagrama completo también está en `diagrams/erd_exported.png`.
+- Para volver a exportar los SVG tras regenerar el modelo: **File** -> **Export All Diagrams As** -> **SVG...**, elegir `diagrams/exportaciones_staruml` y renombrar cada archivo al nombre corto de su PNG. `tests/validar_consistencia.py` comprueba cada SVG contra su diagrama y contra la base.
+- La exportación por línea de comandos (`staruml image …`) no está disponible en la versión de StarUML para Windows; use el menú anterior.
+- Para comprobar que el modelo coincide con la base real (la misma que muestra phpMyAdmin):
   ```bash
-  staruml image diagrams/oftalmologia_model.mdj -o diagrams/erd_exported.png
+  python tests/validar_modelo_staruml.py     # solo el modelo StarUML
+  python tests/validar_consistencia.py       # todos los modelos, diagramas, documentos y scripts SQL
   ```
 
 ---

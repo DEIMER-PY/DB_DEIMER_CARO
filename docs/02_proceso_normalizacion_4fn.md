@@ -52,7 +52,7 @@ Imaginemos el registro clínico histórico inicial almacenado en una única hoja
 2. **Ausencia de dependencias funcionales parciales**: Todo atributo no clave debe depender de manera funcional **completa** de la clave primaria (aplica a tablas con claves primarias compuestas).
 
 ### Análisis y corrección:
-Tomemos la relación intermedia `VISIT_DIAGNOSES` con clave primaria compuesta `{visit_id, diagnosis_id}`:
+Tomemos la relación intermedia `VISIT_DIAGNOSES` con clave candidata compuesta `{visit_id, diagnosis_id}` (en el modelo físico es la restricción `UNIQUE uq_visit_diag`; la `PRIMARY KEY` es el identificador sustituto `id`):
 
 $$FD_1: \{visit\_id, diagnosis\_id\} \rightarrow \{notes, is\_primary\}$$
 $$FD_2: diagnosis\_id \rightarrow \{diagnosis\_name, icd10\_code, description\}$$
@@ -104,7 +104,7 @@ Una relación está en BCNF si y solo si, para cada dependencia funcional no tri
 - En `patients`:
   $$id \rightarrow document\_number$$
   $$document\_number \rightarrow id$$
-  La restricción `UNIQUE(document_type_id, document_number)` garantiza que cualquier búsqueda unívoca parte de una superclave.
+  La restricción `UNIQUE uq_patient_document (document_number)` convierte a `document_number` en clave candidata, así que cualquier búsqueda unívoca parte de una superclave. Lo mismo ocurre en `healthcare_professionals` con `document_number`, `medical_license` y `email`.
 - En todas las tablas operativas, el determinante de cada dependencia funcional constituye la clave primaria o una clave candidata explícita. Por consiguiente, el modelo satisface plenamente **BCNF**.
 
 ---
@@ -119,7 +119,7 @@ Una relación está en BCNF si y solo si, para cada dependencia funcional no tri
 ### Caso de Estudio Crucial en Oftalmología:
 Un paciente $P$ posee múltiples **Alergias** ($A$) y simultáneamente múltiples **Antecedentes Familiares** ($AF$).
 - Las alergias del paciente son independientes de sus antecedentes familiares patológicos.
-- Si intentáramos representar esto en una tabla unificada `patient_conditions(patient_id, allergy_id, family_history_id)`:
+- Si intentáramos representar esto en una tabla unificada `patient_conditions(patient_id, allergy, family_history)`:
 
 | patient_id | allergy | family_history |
 |---|---|---|
@@ -137,17 +137,16 @@ $$allergy \perp family\_history$$
 
 ### Solución aplicada en 4FN:
 Descomposición estricta en dos relaciones independientes:
-1. `patient_allergies`:
-   - Clave primaria compuesta: `{patient_id FK, allergy_name}` (o catálogo `allergy_id`).
-2. `patient_family_histories`:
-   - Clave primaria compuesta: `{patient_id FK, condition_name, relationship}`.
+1. `patient_allergies(id PK, patient_id FK, allergen, reaction, severity)`:
+   - Clave candidata `UNIQUE uq_patient_allergen (patient_id, allergen)`: un alérgeno se registra una sola vez por paciente.
+2. `patient_family_histories(id PK, patient_id FK, condition_name, relationship, notes)`:
+   - Cada fila es un antecedente familiar independiente; la `PRIMARY KEY` es el identificador sustituto `id`.
 
 ### Segundo caso de 4FN en el dominio:
-- **Medicamentos de base frente a Antecedentes Quirúrgicos Previos:**
-  Un paciente tiene antecedentes quirúrgicos oculares previos (ej. Cirugía refractiva LASIK, Cirugía de cataratas) y antecedentes de medicamentos sistémicos crónicos (ej. Losartán, Metformina).
-  Ambos conjuntos son independientes y se desacoplan en:
-  - `patient_medical_antecedents` (antecedentes clínicos/patológicos).
-  - `patient_surgical_antecedents` (antecedentes quirúrgicos).
+- **Antecedentes personales ($P 	woheadrightarrow AP$):**
+  Un paciente también tiene un conjunto de antecedentes personales (ej. hipertensión arterial, cirugía refractiva LASIK, trauma ocular, uso crónico de corticoides), independiente de sus alergias y de sus antecedentes familiares.
+  Se desacopla en una tercera relación, `patient_antecedents(id PK, patient_id FK, antecedent_type, description, year_diagnosed)`.
+  La categoría del antecedente (`antecedent_type ENUM('PATOLOGICO','QUIRURGICO','TRAUMATICO','FARMACOLOGICO')`) es un atributo del mismo hecho y no un conjunto independiente, por lo que no genera una nueva dependencia multivaluada ni requiere tablas separadas por tipo.
 - **Separación de exámenes especializados independientes:**
   Cada examen diagnóstico (`oct_exams`, `visual_field_exams`, `pachymetry_exams`, `gonioscopy_exams`) responde a mediciones físicas y parámetros distintos. Desacoplarlos de la consulta principal y permitir múltiples instancias por ojo y técnica cumple de forma natural con los principios de 4FN.
 
