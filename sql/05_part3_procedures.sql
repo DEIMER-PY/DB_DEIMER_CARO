@@ -46,8 +46,9 @@ BEGIN
 END $$
 
 -- 4. Crear un procedimiento que liste todas las consultas de un paciente.
-DROP PROCEDURE IF EXISTS sp_list_visits_by_patient $$
-CREATE PROCEDURE sp_list_visits_by_patient(IN p_patient_id BIGINT)
+DELIMITER $$
+DROP PROCEDURE IF EXISTS  sp_get_patient_history $$
+CREATE PROCEDURE  sp_get_patient_history(IN p_patient_id BIGINT)
 BEGIN
     SELECT mv.id AS visit_id, mv.visit_date, mv.reason, mv.assessment, mv.plan,
            CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name
@@ -57,6 +58,8 @@ BEGIN
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC;
 END $$
+
+DELIMITER ;;
 
 -- 5. Crear un procedimiento que muestre todos los profesionales.
 DROP PROCEDURE IF EXISTS sp_list_all_professionals $$
