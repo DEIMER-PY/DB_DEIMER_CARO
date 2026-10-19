@@ -68,7 +68,7 @@ Para forzar un modo o cambiar el contenedor, use variables de entorno (`MYSQL_MO
 
 El script ejecutará automáticamente en el contenedor:
 1. `00_init_database.sql`: Crea la base de datos `oftalmologia_glaucoma_db` con codificación `utf8mb4`.
-2. `01_ddl_schema.sql`: Crea las 25 tablas relacionales en 4FN, 4 tablas de backup, llaves primarias, foráneas e índices.
+2. `01_ddl_schema.sql`: Crea las 32 tablas relacionales en 4FN, 5 tablas de backup, llaves primarias, foráneas e índices.
 3. `02_dml_seed_data.sql`: Carga el dataset clínico de prueba con pacientes, antecedentes, visitas, exámenes paraclínicos, tratamientos y controles.
 4. `03_part1_queries.sql`: Ejecuta las 50 consultas SQL.
 5. `04_part2_subqueries.sql`: Ejecuta las 50 subconsultas SQL.
@@ -154,11 +154,11 @@ El proyecto incluye el modelo lógico nativo [`diagrams/oftalmologia_model.mdj`]
 | **Linux** | `staruml diagrams/oftalmologia_model.mdj &` |
 
 ### Paso 2: Explorar los Diagramas Incluidos
-En el panel **Model Explorer** expanda el proyecto `TALLERDB_DEIMER_CARO` y el modelo de datos `oftalmologia_glaucoma_db`. Encontrará 29 entidades (25 relacionales + 4 de respaldo), 25 relaciones y 8 diagramas:
+En el panel **Model Explorer** expanda el proyecto `TALLERDB_DEIMER_CARO` y el modelo de datos `oftalmologia_glaucoma_db`. Encontrará 37 entidades (32 relacionales + 5 de respaldo), 33 relaciones y 8 diagramas:
 
 | Diagrama | Contenido |
 |---|---|
-| `0. Modelo lógico completo` | Las 25 tablas relacionales y sus 25 relaciones. Dos ejes: `patients` arriba y `medical_visits` abajo. |
+| `0. Modelo lógico completo` | Las 32 tablas relacionales y sus 33 relaciones. Dos ejes: `patients` arriba y `medical_visits` abajo. |
 | `1. Pacientes y ubicación` … `7. Auditoría y respaldo` | Un diagrama por módulo, con las tablas de otros módulos que participan en sus relaciones. |
 
 Cada columna muestra sus marcas: **PK** (clave primaria), **FK** (foránea), **U** (UNIQUE) y **N** (admite NULL), además de su tipo exacto (`VARCHAR(100)`, `DECIMAL(5,2)`, `ENUM(...)`). La documentación de cada entidad lista sus `CHECK`, `UNIQUE`, índices y `FOREIGN KEY`.

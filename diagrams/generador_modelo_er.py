@@ -35,24 +35,28 @@ T = {}
 def table(name, mod, desc, cols, cons=(), tag=''):
     T[name] = dict(name=name, mod=mod, desc=desc, cols=cols, cons=list(cons), tag=tag)
 
+# MÓDULO 1: Pacientes y ubicación
 table('departments', 'm1', 'Divisiones político-administrativas de primer nivel.', [
     ID('INT', 'Identificador del departamento'),
     C('name', 'VARCHAR(100)', key='UK', desc='Nombre del departamento (Santander, Antioquia)')],
     ['UNIQUE uq_department_name (name)'], 'catálogo')
+
 table('cities', 'm1', 'Municipios y ciudades de cada departamento.', [
     ID('INT', 'Identificador del municipio'),
     C('department_id', 'INT', key='FK', ref='departments.id', desc='Departamento al que pertenece'),
     C('name', 'VARCHAR(100)', desc='Nombre del municipio (Bucaramanga, Floridablanca)')],
     ['UNIQUE uq_city_department (department_id, name)'], 'catálogo')
-table('document_types', 'm1', 'Tipos legales de documento de identidad (compartido con profesionales).', [
+
+table('document_types', 'm1', 'Tipos legales de documento de identidad.', [
     ID('INT', 'Identificador del tipo de documento'),
     C('code', 'VARCHAR(10)', key='UK', desc='Código oficial (CC, TI, CE, PAS, RC)'),
     C('name', 'VARCHAR(50)', desc='Nombre completo del tipo de documento')],
     ['UNIQUE uq_document_type_code (code)'], 'catálogo')
-table('patients', 'm1', 'Datos demográficos del paciente atendido.', [
-    ID('BIGINT', 'Identificador único del paciente'),
+
+table('persons', 'm1', 'Super-tipo de identidad y datos demográficos base compartidos.', [
+    ID('BIGINT', 'Identificador único de la persona'),
     C('document_type_id', 'INT', key='FK', ref='document_types.id', desc='Tipo de documento'),
-    C('document_number', 'VARCHAR(30)', key='UK', desc='Número de documento'),
+    C('document_number', 'VARCHAR(30)', key='UK', desc='Número de identificación legal'),
     C('first_name', 'VARCHAR(100)', desc='Nombres'),
     C('last_name', 'VARCHAR(100)', desc='Apellidos'),
     C('birth_date', 'DATE', desc='Fecha de nacimiento'),
@@ -61,10 +65,24 @@ table('patients', 'm1', 'Datos demográficos del paciente atendido.', [
     C('address', 'VARCHAR(255)', True, desc='Dirección de residencia'),
     C('phone', 'VARCHAR(30)', True, desc='Teléfono de contacto'),
     C('email', 'VARCHAR(150)', True, key='UK', desc='Correo electrónico'),
+    C('created_at', 'DATETIME', default=CT, desc='Fecha de creación'),
+    C('updated_at', 'DATETIME', default=CT + ' ON UPDATE', desc='Última modificación')],
+    ['UNIQUE uq_person_document (document_number)', 'UNIQUE uq_person_email (email)',
+     'INDEX idx_persons_name (last_name, first_name)'])
+
+table('patients', 'm1', 'Sub-tipo clínico de pacientes atendidos (1:1 con persons).', [
+    ID('BIGINT', 'Identificador único del paciente'),
+    C('person_id', 'BIGINT', key='FK UK', ref='persons.id', desc='Persona asociada (1:0..1)'),
+    C('blood_type', "ENUM('O+','O-','A+','A-','B+','B-','AB+','AB-')", True, desc='Grupo sanguíneo y factor Rh'),
+    C('health_insurance', 'VARCHAR(100)', True, desc='Entidad Promotora de Salud (EPS / Aseguradora)'),
+    C('affiliation_type', "ENUM('COTIZANTE','BENEFICIARIO','PARTICULAR','SUBSIDIADO')", default="'COTIZANTE'", desc='Tipo de afiliación'),
+    C('occupation', 'VARCHAR(100)', True, desc='Ocupación o profesión'),
+    C('emergency_contact_name', 'VARCHAR(100)', True, desc='Nombre del contacto de emergencia'),
+    C('emergency_contact_phone', 'VARCHAR(30)', True, desc='Teléfono del contacto de emergencia'),
     C('created_at', 'DATETIME', default=CT, desc='Fecha de registro'),
     C('updated_at', 'DATETIME', default=CT + ' ON UPDATE', desc='Última modificación')],
-    ['UNIQUE uq_patient_document (document_number)', 'UNIQUE uq_patient_email (email)',
-     'INDEX idx_patients_name (last_name, first_name)'])
+    ['UNIQUE uq_patient_person (person_id)'])
+
 table('patient_allergies', 'm1', 'Alergias del paciente. Tabla separada por 4FN (paciente ↠ alergia).', [
     ID('BIGINT'),
     C('patient_id', 'BIGINT', key='FK', ref='patients.id', desc='Paciente'),
@@ -72,12 +90,14 @@ table('patient_allergies', 'm1', 'Alergias del paciente. Tabla separada por 4FN 
     C('reaction', 'VARCHAR(255)', True, desc='Reacción clínica manifestada'),
     C('severity', "ENUM('LEVE','MODERADA','SEVERA')", default="'MODERADA'", desc='Severidad de la reacción')],
     ['UNIQUE uq_patient_allergen (patient_id, allergen)'], 'entidad débil · 4FN')
+
 table('patient_family_histories', 'm1', 'Antecedentes familiares. Tabla separada por 4FN (paciente ↠ antecedente familiar).', [
     ID('BIGINT'),
     C('patient_id', 'BIGINT', key='FK', ref='patients.id', desc='Paciente'),
     C('condition_name', 'VARCHAR(150)', desc='Patología (glaucoma de ángulo abierto, DM2)'),
     C('relationship', 'VARCHAR(50)', desc='Parentesco (padre, madre, hermano)'),
     C('notes', 'TEXT', True, desc='Notas clínicas')], [], 'entidad débil · 4FN')
+
 table('patient_antecedents', 'm1', 'Antecedentes personales. Tabla separada por 4FN (paciente ↠ antecedente personal).', [
     ID('BIGINT'),
     C('patient_id', 'BIGINT', key='FK', ref='patients.id', desc='Paciente'),
@@ -85,26 +105,41 @@ table('patient_antecedents', 'm1', 'Antecedentes personales. Tabla separada por 
     C('description', 'TEXT', desc='Detalle (LASIK, hipertensión arterial)'),
     C('year_diagnosed', 'YEAR', True, desc='Año aproximado de diagnóstico')], [], 'entidad débil · 4FN')
 
+table('glaucoma_risk_factors', 'm1', 'Factores de riesgo específicos para glaucoma (aislados en 4FN).', [
+    ID('BIGINT'),
+    C('patient_id', 'BIGINT', key='FK', ref='patients.id', desc='Paciente evaluado'),
+    C('risk_factor', "ENUM('CCT_DELGADO','MIOPIA_ALTA','ANTECEDENTE_FAMILIAR_1ER_GRADO','HIPOTENSION_NOCTURNA','VASOESPASMO_MIGRAÑA','HEMORRAGIA_DISCO','SINDROME_PSEUDOEXFOLIATIVO','SINDROME_DISPERSION_PIGMENTARIA')", desc='Factor de riesgo estandarizado'),
+    C('notes', 'VARCHAR(255)', True, desc='Observaciones del factor de riesgo')],
+    ['UNIQUE uq_patient_risk_factor (patient_id, risk_factor)'], 'entidad débil · 4FN')
+
+# MÓDULO 2: Profesionales de salud y agendamiento
 table('specialties', 'm2', 'Especialidades y subespecialidades oftalmológicas.', [
     ID('INT', 'Identificador de especialidad'),
     C('name', 'VARCHAR(100)', key='UK', desc='Nombre (Glaucoma, Córnea, Retina)'),
     C('description', 'TEXT', True, desc='Descripción del área')],
     ['UNIQUE uq_specialty_name (name)'], 'catálogo')
-table('healthcare_professionals', 'm2', 'Oftalmólogos, optómetras y especialistas tratantes.', [
+
+table('healthcare_professionals', 'm2', 'Oftalmólogos, optómetras y especialistas tratantes (sub-tipo de persons).', [
     ID('BIGINT', 'Identificador del profesional'),
-    C('document_type_id', 'INT', key='FK', ref='document_types.id', desc='Tipo de documento'),
-    C('document_number', 'VARCHAR(30)', key='UK', desc='Número de documento'),
-    C('first_name', 'VARCHAR(100)', desc='Nombres'),
-    C('last_name', 'VARCHAR(100)', desc='Apellidos'),
-    C('medical_license', 'VARCHAR(50)', key='UK', desc='Registro médico'),
+    C('person_id', 'BIGINT', key='FK UK', ref='persons.id', desc='Persona asociada (1:0..1)'),
+    C('medical_license', 'VARCHAR(50)', key='UK', desc='Registro médico profesional'),
     C('specialty_id', 'INT', key='FK', ref='specialties.id', desc='Especialidad que ejerce'),
-    C('email', 'VARCHAR(150)', key='UK', desc='Correo institucional'),
-    C('phone', 'VARCHAR(30)', True, desc='Teléfono'),
     C('is_active', 'BOOLEAN', default='TRUE', desc='Disponible para atender'),
     C('created_at', 'DATETIME', default=CT, desc='Fecha de registro')],
-    ['UNIQUE uq_prof_document (document_number)', 'UNIQUE uq_prof_license (medical_license)',
-     'UNIQUE uq_prof_email (email)'])
+    ['UNIQUE uq_prof_person (person_id)', 'UNIQUE uq_prof_license (medical_license)'])
 
+table('appointments', 'm2', 'Agendamiento y programación de citas oftalmológicas.', [
+    ID('BIGINT', 'Identificador de la cita'),
+    C('patient_id', 'BIGINT', key='FK', ref='patients.id', desc='Paciente citado'),
+    C('professional_id', 'BIGINT', key='FK', ref='healthcare_professionals.id', desc='Profesional asignado'),
+    C('appointment_date', 'DATETIME', desc='Fecha y hora programada'),
+    C('appointment_type', "ENUM('PRIMERA_VEZ','CONTROL_GLAUCOMA','POST_QUIRURGICO','LECTURA_EXAMENES','URGENCIA')", default="'CONTROL_GLAUCOMA'", desc='Tipo de cita'),
+    C('status', "ENUM('PROGRAMADA','CONFIRMADA','ATENDIDA','CANCELADA','NO_ASISTIO')", default="'PROGRAMADA'", desc='Estado de la cita'),
+    C('reason', 'VARCHAR(255)', True, desc='Motivo de la cita'),
+    C('created_at', 'DATETIME', default=CT, desc='Fecha de agendamiento')],
+    ['INDEX idx_appointments_date (appointment_date)'])
+
+# MÓDULO 3: Historia clínica y consultas
 table('clinical_histories', 'm3', 'Expediente único del paciente (relación 1:1).', [
     ID('BIGINT', 'Identificador de la historia'),
     C('patient_id', 'BIGINT', key='FK UK', ref='patients.id', desc='Paciente dueño del expediente (1:1)'),
@@ -112,6 +147,7 @@ table('clinical_histories', 'm3', 'Expediente único del paciente (relación 1:1
     C('status', "ENUM('ACTIVA','ARCHIVADA','INACTIVA')", default="'ACTIVA'", desc='Estado del expediente'),
     C('created_at', 'DATETIME', default=CT, desc='Fecha de apertura')],
     ['UNIQUE uq_history_patient (patient_id)', 'UNIQUE uq_history_number (history_number)'])
+
 table('medical_visits', 'm3', 'Consulta clínica realizada; eje de exámenes, diagnósticos y tratamientos.', [
     ID('BIGINT', 'Identificador de la consulta'),
     C('clinical_history_id', 'BIGINT', key='FK', ref='clinical_histories.id', desc='Historia clínica'),
@@ -125,6 +161,7 @@ table('medical_visits', 'm3', 'Consulta clínica realizada; eje de exámenes, di
     C('created_at', 'DATETIME', default=CT, desc='Creación del registro'),
     C('updated_at', 'DATETIME', default=CT + ' ON UPDATE', desc='Última modificación')],
     ['INDEX idx_visits_date (visit_date)'])
+
 table('diagnoses', 'm3', 'Catálogo de diagnósticos CIE-10.', [
     ID('INT', 'Identificador del diagnóstico'),
     C('code', 'VARCHAR(20)', key='UK', desc='Código CIE-10 (H40.1, H40.2)'),
@@ -132,6 +169,7 @@ table('diagnoses', 'm3', 'Catálogo de diagnósticos CIE-10.', [
     C('is_glaucoma_type', 'BOOLEAN', default='FALSE', desc='Indica si es un tipo de glaucoma'),
     C('description', 'TEXT', True, desc='Criterios diagnósticos')],
     ['UNIQUE uq_diagnosis_code (code)'], 'catálogo')
+
 table('visit_diagnoses', 'm3', 'Diagnósticos de cada consulta. Resuelve la relación N:M consulta–diagnóstico.', [
     ID('BIGINT'),
     C('visit_id', 'BIGINT', key='FK', ref='medical_visits.id', desc='Consulta'),
@@ -139,6 +177,7 @@ table('visit_diagnoses', 'm3', 'Diagnósticos de cada consulta. Resuelve la rela
     C('is_primary', 'BOOLEAN', default='FALSE', desc='Diagnóstico principal'),
     C('notes', 'VARCHAR(255)', True, desc='Observaciones del caso')],
     ['UNIQUE uq_visit_diag (visit_id, diagnosis_id)'], 'resuelve N:M «diagnostica»')
+
 table('clinical_documents', 'm3', 'Archivos adjuntos: retinografías, PDF de perimetría, firmas.', [
     ID('BIGINT', 'Identificador del archivo'),
     C('clinical_history_id', 'BIGINT', key='FK', ref='clinical_histories.id', desc='Historia clínica'),
@@ -148,6 +187,7 @@ table('clinical_documents', 'm3', 'Archivos adjuntos: retinografías, PDF de per
     C('uploaded_at', 'DATETIME', default=CT, desc='Fecha de carga'),
     C('deleted_by', 'VARCHAR(100)', True, desc='Usuario que lo eliminó')])
 
+# MÓDULO 4: Exámenes oftalmológicos
 table('intraocular_pressures', 'm4', 'Tonometría: presión intraocular por ojo, en mmHg.', [
     ID('BIGINT', 'Identificador de la medición'), VISIT,
     C('eye', EYE2, desc='Ojo evaluado: derecho (OD) o izquierdo (OI)'),
@@ -157,6 +197,7 @@ table('intraocular_pressures', 'm4', 'Tonometría: presión intraocular por ojo,
     C('notes', 'VARCHAR(255)', True, desc='Observaciones')],
     ['CHECK chk_iop_pressure (pressure > 0 AND pressure <= 80)', "CHECK chk_iop_eye (eye IN ('OD','OI'))",
      'INDEX idx_iop_eye_pressure (eye, pressure)'], 'entidad débil')
+
 table('pachymetry_exams', 'm4', 'Paquimetría: espesor corneal central (CCT) en µm.', [
     ID('BIGINT', 'Identificador del examen'), VISIT,
     C('eye', EYE2, desc='Ojo evaluado'),
@@ -165,6 +206,7 @@ table('pachymetry_exams', 'm4', 'Paquimetría: espesor corneal central (CCT) en 
     C('exam_date', 'DATETIME', default=CT, desc='Fecha del examen')],
     ['CHECK chk_pachy_thickness (corneal_thickness > 0 AND corneal_thickness <= 1000)',
      "CHECK chk_pachy_eye (eye IN ('OD','OI'))"], 'entidad débil')
+
 table('gonioscopy_exams', 'm4', 'Gonioscopía: grado del ángulo iridocorneal (escala de Shaffer).', [
     ID('BIGINT', 'Identificador del examen'), VISIT,
     C('eye', EYE2, desc='Ojo evaluado'),
@@ -173,6 +215,7 @@ table('gonioscopy_exams', 'm4', 'Gonioscopía: grado del ángulo iridocorneal (e
     C('findings', 'TEXT', True, desc='Sinequias, neovascularización'),
     C('exam_date', 'DATETIME', default=CT, desc='Fecha del examen')],
     ["CHECK chk_gonio_eye (eye IN ('OD','OI'))"], 'entidad débil')
+
 table('oct_exams', 'm4', 'Tomografía de coherencia óptica: capa de fibras nerviosas (RNFL) y excavación.', [
     ID('BIGINT', 'Identificador del OCT'), VISIT,
     C('eye', EYE2, desc='Ojo evaluado'),
@@ -186,6 +229,7 @@ table('oct_exams', 'm4', 'Tomografía de coherencia óptica: capa de fibras nerv
     ["CHECK chk_oct_eye (eye IN ('OD','OI'))", 'CHECK chk_oct_rnfl (rnfl_average BETWEEN 0 AND 300)',
      'CHECK chk_oct_cup_disc (cup_to_disc_ratio IS NULL OR cup_to_disc_ratio BETWEEN 0 AND 1)',
      'INDEX idx_oct_exam_date (exam_date)'], 'entidad débil')
+
 table('visual_field_exams', 'm4', 'Campimetría computarizada: índices MD, PSD y VFI.', [
     ID('BIGINT', 'Identificador del campo visual'), VISIT,
     C('eye', EYE2, desc='Ojo evaluado'),
@@ -201,14 +245,47 @@ table('visual_field_exams', 'm4', 'Campimetría computarizada: índices MD, PSD 
     ["CHECK chk_vf_eye (eye IN ('OD','OI'))", 'CHECK chk_vf_vfi (visual_field_index_vfi BETWEEN 0 AND 100)',
      'INDEX idx_vf_exam_date (exam_date)'], 'entidad débil')
 
+table('visual_acuity_exams', 'm4', 'Agudeza visual lejana/cercana y refracción clínica.', [
+    ID('BIGINT', 'Identificador del examen de agudeza'), VISIT,
+    C('eye', EYE2, desc='Ojo evaluado'),
+    C('sphere', 'DECIMAL(4,2)', True, desc='Esfera refracción (dioptrías)'),
+    C('cylinder', 'DECIMAL(4,2)', True, desc='Cilindro refracción (dioptrías)'),
+    C('axis', 'INT', True, desc='Eje del astigmatismo (0-180 grados)'),
+    C('uncorrected_va', 'VARCHAR(20)', desc='Agudeza visual sin corrección (Snellen 20/XX)'),
+    C('corrected_va', 'VARCHAR(20)', desc='Agudeza visual con corrección'),
+    C('pinhole_va', 'VARCHAR(20)', True, desc='Agudeza visual con agujero estenopeico'),
+    C('exam_date', 'DATETIME', default=CT, desc='Fecha del examen')],
+    ["CHECK chk_va_eye (eye IN ('OD','OI'))", 'CHECK chk_va_axis (axis IS NULL OR (axis >= 0 AND axis <= 180))'], 'entidad débil')
+
+table('biomicroscopy_exams', 'm4', 'Biomicroscopía en lámpara de hendidura: profundidad y estructuras.', [
+    ID('BIGINT', 'Identificador de la biomicroscopía'), VISIT,
+    C('eye', EYE2, desc='Ojo evaluado'),
+    C('cornea_status', 'VARCHAR(100)', default="'TRANSPARENTE'", desc='Estado de la córnea'),
+    C('anterior_chamber_depth', "ENUM('VAN_HERICK_I','VAN_HERICK_II','VAN_HERICK_III','VAN_HERICK_IV')", default="'VAN_HERICK_IV'", desc='Profundidad de cámara periférica (Van Herick)'),
+    C('iris_status', 'VARCHAR(100)', default="'NORMAL'", desc='Estado del iris'),
+    C('lens_status', "ENUM('TRANSPARENTE','CATARATA_NUCLEAR','CATARATA_CORTICAL','CATARATA_SUBCAPSULAR','PSEUDOFAQUICO','AFAQUICO')", default="'TRANSPARENTE'", desc='Estado del cristalino'),
+    C('pseudoexfoliation_present', 'BOOLEAN', default='FALSE', desc='Presencia de material pseudoexfoliativo'),
+    C('pigment_dispersion_present', 'BOOLEAN', default='FALSE', desc='Presencia de dispersión pigmentaria'),
+    C('exam_date', 'DATETIME', default=CT, desc='Fecha del examen')],
+    ["CHECK chk_biomicro_eye (eye IN ('OD','OI'))"], 'entidad débil')
+
+# MÓDULO 5: Tratamientos y procedimientos
+table('medication_classes', 'm5', 'Catálogo de familias farmacológicas para glaucoma (3FN).', [
+    ID('INT', 'Identificador de la clase farmacológica'),
+    C('name', 'VARCHAR(100)', key='UK', desc='Nombre de la familia farmacológica'),
+    C('mechanism_of_action', 'TEXT', True, desc='Mecanismo de acción hipotensora')],
+    ['UNIQUE uq_med_class_name (name)'], 'catálogo')
+
 table('medications', 'm5', 'Catálogo de medicamentos hipotensores oculares.', [
     ID('INT', 'Identificador del medicamento'),
+    C('medication_class_id', 'INT', key='FK', ref='medication_classes.id', desc='Clase farmacológica (3FN)'),
     C('name', 'VARCHAR(150)', key='UK', desc='Nombre comercial'),
     C('generic_name', 'VARCHAR(150)', desc='Denominación común internacional'),
     C('concentration', 'VARCHAR(50)', desc='Concentración (0.005%, 0.5%)'),
     C('presentation', 'VARCHAR(100)', default="'Frasco gotero x 2.5 ml'", desc='Presentación farmacéutica'),
     C('is_active', 'BOOLEAN', default='TRUE', desc='Vigente en el catálogo')],
     ['UNIQUE uq_medication_name (name)'], 'catálogo')
+
 table('treatments', 'm5', 'Prescripción farmacológica emitida en una consulta.', [
     ID('BIGINT', 'Identificador de la prescripción'), VISIT,
     C('medication_id', 'INT', key='FK', ref='medications.id', desc='Medicamento prescrito'),
@@ -221,14 +298,24 @@ table('treatments', 'm5', 'Prescripción farmacológica emitida en una consulta.
     C('notes', 'TEXT', True, desc='Indicaciones o efectos adversos')],
     ['CHECK chk_treatment_dates (end_date IS NULL OR end_date >= start_date)',
      'INDEX idx_treatments_active (is_active)'])
-table('procedures', 'm5', 'Procedimientos láser o quirúrgicos (SLT, iridotomía, trabeculectomía).', [
-    ID('BIGINT', 'Identificador del procedimiento'), VISIT,
+
+table('procedure_types', 'm5', 'Catálogo de procedimientos quirúrgicos y láser CUPS (3FN).', [
+    ID('INT', 'Identificador del tipo de procedimiento'),
+    C('code', 'VARCHAR(20)', key='UK', desc='Código oficial o CUPS'),
     C('name', 'VARCHAR(150)', desc='Nombre del procedimiento'),
+    C('category', "ENUM('LASER','QUIRURGICO','DIAGNOSTICO')", default="'QUIRURGICO'", desc='Categoría del procedimiento'),
+    C('description', 'TEXT', True, desc='Descripción técnica')],
+    ['UNIQUE uq_procedure_type_code (code)'], 'catálogo')
+
+table('procedures', 'm5', 'Procedimientos láser o quirúrgicos realizados (SLT, trabeculectomía).', [
+    ID('BIGINT', 'Identificador del procedimiento'), VISIT,
+    C('procedure_type_id', 'INT', key='FK', ref='procedure_types.id', desc='Tipo de procedimiento realizado (3FN)'),
     C('eye', EYE3, desc='Ojo intervenido'),
     C('procedure_date', 'DATETIME', default=CT, desc='Fecha y hora'),
     C('complications', 'TEXT', True, desc='Complicaciones'),
     C('results', 'TEXT', True, desc='Resultados inmediatos')])
 
+# MÓDULO 6: Seguimiento de glaucoma
 table('glaucoma_records', 'm6', 'Ficha de glaucoma del paciente: PIO objetivo y estadio.', [
     ID('BIGINT', 'Identificador de la ficha'),
     C('patient_id', 'BIGINT', key='FK UK', ref='patients.id', desc='Paciente (máximo una ficha)'),
@@ -239,6 +326,7 @@ table('glaucoma_records', 'm6', 'Ficha de glaucoma del paciente: PIO objetivo y 
     C('notes', 'TEXT', True, desc='Factores de riesgo')],
     ['UNIQUE uq_glaucoma_patient (patient_id)', 'CHECK chk_target_iop_od (target_iop_od > 0 AND target_iop_od <= 50)',
      'CHECK chk_target_iop_oi (target_iop_oi > 0 AND target_iop_oi <= 50)'])
+
 table('glaucoma_controls', 'm6', 'Control periódico de progresión y adherencia.', [
     ID('BIGINT', 'Identificador del control'),
     C('glaucoma_record_id', 'BIGINT', key='FK', ref='glaucoma_records.id', desc='Ficha de glaucoma'),
@@ -248,6 +336,7 @@ table('glaucoma_controls', 'm6', 'Control periódico de progresión y adherencia
     C('adherence_score', "ENUM('EXCELENTE','BUENA','REGULAR','MALA')", default="'BUENA'", desc='Adherencia a las gotas'),
     C('notes', 'TEXT', True, desc='Ajustes al tratamiento')])
 
+# MÓDULO 7: Auditoría y respaldo
 table('audit_logs', 'm7', 'Bitácora inmutable que llenan los triggers. Se relaciona con cualquier tabla por (table_name, record_id), sin FK.', [
     ID('BIGINT', 'Identificador del evento'),
     C('table_name', 'VARCHAR(100)', desc='Tabla afectada'),
@@ -259,10 +348,12 @@ table('audit_logs', 'm7', 'Bitácora inmutable que llenan los triggers. Se relac
     C('changed_at', 'DATETIME', default=CT, desc='Momento del cambio')],
     ['INDEX idx_audit_table_date (table_name, changed_at)'], 'auditoría')
 
-BACKUPS = [('patients_backup', 'patients', 'trg_bd_patients_backup'),
+BACKUPS = [('persons_backup', 'persons', 'trg_bd_persons_backup'),
+           ('patients_backup', 'patients', 'trg_bd_patients_backup'),
            ('medical_visits_backup', 'medical_visits', 'trg_bd_visits_backup'),
            ('treatments_backup', 'treatments', 'trg_bd_treatments_backup'),
            ('oct_exams_backup', 'oct_exams', 'trg_bd_oct_delete_backup')]
+
 for bname, src, trg in BACKUPS:
     cols = []
     for c in T[src]['cols']:
@@ -275,13 +366,17 @@ for bname, src, trg in BACKUPS:
 # (hija, columna FK, padre, verbo, ON DELETE)
 FKS = [
     ('cities', 'department_id', 'departments', 'pertenece a', 'RESTRICT'),
-    ('patients', 'document_type_id', 'document_types', 'identifica', 'RESTRICT'),
-    ('patients', 'city_id', 'cities', 'reside en', 'RESTRICT'),
+    ('persons', 'document_type_id', 'document_types', 'identifica', 'RESTRICT'),
+    ('persons', 'city_id', 'cities', 'reside en', 'RESTRICT'),
+    ('patients', 'person_id', 'persons', 'especializa', 'RESTRICT'),
     ('patient_allergies', 'patient_id', 'patients', 'presenta', 'CASCADE'),
     ('patient_family_histories', 'patient_id', 'patients', 'reporta', 'CASCADE'),
     ('patient_antecedents', 'patient_id', 'patients', 'registra', 'CASCADE'),
-    ('healthcare_professionals', 'document_type_id', 'document_types', 'identifica', 'RESTRICT'),
+    ('glaucoma_risk_factors', 'patient_id', 'patients', 'pondera', 'CASCADE'),
+    ('healthcare_professionals', 'person_id', 'persons', 'identifica', 'RESTRICT'),
     ('healthcare_professionals', 'specialty_id', 'specialties', 'ejerce', 'RESTRICT'),
+    ('appointments', 'patient_id', 'patients', 'agenda', 'CASCADE'),
+    ('appointments', 'professional_id', 'healthcare_professionals', 'atiende', 'RESTRICT'),
     ('clinical_histories', 'patient_id', 'patients', 'tiene', 'RESTRICT'),
     ('medical_visits', 'clinical_history_id', 'clinical_histories', 'acumula', 'RESTRICT'),
     ('medical_visits', 'professional_id', 'healthcare_professionals', 'atiende', 'RESTRICT'),
@@ -293,20 +388,25 @@ FKS = [
     ('gonioscopy_exams', 'visit_id', 'medical_visits', 'inspecciona', 'CASCADE'),
     ('oct_exams', 'visit_id', 'medical_visits', 'escanea', 'CASCADE'),
     ('visual_field_exams', 'visit_id', 'medical_visits', 'cuantifica', 'CASCADE'),
+    ('visual_acuity_exams', 'visit_id', 'medical_visits', 'determina', 'CASCADE'),
+    ('biomicroscopy_exams', 'visit_id', 'medical_visits', 'examina', 'CASCADE'),
+    ('medications', 'medication_class_id', 'medication_classes', 'clasifica', 'RESTRICT'),
     ('treatments', 'visit_id', 'medical_visits', 'prescribe', 'CASCADE'),
     ('treatments', 'medication_id', 'medications', 'suministra', 'RESTRICT'),
     ('procedures', 'visit_id', 'medical_visits', 'realiza', 'CASCADE'),
+    ('procedures', 'procedure_type_id', 'procedure_types', 'tipifica', 'RESTRICT'),
     ('glaucoma_records', 'patient_id', 'patients', 'posee', 'RESTRICT'),
     ('glaucoma_controls', 'glaucoma_record_id', 'glaucoma_records', 'monitorea', 'CASCADE'),
     ('glaucoma_controls', 'visit_id', 'medical_visits', 'asocia', 'CASCADE'),
 ]
+
 def col_of(t, c):
     return next(x for x in T[t]['cols'] if x['name'] == c)
 def is_unique_fk(t, c):
     return 'UK' in col_of(t, c)['key'].split()
 for ch, c, p, v, od in FKS:
     T[ch]['cons'].append(f'FOREIGN KEY ({c}) REFERENCES {p}(id) ON UPDATE CASCADE ON DELETE {od}')
-assert len(FKS) == 25
+assert len(FKS) == 33
 
 # ----------------------------------------------------------------------------- utilidades SVG
 CW = 7.25  # ancho aproximado de un carácter mono a 12px
@@ -346,22 +446,25 @@ def der_box_width(t, stub):
     return math.ceil(m)
 
 DER_LAYOUT = {
-    'm1': [['departments'], ['document_types', 'cities'], ['patients'],
-           ['patient_allergies', 'patient_family_histories', 'patient_antecedents']],
-    'm2': [['document_types'], ['healthcare_professionals'], ['specialties']],
+    'm1': [['departments'], ['document_types', 'cities'], ['persons'], ['patients'],
+           ['patient_allergies', 'patient_family_histories', 'patient_antecedents', 'glaucoma_risk_factors']],
+    'm2': [['persons', 'specialties'], ['healthcare_professionals'], ['appointments'], ['patients']],
     'm3': [['patients', 'healthcare_professionals'], ['clinical_histories'], ['medical_visits', 'clinical_documents'],
            ['visit_diagnoses'], ['diagnoses']],
     'm4': [['intraocular_pressures', 'pachymetry_exams', 'gonioscopy_exams'], ['medical_visits'],
-           ['oct_exams', 'visual_field_exams']],
-    'm5': [['medical_visits'], ['treatments', 'procedures'], ['medications']],
+           ['oct_exams', 'visual_field_exams'], ['visual_acuity_exams', 'biomicroscopy_exams']],
+    'm5': [['medication_classes', 'procedure_types'], ['medications'], ['treatments', 'procedures'], ['medical_visits']],
     'm6': [['patients'], ['glaucoma_records', 'glaucoma_controls'], ['medical_visits']],
-    'm7': [['audit_logs'], ['patients_backup', 'medical_visits_backup'], ['treatments_backup', 'oct_exams_backup']],
+    'm7': [['audit_logs'], ['persons_backup', 'patients_backup', 'medical_visits_backup'], ['treatments_backup', 'oct_exams_backup']],
 }
-# desplazamientos verticales opcionales por tabla (para alinear o despejar rutas)
-DER_DY = {('m3', 'healthcare_professionals'): 150, ('m3', 'clinical_documents'): 30, ('m3', 'diagnoses'): 38,
-          ('m4', 'medical_visits'): 120, ('m5', 'medical_visits'): 60, ('m5', 'medications'): 38,
-          ('m6', 'medical_visits'): 170, ('m2', 'document_types'): 19, ('m2', 'specialties'): 114,
-          ('m1', 'departments'): 154}
+
+DER_DY = {
+    ('m1', 'departments'): 154, ('m1', 'cities'): 40,
+    ('m2', 'specialties'): 114, ('m2', 'appointments'): 40,
+    ('m3', 'healthcare_professionals'): 150, ('m3', 'clinical_documents'): 30, ('m3', 'diagnoses'): 38,
+    ('m4', 'medical_visits'): 120, ('m5', 'medical_visits'): 60, ('m5', 'medications'): 38,
+    ('m6', 'medical_visits'): 170
+}
 
 def render_der(mod):
     cols = DER_LAYOUT[mod]
@@ -369,12 +472,11 @@ def render_der(mod):
     colw = [max(der_box_width(t, stub(t)) for t in c) for c in cols]
     where = {t: i for i, c in enumerate(cols) for t in c}
     edges = [f for f in FKS if f[0] in where and T[f[0]]['mod'] == mod]
-    # canal vertical de cada arista
     def gap_of(e):
         ci, pi = where[e[0]], where[e[2]]
-        if pi > ci: return ci          # el padre está a la derecha: hueco tras la columna hija
-        if pi < ci: return ci - 1      # el padre está a la izquierda: hueco antes de la hija
-        return ci                      # misma columna: canal a la derecha
+        if pi > ci: return ci
+        if pi < ci: return ci - 1
+        return ci
     gaps = {}
     for e in edges: gaps.setdefault(gap_of(e), []).append(e)
     gapw = [70 + 16 * len(gaps.get(i, [])) for i in range(len(cols))]
@@ -392,9 +494,7 @@ def render_der(mod):
             y += h + 40
     b = Bounds(); out = []
     rowy = lambda t, cname: pos[t][1] + HEAD + ([c['name'] for c in T[t]['cols']].index(cname)) * ROW + ROW / 2 + 2
-    # aristas
-    gi = {}
-    marks = []
+    gi = {}; marks = []
     for e in sorted(edges, key=lambda e: (gap_of(e), rowy(e[0], e[1]))):
         ch, c, p, verb, od = e
         g = gap_of(e); k = gi.get(g, 0); gi[g] = k + 1
@@ -414,10 +514,8 @@ def render_der(mod):
         uniq = is_unique_fk(ch, c)
         card = '1 : 0..1' if uniq else '1 : N'
         out.append(f"<path class='edge nonid' d='{d}'><title>{E(ch)}.{E(c)} → {E(p)}.id ({E(verb)}) · {card} · ON DELETE {od}</title></path>")
-        # extremo padre: exactamente uno
         marks.append(f"<line class='mk' x1='{x1 + s1 * 9:.1f}' y1='{yp - 6:.1f}' x2='{x1 + s1 * 9:.1f}' y2='{yp + 6:.1f}'/>"
                      f"<line class='mk' x1='{x1 + s1 * 14:.1f}' y1='{yp - 6:.1f}' x2='{x1 + s1 * 14:.1f}' y2='{yp + 6:.1f}'/>")
-        # extremo hijo
         if uniq:
             marks.append(f"<line class='mk' x1='{x0 + s0 * 9:.1f}' y1='{yc - 6:.1f}' x2='{x0 + s0 * 9:.1f}' y2='{yc + 6:.1f}'/>"
                          f"<circle class='mkc' cx='{x0 + s0 * 18:.1f}' cy='{yc:.1f}' r='4.2'/>")
@@ -426,7 +524,6 @@ def render_der(mod):
                          f"<circle class='mkc' cx='{x0 + s0 * 18:.1f}' cy='{yc:.1f}' r='4.2'/>")
         b.add(min(x0, cx, x1) - 4, min(yc, yp) - 8, max(x0, cx, x1) + 4, max(yc, yp) + 8)
     out += marks
-    # tablas
     for t, (x, y, w, h) in pos.items():
         color = MODS[T[t]['mod']][1]
         st = stub(t)
@@ -454,7 +551,7 @@ def render_der(mod):
             extra = " text-decoration='underline'" if bd in ('PK', 'PF') else ''
             nm = c['name'] + ('' if not c['null'] else '?')
             g.append(f"<text class='{ncls}' x='{x + PADX + 24}' y='{ty}' font-size='12'{extra}>{E(c['name'])}"
-                     f"{'<tspan class=\"mu\">?</tspan>' if c['null'] else ''}<title>{E(c['type'])}{' NULL' if c['null'] else ' NOT NULL'}{(' DEFAULT ' + c['default']) if c['default'] else ''}</title></text>")
+                     f"{'<tspan class="mu">?</tspan>' if c['null'] else ''}<title>{E(c['type'])}{' NULL' if c['null'] else ' NOT NULL'}{(' DEFAULT ' + c['default']) if c['default'] else ''}</title></text>")
             g.append(f"<text class='mu' x='{x + w - PADX}' y='{ty}' font-size='11' text-anchor='end'>{E(short_type(c['type']))}</text>")
         out.append(''.join(g))
         b.add(x, y, x + w, y + h)
@@ -462,19 +559,25 @@ def render_der(mod):
     return svg, w, len([t for t in pos if not stub(t)])
 
 # ----------------------------------------------------------------------------- Modelo conceptual (Chen)
-# entidades: {nombre: (x, y)} · relaciones: (verbo, A, cardA, B, cardB, pos_rombo|None, atributos|None)
 CHEN = {
-    'm1': dict(ents={'patients': (520, 300), 'document_types': (0, 100), 'cities': (0, 500), 'departments': (0, 760),
-                     'patient_allergies': (1080, 100), 'patient_family_histories': (1080, 300), 'patient_antecedents': (1080, 500)},
-               rels=[('identifica', 'document_types', '1', 'patients', 'N', None, None),
-                     ('reside en', 'cities', '1', 'patients', 'N', None, None),
-                     ('pertenece a', 'cities', 'N', 'departments', '1', None, None),
+    'm1': dict(ents={'departments': (0, 760), 'cities': (0, 500), 'document_types': (0, 100),
+                     'persons': (520, 300), 'patients': (1080, 300),
+                     'patient_allergies': (1600, 100), 'patient_family_histories': (1600, 300),
+                     'patient_antecedents': (1600, 500), 'glaucoma_risk_factors': (1600, 700)},
+               rels=[('pertenece a', 'cities', 'N', 'departments', '1', None, None),
+                     ('documenta', 'document_types', '1', 'persons', 'N', None, None),
+                     ('reside en', 'cities', '1', 'persons', 'N', None, None),
+                     ('especializa', 'persons', '1', 'patients', '0..1', None, None),
                      ('presenta', 'patients', '1', 'patient_allergies', 'N', None, None),
                      ('reporta', 'patients', '1', 'patient_family_histories', 'N', None, None),
-                     ('registra', 'patients', '1', 'patient_antecedents', 'N', None, None)]),
-    'm2': dict(ents={'document_types': (0, 0), 'healthcare_professionals': (520, 0), 'specialties': (1040, 0)},
-               rels=[('identifica', 'document_types', '1', 'healthcare_professionals', 'N', None, None),
-                     ('ejerce', 'healthcare_professionals', 'N', 'specialties', '1', None, None)]),
+                     ('registra', 'patients', '1', 'patient_antecedents', 'N', None, None),
+                     ('pondera', 'patients', '1', 'glaucoma_risk_factors', 'N', None, None)]),
+    'm2': dict(ents={'persons': (0, 150), 'specialties': (520, 0), 'healthcare_professionals': (520, 300),
+                     'appointments': (1080, 300), 'patients': (1080, 0)},
+               rels=[('ejerce', 'healthcare_professionals', 'N', 'specialties', '1', None, None),
+                     ('identifica', 'persons', '1', 'healthcare_professionals', '0..1', None, None),
+                     ('agenda', 'patients', '1', 'appointments', 'N', None, None),
+                     ('atiende', 'healthcare_professionals', '1', 'appointments', 'N', None, None)]),
     'm3': dict(ents={'patients': (0, 0), 'clinical_histories': (520, 0), 'clinical_documents': (1040, 0),
                      'healthcare_professionals': (0, 300), 'medical_visits': (520, 300), 'diagnoses': (1040, 300)},
                rels=[('tiene', 'patients', '1', 'clinical_histories', '1', None, None),
@@ -482,17 +585,23 @@ CHEN = {
                      ('acumula', 'clinical_histories', '1', 'medical_visits', 'N', None, None),
                      ('atiende', 'healthcare_professionals', '1', 'medical_visits', 'N', None, None),
                      ('diagnostica', 'medical_visits', 'N', 'diagnoses', 'M', None, ['is_primary', 'notes'])]),
-    'm4': dict(ents={'medical_visits': (520, 280), 'intraocular_pressures': (0, 60), 'pachymetry_exams': (0, 500),
-                     'gonioscopy_exams': (1040, 60), 'oct_exams': (1040, 500), 'visual_field_exams': (520, 680)},
+    'm4': dict(ents={'medical_visits': (520, 350), 'intraocular_pressures': (0, 60), 'pachymetry_exams': (0, 350),
+                     'gonioscopy_exams': (0, 640), 'oct_exams': (1040, 60), 'visual_field_exams': (1040, 350),
+                     'visual_acuity_exams': (520, 80), 'biomicroscopy_exams': (1040, 640)},
                rels=[('mide', 'medical_visits', '1', 'intraocular_pressures', 'N', None, None),
                      ('evalúa', 'medical_visits', '1', 'pachymetry_exams', 'N', None, None),
                      ('inspecciona', 'medical_visits', '1', 'gonioscopy_exams', 'N', None, None),
                      ('escanea', 'medical_visits', '1', 'oct_exams', 'N', None, None),
-                     ('cuantifica', 'medical_visits', '1', 'visual_field_exams', 'N', None, None)]),
-    'm5': dict(ents={'medical_visits': (0, 150), 'treatments': (520, 0), 'procedures': (520, 300), 'medications': (1040, 0)},
-               rels=[('prescribe', 'medical_visits', '1', 'treatments', 'N', None, None),
-                     ('realiza', 'medical_visits', '1', 'procedures', 'N', None, None),
-                     ('suministra', 'medications', '1', 'treatments', 'N', None, None)]),
+                     ('cuantifica', 'medical_visits', '1', 'visual_field_exams', 'N', None, None),
+                     ('determina', 'medical_visits', '1', 'visual_acuity_exams', 'N', None, None),
+                     ('examina', 'medical_visits', '1', 'biomicroscopy_exams', 'N', None, None)]),
+    'm5': dict(ents={'medication_classes': (0, 0), 'medications': (520, 0), 'treatments': (1040, 0),
+                     'procedure_types': (0, 350), 'procedures': (520, 350), 'medical_visits': (1040, 350)},
+               rels=[('clasifica', 'medication_classes', '1', 'medications', 'N', None, None),
+                     ('suministra', 'medications', '1', 'treatments', 'N', None, None),
+                     ('prescribe', 'medical_visits', '1', 'treatments', 'N', None, None),
+                     ('tipifica', 'procedure_types', '1', 'procedures', 'N', None, None),
+                     ('realiza', 'medical_visits', '1', 'procedures', 'N', None, None)]),
     'm6': dict(ents={'patients': (0, 0), 'glaucoma_records': (520, 0), 'glaucoma_controls': (520, 300), 'medical_visits': (1040, 300)},
                rels=[('posee', 'patients', '1', 'glaucoma_records', '0..1', None, None),
                      ('monitorea', 'glaucoma_records', '1', 'glaucoma_controls', 'N', None, None),
@@ -522,7 +631,7 @@ def render_chen(mod):
             tx, ty = clip_diamond(dx_, dy_, hw, hh, -ux, -uy)
             lines.append(f"<line class='cl' x1='{sx:.1f}' y1='{sy:.1f}' x2='{tx:.1f}' y2='{ty:.1f}'/>")
             nx, ny = -uy, ux
-            if ny > 0.01 or (abs(ny) <= 0.01 and nx < 0): nx, ny = -nx, -ny  # etiqueta arriba / a la derecha
+            if ny > 0.01 or (abs(ny) <= 0.01 and nx < 0): nx, ny = -nx, -ny
             lx, ly = sx + ux * 22 + nx * 13, sy + uy * 22 + ny * 13 + 4
             cards.append(f"<text class='fg cd' x='{lx:.1f}' y='{ly:.1f}' font-size='12' font-weight='700' text-anchor='middle'>{card}</text>")
             b.add(lx - 14, ly - 12, lx + 14, ly + 4)
@@ -536,7 +645,6 @@ def render_chen(mod):
             b.add(ax_ - aw / 2, ay_ - ah / 2, ax_ + aw / 2, ay_ + ah / 2)
         diamond = (f"<polygon class='rel' points='{dx_},{dy_ - hh} {dx_ + hw:.1f},{dy_} {dx_},{dy_ + hh} {dx_ - hw:.1f},{dy_}'/>"
                    f"<text class='fg' x='{dx_}' y='{dy_ + 4}' font-size='12' text-anchor='middle'>{E(verb)}</text>")
-        # una relación N:M con atributos es la tabla asociativa que tiene FK hacia ambas entidades
         assoc = [t for t in T if {p for ch, c, p, v, od in FKS if ch == t} == {A, B}] if attrs else []
         if assoc:
             t = assoc[0]
@@ -561,7 +669,6 @@ def render_chen(mod):
     return svg, w
 
 def render_chen_m7():
-    """Auditoría y respaldo: sin FK. Se dibujan los vínculos lógicos que crean los triggers."""
     b = Bounds(); out = []; color = MODS['m7'][1]
     def ent(name, x, y, own=True, label=None):
         label = label or name; w = ent_w(label)
@@ -594,32 +701,31 @@ def render_rel(mod):
     for t in [x for x in T if T[x]['mod'] == mod]:
         d = T[t]
         parts = []
-        for c in d['cols']:
-            ks = c['key'].split()
-            if 'PK' in ks: parts.append(f"<span class=\"pk\">{E(c['name'])}</span>")
-            elif 'FK' in ks: parts.append(f"<span class=\"fk\">{E(c['name'])}</span>")
-            else: parts.append(E(c['name']))
+        for col in d['cols']:
+            ks = col['key'].split()
+            if 'PK' in ks: parts.append(f'<span class="pk">{E(col["name"])}</span>')
+            elif 'FK' in ks: parts.append(f'<span class="fk">{E(col["name"])}</span>')
+            else: parts.append(E(col['name']))
         rows = []
-        for c in d['cols']:
-            kk = ''.join(f"<span class=\"k k-{k.lower()}\">{k}</span>" for k in c['key'].split())
-            rows.append(f"<tr><td class=\"mono\">{E(c['name'])}</td><td class=\"mono t\">{E(c['type'])}</td>"
-                        f"<td>{'Sí' if c['null'] else 'No'}</td><td>{kk}</td><td class=\"mono r\">{E(c['ref'])}</td>"
-                        f"<td class=\"mono t\">{E(c['default'])}</td><td class=\"dsc\">{E(c['desc'])}</td></tr>")
-        tag = f"<span class=\"tag\">{E(d['tag'])}</span>" if d['tag'] else ''
-        cons = ''.join(f"<li class=\"mono\">{E(x)}</li>" for x in d['cons'])
-        cards.append(f"<article class=\"tcard\" id=\"t-{t}\"><header><h4>{E(t)}</h4><span class=\"hdr\">{tag}<button type=\"button\" class=\"xlink\" data-t=\"{t}\">Explorar →</button></span></header>"
-                     f"<p class=\"desc\">{E(d['desc'])}</p>"
-                     f"<code class=\"rn\"><b>{E(t)}</b>({', '.join(parts)})</code>"
-                     "<div class=\"scroll\"><table><thead><tr><th>Atributo</th><th>Tipo</th><th>Nulo</th><th>Clave</th><th>Referencia</th><th>Default</th><th>Descripción</th></tr></thead>"
-                     f"<tbody>{''.join(rows)}</tbody></table></div>"
-                     + (f"<ul class=\"cons\">{cons}</ul>" if cons else '') + "</article>")
-    return f"<div class=\"cards\">{''.join(cards)}</div>"
+        for col in d['cols']:
+            kk = ''.join(f'<span class="k k-{k.lower()}">{k}</span>' for k in col['key'].split())
+            rows.append(f'<tr><td class="mono">{E(col["name"])}</td><td class="mono t">{E(col["type"])}</td>'
+                        f'<td>{"Sí" if col["null"] else "No"}</td><td>{kk}</td><td class="mono r">{E(col["ref"])}</td>'
+                        f'<td class="mono t">{E(col["default"])}</td><td class="dsc">{E(col["desc"])}</td></tr>')
+        tag = f'<span class="tag">{E(d["tag"])}</span>' if d['tag'] else ''
+        cons = ''.join(f'<li class="mono">{E(x)}</li>' for x in d['cons'])
+        cards.append(f'<article class="tcard" id="t-{t}"><header><h4>{E(t)}</h4><span class="hdr">{tag}<button type="button" class="xlink" data-t="{t}">Explorar →</button></span></header>'
+                     f'<p class="desc">{E(d["desc"])}</p>'
+                     f'<code class="rn"><b>{E(t)}</b>({ ", ".join(parts) })</code>'
+                     '<div class="scroll"><table><thead><tr><th>Atributo</th><th>Tipo</th><th>Nulo</th><th>Clave</th><th>Referencia</th><th>Default</th><th>Descripción</th></tr></thead>'
+                     f'<tbody>{"".join(rows)}</tbody></table></div>'
+                     + (f'<ul class="cons">{cons}</ul>' if cons else '') + '</article>')
+    return f'<div class="cards">{"".join(cards)}</div>'
 
 # ----------------------------------------------------------------------------- mapa general
-MAP_POS = {'m2': (40, 40), 'm1': (630, 40), 'm6': (1220, 40), 'm4': (40, 330), 'm3': (630, 330), 'm5': (1220, 330)}
 def render_map():
     W, H0 = 420, 0
-    out = []; boxes = {}
+    out = []
     def box(m, x, y, w, h):
         name, color = MODS[m]; ts = [t for t in T if T[t]['mod'] == m]
         s = [f"<rect class='sf' x='{x}' y='{y}' width='{w}' height='{h}' rx='10'/>",
@@ -643,7 +749,7 @@ def render_map():
             out.append(f"<text class='mu cd' x='{x}' y='{y + i * 14}' font-size='11' text-anchor='{anchor}'>{E(l)}</text>")
     cy1 = 40 + h1 / 2; cy2 = y2 + h2 / 2
     out.append(f"<line class='cl' x1='460' y1='{cy1}' x2='640' y2='{cy1}' stroke-width='2'/>")
-    lbl(550, cy1 - 26, ['document_types →', 'healthcare_professionals'])
+    lbl(550, cy1 - 26, ['persons →', 'healthcare_professionals'])
     out.append(f"<line class='cl' x1='1060' y1='{cy1}' x2='1240' y2='{cy1}' stroke-width='2'/>")
     lbl(1150, cy1 - 26, ['patients →', 'glaucoma_records'])
     out.append(f"<line class='cl' x1='850' y1='{40 + h1}' x2='850' y2='{y2}' stroke-width='2'/>")
@@ -653,7 +759,7 @@ def render_map():
     out.append(f"<line class='cl' x1='1240' y1='{40 + h1}' x2='1060' y2='{y2}' stroke-width='2'/>")
     lbl(1195, 40 + h1 + 30, ['medical_visits →'], 'start'); lbl(1195, 40 + h1 + 44, ['glaucoma_controls'], 'start')
     out.append(f"<line class='cl' x1='460' y1='{cy2}' x2='640' y2='{cy2}' stroke-width='2'/>")
-    lbl(550, cy2 - 40, ['medical_visits →', '5 exámenes', '(OD / OI)'])
+    lbl(550, cy2 - 40, ['medical_visits →', '7 exámenes', '(OD / OI)'])
     out.append(f"<line class='cl' x1='1060' y1='{cy2}' x2='1240' y2='{cy2}' stroke-width='2'/>")
     lbl(1150, cy2 - 26, ['medical_visits →', 'treatments, procedures'])
     out.append(f"<line class='dot' x1='850' y1='{y2 + h2}' x2='850' y2='{y3}' stroke-width='2'/>")
@@ -666,15 +772,15 @@ def render_map():
 
 def render_fk_table():
     rows = []
-    for i, (ch, c, p, v, od) in enumerate(FKS, 1):
-        uniq = is_unique_fk(ch, c)
-        card = '1 : 1' if (uniq and ch == 'clinical_histories') else ('1 : 0..1' if uniq else '1 : N')
-        rows.append(f"<tr><td class=\"num\">{i}</td><td class=\"mono\"><button type=\"button\" class=\"xlink\" data-t=\"{p}\">{E(p)}</button></td><td>{E(v)}</td><td class=\"mono\"><button type=\"button\" class=\"xlink\" data-t=\"{ch}\">{E(ch)}</button>.<span class=\"fkc\">{E(c)}</span></td>"
-                    f"<td class=\"mono\">{card}</td><td class=\"mono t\">{od}</td><td><span class=\"mdot\" style=\"--mc:{MODS[T[ch]['mod']][1]}\"></span>{T[ch]['mod'][1]}</td></tr>")
-    return ("<div class=\"panel\"><h3>Las 25 relaciones por llave foránea</h3>"
-            "<p class=\"desc\">Cada fila es una FOREIGN KEY del DDL. Todas usan ON UPDATE CASCADE. ON DELETE CASCADE se usa cuando el registro hijo no tiene sentido sin su padre.</p>"
-            "<div class=\"scroll\"><table><thead><tr><th>#</th><th>Tabla padre (1)</th><th>Relación</th><th>Tabla hija · columna FK</th><th>Cardinalidad</th><th>ON DELETE</th><th>Módulo</th></tr></thead>"
-            f"<tbody>{''.join(rows)}</tbody></table></div></div>")
+    for i, (ch, col, p, v, od) in enumerate(FKS, 1):
+        uniq = is_unique_fk(ch, col)
+        card = '1 : 1' if (uniq and ch in ('clinical_histories', 'patients', 'healthcare_professionals', 'glaucoma_records')) else ('1 : 0..1' if uniq else '1 : N')
+        rows.append(f'<tr><td class="num">{i}</td><td class="mono"><button type="button" class="xlink" data-t="{p}">{E(p)}</button></td><td>{E(v)}</td><td class="mono"><button type="button" class="xlink" data-t="{ch}">{E(ch)}</button>.<span class="fkc">{E(col)}</span></td>'
+                    f'<td class="mono">{card}</td><td class="mono t">{od}</td><td><span class="mdot" style="--mc:{MODS[T[ch]["mod"]][1]}"></span>{T[ch]["mod"][1]}</td></tr>')
+    return ('<div class="panel"><h3>Las 33 relaciones por llave foránea</h3>'
+            '<p class="desc">Cada fila es una FOREIGN KEY del DDL. Todas usan ON UPDATE CASCADE. ON DELETE CASCADE se usa cuando el registro hijo no tiene sentido sin su padre.</p>'
+            '<div class="scroll"><table><thead><tr><th>#</th><th>Tabla padre (1)</th><th>Relación</th><th>Tabla hija · columna FK</th><th>Cardinalidad</th><th>ON DELETE</th><th>Módulo</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody></table></div></div>')
 
 # ----------------------------------------------------------------------------- datos del explorador
 def explorer_json():
@@ -689,7 +795,7 @@ def explorer_json():
         return 'fuerte'
     def card(ch, c):
         if is_unique_fk(ch, c):
-            return '1 : 1' if ch == 'clinical_histories' else '1 : 0..1'
+            return '1 : 1' if ch in ('clinical_histories', 'patients', 'healthcare_professionals', 'glaucoma_records') else '1 : 0..1'
         return '1 : N'
     tables = []
     for name, d in T.items():
@@ -704,22 +810,22 @@ def explorer_json():
 
 # ----------------------------------------------------------------------------- página
 def chips():
-    return ''.join(f"<button type=\"button\" class=\"chip\" data-mod=\"{m}\" style=\"--mc:{c}\"><span class=\"dotc\"></span>{m[1]}. {E(n)}</button>"
+    return ''.join(f'<button type="button" class="chip" data-mod="{m}" style="--mc:{c}"><span class="dotc"></span>{m[1]}. {E(n)}</button>'
                    for m, (n, c) in MODS.items())
 
 def head_h3(m, n):
     name, color = MODS[m]
-    return f"<h3 style=\"--mc:{color}\"><span class=\"mn\">{m[1]}</span>{E(name)}<span class=\"cnt\">{n} tablas</span></h3>"
+    return f'<h3 style="--mc:{color}"><span class="mn">{m[1]}</span>{E(name)}<span class="cnt">{n} tablas</span></h3>'
 
 def main(out_path):
     chen, rel, der = [], [], []
     for m in MODS:
         n = len([t for t in T if T[t]['mod'] == m])
         s, w = render_chen(m) if m in CHEN else render_chen_m7()
-        chen.append(f"<section class=\"pane\" data-kind=\"chen\" data-mod=\"{m}\" hidden>{head_h3(m, n)}<div class=\"diagram\">{s}</div></section>")
-        rel.append(f"<section class=\"pane\" data-kind=\"rel\" data-mod=\"{m}\" hidden>{head_h3(m, n)}{render_rel(m)}</section>")
+        chen.append(f'<section class="pane" data-kind="chen" data-mod="{m}" hidden>{head_h3(m, n)}<div class="diagram">{s}</div></section>')
+        rel.append(f'<section class="pane" data-kind="rel" data-mod="{m}" hidden>{head_h3(m, n)}{render_rel(m)}</section>')
         s, w, _ = render_der(m)
-        der.append(f"<section class=\"pane\" data-kind=\"der\" data-mod=\"{m}\" hidden>{head_h3(m, n)}<div class=\"diagram\">{s}</div></section>")
+        der.append(f'<section class="pane" data-kind="der" data-mod="{m}" hidden>{head_h3(m, n)}<div class="diagram">{s}</div></section>')
     tpl = open(sys.argv[2], encoding='utf-8').read()
     page = (tpl.replace('{{CHIPS}}', chips()).replace('{{MAP}}', render_map()).replace('{{FKTABLE}}', render_fk_table())
                .replace('{{DATA}}', explorer_json()).replace('{{CHEN}}', ''.join(chen)).replace('{{REL}}', ''.join(rel)).replace('{{DER}}', ''.join(der)))

@@ -1,33 +1,35 @@
 erDiagram
-    %% Modelo Lógico Relacional Normalizado
-    DEPARTMENTS ||--o{ CITIES : contains
-    CITIES ||--o{ PATIENTS : locates
-    DOCUMENT_TYPES ||--o{ PATIENTS : identifies
-    DOCUMENT_TYPES ||--o{ HEALTHCARE_PROFESSIONALS : identifies
-    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : qualifies
-    
-    PATIENTS ||--|| CLINICAL_HISTORIES : has_one
-    PATIENTS ||--o{ PATIENT_ALLERGIES : exhibits
-    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : reports
-    PATIENTS ||--o{ PATIENT_ANTECEDENTS : records
-    PATIENTS ||--o| GLAUCOMA_RECORDS : registers
-    
-    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : conducts
-    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : compiles
-    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : attaches
-    
-    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : diagnoses
-    DIAGNOSES ||--o{ VISIT_DIAGNOSES : categorizes
-    
-    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : measures
-    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : evaluates
-    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : inspects
-    MEDICAL_VISITS ||--o{ OCT_EXAMS : scans
-    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : maps
-    
-    MEDICAL_VISITS ||--o{ TREATMENTS : prescribes
-    MEDICATIONS ||--o{ TREATMENTS : utilizes
-    MEDICAL_VISITS ||--o{ PROCEDURES : performs
-    
-    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : tracks
-    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : associates
+    %% Modelo Lógico Relacional Normalizado (MySQL 8.0 / 4FN)
+    DEPARTMENTS ||--o{ CITIES : "1:N pertenece a"
+    DOCUMENT_TYPES ||--o{ PERSONS : "1:N identifica"
+    CITIES ||--o{ PERSONS : "1:N reside en"
+    PERSONS ||--o| PATIENTS : "1:0..1 especializa"
+    PATIENTS ||--o{ PATIENT_ALLERGIES : "1:N presenta"
+    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "1:N reporta"
+    PATIENTS ||--o{ PATIENT_ANTECEDENTS : "1:N registra"
+    PATIENTS ||--o{ GLAUCOMA_RISK_FACTORS : "1:N pondera"
+    PERSONS ||--o| HEALTHCARE_PROFESSIONALS : "1:0..1 identifica"
+    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : "1:N ejerce"
+    PATIENTS ||--o{ APPOINTMENTS : "1:N agenda"
+    HEALTHCARE_PROFESSIONALS ||--o{ APPOINTMENTS : "1:N atiende"
+    PATIENTS ||--|| CLINICAL_HISTORIES : "1:1 tiene"
+    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N acumula"
+    HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "1:N atiende"
+    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "1:N diagnostica"
+    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "1:N diagnostica"
+    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : "1:N adjunta"
+    MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : "1:N mide"
+    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : "1:N evalúa"
+    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : "1:N inspecciona"
+    MEDICAL_VISITS ||--o{ OCT_EXAMS : "1:N escanea"
+    MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "1:N cuantifica"
+    MEDICAL_VISITS ||--o{ VISUAL_ACUITY_EXAMS : "1:N determina"
+    MEDICAL_VISITS ||--o{ BIOMICROSCOPY_EXAMS : "1:N examina"
+    MEDICATION_CLASSES ||--o{ MEDICATIONS : "1:N clasifica"
+    MEDICAL_VISITS ||--o{ TREATMENTS : "1:N prescribe"
+    MEDICATIONS ||--o{ TREATMENTS : "1:N suministra"
+    MEDICAL_VISITS ||--o{ PROCEDURES : "1:N realiza"
+    PROCEDURE_TYPES ||--o{ PROCEDURES : "1:N tipifica"
+    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:0..1 posee"
+    GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "1:N monitorea"
+    MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "1:N asocia"

@@ -13,13 +13,19 @@ USE oftalmologia_glaucoma_db;
 -- ------------------------------------------------------------------------------
 
 -- 1. Mostrar todos los pacientes registrados en la base de datos.
-SELECT * FROM patients;
+SELECT p.id, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, p.blood_type, p.health_insurance, p.affiliation_type
+FROM patients p
+JOIN persons per ON p.person_id = per.id;
 
 -- 2. Mostrar únicamente el número de documento, nombres y apellidos de todos los pacientes.
-SELECT document_number, first_name, last_name FROM patients;
+SELECT per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id;
 
 -- 3. Listar todos los profesionales de salud registrados.
-SELECT * FROM healthcare_professionals;
+SELECT hp.id, per.document_number, per.first_name, per.last_name, hp.medical_license, hp.specialty_id, hp.is_active
+FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id;
 
 -- 4. Mostrar todos los diagnósticos disponibles en el catálogo.
 SELECT * FROM diagnoses;
@@ -28,26 +34,45 @@ SELECT * FROM diagnoses;
 SELECT * FROM clinical_histories;
 
 -- 6. Mostrar todos los pacientes ordenados alfabéticamente por apellido.
-SELECT * FROM patients ORDER BY last_name ASC, first_name ASC;
+SELECT p.id, per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+ORDER BY per.last_name ASC, per.first_name ASC;
 
 -- 7. Mostrar los pacientes ordenados por fecha de nacimiento desde el más joven hasta el de mayor edad.
-SELECT * FROM patients ORDER BY birth_date DESC;
+SELECT p.id, per.first_name, per.last_name, per.birth_date
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+ORDER BY per.birth_date DESC;
 
 -- 8. Consultar los pacientes cuyo apellido sea Gómez.
-SELECT * FROM patients WHERE last_name LIKE '%Gómez%' OR last_name LIKE '%Gomez%';
+SELECT p.id, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.last_name LIKE '%Gómez%' OR per.last_name LIKE '%Gomez%';
 
 -- 9. Mostrar los pacientes cuyo número de documento comience por 10.
-SELECT * FROM patients WHERE document_number LIKE '10%';
+SELECT p.id, per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.document_number LIKE '10%';
 
 -- 10. Consultar los pacientes cuyo correo electrónico pertenezca al dominio gmail.com.
-SELECT * FROM patients WHERE email LIKE '%@gmail.com';
+SELECT p.id, per.first_name, per.last_name, per.email
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.email LIKE '%@gmail.com';
 
 -- 11. Mostrar los pacientes que no tengan correo electrónico registrado.
-SELECT * FROM patients WHERE email IS NULL;
+SELECT p.id, per.first_name, per.last_name, per.email
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.email IS NULL;
 
 -- 12. Mostrar los profesionales cuya especialidad sea Oftalmología.
-SELECT hp.* 
+SELECT hp.id, per.first_name, per.last_name, hp.medical_license, s.name AS specialty
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 WHERE s.name = 'Oftalmología';
 
@@ -81,25 +106,29 @@ SELECT * FROM procedures WHERE procedure_date >= '2026-01-01 00:00:00';
 -- ------------------------------------------------------------------------------
 
 -- 21. Mostrar cada paciente junto con el número de su historia clínica.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, ch.history_number, ch.status
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, ch.history_number, ch.status
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id;
 
 -- 22. Mostrar cada consulta indicando el nombre completo del paciente.
-SELECT mv.id AS visit_id, mv.visit_date, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.reason
+SELECT mv.id AS visit_id, mv.visit_date, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.reason
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 
 -- 23. Mostrar cada consulta junto con el nombre del profesional que la realizó.
-SELECT mv.id AS visit_id, mv.visit_date, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, s.name AS specialty, mv.reason
+SELECT mv.id AS visit_id, mv.visit_date, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, s.name AS specialty, mv.reason
 FROM medical_visits mv
 JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id;
 
 -- 24. Listar todos los pacientes junto con la fecha de sus consultas.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.id AS visit_id, mv.visit_date
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.id AS visit_id, mv.visit_date
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 ORDER BY p.id, mv.visit_date;
@@ -112,16 +141,18 @@ JOIN diagnoses d ON vd.diagnosis_id = d.id
 ORDER BY mv.id, vd.is_primary DESC;
 
 -- 26. Mostrar nombre del paciente, fecha de consulta y diagnóstico correspondiente.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, d.code, d.name AS diagnosis, vd.is_primary
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, d.code, d.name AS diagnosis, vd.is_primary
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
 JOIN diagnoses d ON vd.diagnosis_id = d.id;
 
 -- 27. Consultar todos los pacientes que tengan diagnóstico de glaucoma.
-SELECT DISTINCT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, d.code, d.name AS glaucoma_diagnosis
+SELECT DISTINCT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, d.code, d.name AS glaucoma_diagnosis
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -129,47 +160,53 @@ JOIN diagnoses d ON vd.diagnosis_id = d.id
 WHERE d.is_glaucoma_type = TRUE;
 
 -- 28. Mostrar todos los controles de glaucoma indicando el paciente correspondiente.
-SELECT gc.id AS control_id, gc.control_date, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, gr.clinical_stage, gc.is_progression_detected, gc.adherence_score, gc.notes
+SELECT gc.id AS control_id, gc.control_date, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, gr.clinical_stage, gc.is_progression_detected, gc.adherence_score, gc.notes
 FROM glaucoma_controls gc
 JOIN glaucoma_records gr ON gc.glaucoma_record_id = gr.id
-JOIN patients p ON gr.patient_id = p.id;
+JOIN patients p ON gr.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 
 -- 29. Mostrar cada medición de presión intraocular junto con nombre del paciente, fecha y ojo.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, iop.eye, iop.pressure, iop.method
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, iop.eye, iop.pressure, iop.method
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 ORDER BY mv.visit_date DESC, iop.eye;
 
 -- 30. Mostrar los estudios OCT realizados indicando paciente, ojo y fecha.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, oct.eye, oct.exam_date, oct.rnfl_average, oct.cup_to_disc_ratio, oct.interpretation
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, oct.eye, oct.exam_date, oct.rnfl_average, oct.cup_to_disc_ratio, oct.interpretation
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 
 -- 31. Mostrar los campos visuales registrados indicando paciente, ojo, MD, PSD y VFI.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, vf.eye, vf.mean_deviation_md, vf.pattern_std_deviation_psd, vf.visual_field_index_vfi, vf.reliability, vf.exam_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, vf.eye, vf.mean_deviation_md, vf.pattern_std_deviation_psd, vf.visual_field_index_vfi, vf.reliability, vf.exam_date
 FROM visual_field_exams vf
 JOIN medical_visits mv ON vf.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 
 -- 32. Mostrar las paquimetrías realizadas junto con el paciente y el espesor corneal registrado.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, pe.eye, pe.corneal_thickness, pe.method, pe.exam_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, pe.eye, pe.corneal_thickness, pe.method, pe.exam_date
 FROM pachymetry_exams pe
 JOIN medical_visits mv ON pe.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 
 -- 33. Mostrar los tratamientos activos incluyendo nombre del paciente y medicamento.
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, m.name AS medication_name, m.generic_name, t.dosage, t.frequency, t.eye, t.start_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, m.name AS medication_name, m.generic_name, t.dosage, t.frequency, t.eye, t.start_date
 FROM treatments t
 JOIN medications m ON t.medication_id = m.id
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.is_active = TRUE;
 
 -- 34. Mostrar cada medicamento y la cantidad de tratamientos en los que ha sido utilizado.
@@ -186,13 +223,15 @@ SELECT COUNT(*) AS total_patients_registered FROM patients;
 SELECT COUNT(*) AS total_visits_conducted FROM medical_visits;
 
 -- 37. Mostrar la cantidad de pacientes por sexo.
-SELECT gender, COUNT(*) AS total_patients
-FROM patients
-GROUP BY gender;
+SELECT per.gender, COUNT(*) AS total_patients
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+GROUP BY per.gender;
 
 -- 38. Mostrar la cantidad de pacientes atendidos por cada profesional.
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, COUNT(DISTINCT ch.patient_id) AS distinct_patients_attended
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, COUNT(DISTINCT ch.patient_id) AS distinct_patients_attended
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 GROUP BY hp.id, professional_name
@@ -215,16 +254,18 @@ FROM intraocular_pressures
 GROUP BY eye;
 
 -- 42. Mostrar la cantidad de consultas realizadas por cada paciente.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
 ORDER BY total_visits DESC;
 
 -- 43. Mostrar únicamente los pacientes que tengan dos o más consultas.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
@@ -232,8 +273,9 @@ HAVING COUNT(mv.id) >= 2
 ORDER BY total_visits DESC;
 
 -- 44. Mostrar cada profesional junto con la cantidad de consultas realizadas.
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, s.name AS specialty, COUNT(mv.id) AS total_visits
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, s.name AS specialty, COUNT(mv.id) AS total_visits
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name, s.name
@@ -278,12 +320,13 @@ ORDER BY exam_year;
 -- cantidad de controles de glaucoma, promedio de PIO y fecha de última consulta.
 SELECT 
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     COUNT(DISTINCT mv.id) AS total_visits,
     COUNT(DISTINCT gc.id) AS total_glaucoma_controls,
     ROUND(AVG(iop.pressure), 2) AS avg_iop,
     MAX(mv.visit_date) AS last_visit_date
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 LEFT JOIN glaucoma_records gr ON p.id = gr.patient_id

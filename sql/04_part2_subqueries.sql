@@ -13,19 +13,25 @@ USE oftalmologia_glaucoma_db;
 -- ------------------------------------------------------------------------------
 
 -- 1. Mostrar los pacientes cuya edad sea superior a la edad promedio de todos los pacientes.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name,
-       TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age
-FROM patients
-WHERE TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) > (
-    SELECT AVG(TIMESTAMPDIFF(YEAR, birth_date, CURDATE())) FROM patients
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
+       TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) > (
+    SELECT AVG(TIMESTAMPDIFF(YEAR, per2.birth_date, CURDATE()))
+    FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
 );
 
 -- 2. Mostrar los pacientes cuya edad sea inferior a la edad promedio.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name,
-       TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age
-FROM patients
-WHERE TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) < (
-    SELECT AVG(TIMESTAMPDIFF(YEAR, birth_date, CURDATE())) FROM patients
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
+       TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) < (
+    SELECT AVG(TIMESTAMPDIFF(YEAR, per2.birth_date, CURDATE()))
+    FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
 );
 
 -- 3. Consultar la medición de presión intraocular más alta registrada.
@@ -55,8 +61,9 @@ FROM oct_exams
 WHERE rnfl_average > (SELECT AVG(rnfl_average) FROM oct_exams);
 
 -- 8. Consultar pacientes cuya cantidad de consultas sea mayor que el promedio de consultas por paciente.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
@@ -71,8 +78,9 @@ HAVING COUNT(mv.id) > (
 );
 
 -- 9. Mostrar profesionales cuya cantidad de consultas sea superior al promedio por profesional.
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, COUNT(mv.id) AS total_visits
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, COUNT(mv.id) AS total_visits
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name
 HAVING COUNT(mv.id) > (
@@ -86,8 +94,9 @@ HAVING COUNT(mv.id) > (
 );
 
 -- 10. Consultar pacientes cuya última presión intraocular sea superior al promedio general.
-SELECT DISTINCT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, iop.pressure AS latest_iop
+SELECT DISTINCT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, iop.pressure AS latest_iop
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
@@ -108,18 +117,20 @@ AND iop.pressure > (SELECT AVG(pressure) FROM intraocular_pressures);
 -- ------------------------------------------------------------------------------
 
 -- 11. Mostrar pacientes que tengan al menos una consulta registrada.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 );
 
 -- 12. Mostrar pacientes que tengan diagnóstico de glaucoma.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -129,9 +140,10 @@ WHERE id IN (
 );
 
 -- 13. Mostrar pacientes que hayan recibido tratamiento farmacológico.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -139,9 +151,10 @@ WHERE id IN (
 );
 
 -- 14. Mostrar pacientes que tengan estudios OCT registrados.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -149,9 +162,10 @@ WHERE id IN (
 );
 
 -- 15. Mostrar pacientes que tengan campos visuales registrados.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -166,9 +180,10 @@ WHERE id IN (
 );
 
 -- 17. Mostrar profesionales que hayan atendido pacientes con glaucoma.
-SELECT id, CONCAT(first_name, ' ', last_name) AS professional_name, medical_license
-FROM healthcare_professionals
-WHERE id IN (
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, hp.medical_license
+FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
+WHERE hp.id IN (
     SELECT mv.professional_id
     FROM medical_visits mv
     JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -184,9 +199,10 @@ WHERE id IN (
 );
 
 -- 19. Mostrar pacientes que hayan tenido algún procedimiento quirúrgico o clínico.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -194,9 +210,10 @@ WHERE id IN (
 );
 
 -- 20. Mostrar pacientes que tengan registros de paquimetría.
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -209,8 +226,9 @@ WHERE id IN (
 -- ------------------------------------------------------------------------------
 
 -- 21. Mostrar pacientes que nunca hayan tenido una consulta.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -219,8 +237,9 @@ WHERE NOT EXISTS (
 );
 
 -- 22. Mostrar pacientes que nunca hayan tenido un control de glaucoma.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM glaucoma_records gr
@@ -229,8 +248,9 @@ WHERE NOT EXISTS (
 );
 
 -- 23. Mostrar pacientes que no tengan estudios OCT.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -240,8 +260,9 @@ WHERE NOT EXISTS (
 );
 
 -- 24. Mostrar pacientes que no tengan campos visuales.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -258,8 +279,9 @@ WHERE m.id NOT IN (
 );
 
 -- 26. Mostrar profesionales que todavía no hayan registrado consultas.
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1 FROM medical_visits mv WHERE mv.professional_id = hp.id
 );
@@ -272,8 +294,9 @@ WHERE d.id NOT IN (
 );
 
 -- 28. Mostrar pacientes que no tengan tratamientos activos.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -283,8 +306,9 @@ WHERE NOT EXISTS (
 );
 
 -- 29. Mostrar pacientes que nunca hayan tenido procedimientos.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -294,8 +318,9 @@ WHERE NOT EXISTS (
 );
 
 -- 30. Mostrar pacientes sin mediciones de presión intraocular.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -310,12 +335,13 @@ WHERE NOT EXISTS (
 -- ------------------------------------------------------------------------------
 
 -- 31. Mostrar las mediciones de PIO superiores al promedio del mismo paciente.
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE iop.pressure > (
     SELECT AVG(iop2.pressure)
     FROM intraocular_pressures iop2
@@ -325,12 +351,13 @@ WHERE iop.pressure > (
 );
 
 -- 32. Mostrar los estudios OCT cuyo RNFL sea inferior al promedio del mismo paciente.
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        oct.eye, oct.rnfl_average, oct.exam_date
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE oct.rnfl_average < (
     SELECT AVG(oct2.rnfl_average)
     FROM oct_exams oct2
@@ -340,10 +367,11 @@ WHERE oct.rnfl_average < (
 );
 
 -- 33. Mostrar las consultas posteriores a la primera consulta de cada paciente.
-SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date
+SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date > (
     SELECT MIN(mv2.visit_date)
     FROM medical_visits mv2
@@ -351,10 +379,11 @@ WHERE mv.visit_date > (
 );
 
 -- 34. Mostrar la última consulta de cada paciente utilizando una subconsulta correlacionada.
-SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, mv.reason
+SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, mv.reason
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MAX(mv2.visit_date)
     FROM medical_visits mv2
@@ -362,12 +391,13 @@ WHERE mv.visit_date = (
 );
 
 -- 35. Mostrar la primera medición de PIO de cada paciente.
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MIN(mv2.visit_date)
     FROM intraocular_pressures iop2
@@ -377,12 +407,13 @@ WHERE mv.visit_date = (
 );
 
 -- 36. Mostrar la última medición de presión intraocular de cada paciente y ojo.
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MAX(mv2.visit_date)
     FROM intraocular_pressures iop2
@@ -392,11 +423,12 @@ WHERE mv.visit_date = (
 );
 
 -- 37. Mostrar los tratamientos cuya fecha de inicio sea posterior a la primera consulta del paciente.
-SELECT t.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, t.dosage, t.start_date
+SELECT t.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, t.dosage, t.start_date
 FROM treatments t
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.start_date > (
     SELECT MIN(DATE(mv2.visit_date))
     FROM medical_visits mv2
@@ -404,23 +436,26 @@ WHERE t.start_date > (
 );
 
 -- 38. Mostrar pacientes cuyo número de consultas sea mayor que el de todos los demás pacientes de su misma ciudad.
-SELECT p1.id, CONCAT(p1.first_name, ' ', p1.last_name) AS patient_name, p1.city_id, COUNT(mv1.id) AS visit_count
+SELECT p1.id, CONCAT(per1.first_name, ' ', per1.last_name) AS patient_name, per1.city_id, COUNT(mv1.id) AS visit_count
 FROM patients p1
+JOIN persons per1 ON p1.person_id = per1.id
 JOIN clinical_histories ch1 ON p1.id = ch1.patient_id
 JOIN medical_visits mv1 ON ch1.id = mv1.clinical_history_id
-GROUP BY p1.id, patient_name, p1.city_id
+GROUP BY p1.id, patient_name, per1.city_id
 HAVING visit_count >= ALL (
     SELECT COUNT(mv2.id)
     FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
     JOIN clinical_histories ch2 ON p2.id = ch2.patient_id
     JOIN medical_visits mv2 ON ch2.id = mv2.clinical_history_id
-    WHERE p2.city_id = p1.city_id AND p2.id <> p1.id
+    WHERE per2.city_id = per1.city_id AND p2.id <> p1.id
     GROUP BY p2.id
 );
 
 -- 39. Mostrar profesionales cuya cantidad de consultas sea superior al promedio de los profesionales de su especialidad.
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, hp.specialty_id, COUNT(mv.id) AS visits_count
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, hp.specialty_id, COUNT(mv.id) AS visits_count
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name, hp.specialty_id
 HAVING visits_count >= (
@@ -435,12 +470,13 @@ HAVING visits_count >= (
 );
 
 -- 40. Mostrar el estudio OCT más reciente de cada paciente.
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        oct.eye, oct.rnfl_average, oct.exam_date
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE oct.exam_date = (
     SELECT MAX(oct2.exam_date)
     FROM oct_exams oct2
@@ -455,8 +491,9 @@ WHERE oct.exam_date = (
 -- ------------------------------------------------------------------------------
 
 -- 41. Mostrar pacientes cuya presión intraocular máxima sea mayor que la presión máxima promedio de todos los pacientes.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, MAX(iop.pressure) AS patient_max_iop
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, MAX(iop.pressure) AS patient_max_iop
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
@@ -473,8 +510,9 @@ HAVING patient_max_iop > (
 );
 
 -- 42. Mostrar pacientes cuya cantidad de diagnósticos diferentes sea superior al promedio.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(DISTINCT vd.diagnosis_id) AS distinct_diag_count
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(DISTINCT vd.diagnosis_id) AS distinct_diag_count
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -491,8 +529,9 @@ HAVING distinct_diag_count > (
 );
 
 -- 43. Mostrar los pacientes que tengan más tratamientos activos que el promedio de tratamientos activos por paciente.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(t.id) AS active_treatments
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(t.id) AS active_treatments
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN treatments t ON mv.id = t.visit_id
@@ -538,8 +577,9 @@ HAVING occurrences = (
 );
 
 -- 46. Mostrar los pacientes cuya última PIO sea inferior a su primera PIO.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE (
     SELECT iop_first.pressure
     FROM intraocular_pressures iop_first
@@ -559,8 +599,9 @@ WHERE (
 );
 
 -- 47. Mostrar pacientes cuya presión promedio del ojo derecho sea mayor que la del ojo izquierdo.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE (
     SELECT AVG(iop_od.pressure)
     FROM intraocular_pressures iop_od
@@ -576,8 +617,9 @@ WHERE (
 );
 
 -- 48. Mostrar los pacientes con mayor cantidad de controles de glaucoma que el promedio general.
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(gc.id) AS controls_count
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(gc.id) AS controls_count
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN glaucoma_records gr ON p.id = gr.patient_id
 JOIN glaucoma_controls gc ON gr.id = gc.glaucoma_record_id
 GROUP BY p.id, patient_name
@@ -607,8 +649,9 @@ HAVING diag_count > (
 );
 
 -- 50. Mostrar los pacientes que tengan simultáneamente OCT, campo visual, paquimetría y control de glaucoma registrados.
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE EXISTS (
     SELECT 1 FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id

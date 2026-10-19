@@ -39,7 +39,10 @@ RETURNS VARCHAR(30)
 READS SQL DATA
 BEGIN
     DECLARE v_doc VARCHAR(30);
-    SELECT document_number INTO v_doc FROM patients WHERE id = p_patient_id;
+    SELECT per.document_number INTO v_doc
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     RETURN IFNULL(v_doc, 'NO ENCONTRADO');
 END $$
 
@@ -50,7 +53,10 @@ RETURNS INT
 READS SQL DATA
 BEGIN
     DECLARE v_age INT;
-    SELECT TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) INTO v_age FROM patients WHERE id = p_patient_id;
+    SELECT TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) INTO v_age
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     RETURN IFNULL(v_age, 0);
 END $$
 
@@ -782,6 +788,8 @@ BEGIN
     DECLARE v_vf INT DEFAULT 0;
     DECLARE v_pachy INT DEFAULT 0;
     DECLARE v_gonio INT DEFAULT 0;
+    DECLARE v_va INT DEFAULT 0;
+    DECLARE v_bio INT DEFAULT 0;
 
     SELECT COUNT(oct.id) INTO v_oct
     FROM oct_exams oct JOIN medical_visits mv ON oct.visit_id = mv.id
@@ -799,7 +807,15 @@ BEGIN
     FROM gonioscopy_exams ge JOIN medical_visits mv ON ge.visit_id = mv.id
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
 
-    SET v_total = v_oct + v_vf + v_pachy + v_gonio;
+    SELECT COUNT(va.id) INTO v_va
+    FROM visual_acuity_exams va JOIN medical_visits mv ON va.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
+
+    SELECT COUNT(bio.id) INTO v_bio
+    FROM biomicroscopy_exams bio JOIN medical_visits mv ON bio.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
+
+    SET v_total = v_oct + v_vf + v_pachy + v_gonio + v_va + v_bio;
     RETURN v_total;
 END $$
 
@@ -817,7 +833,10 @@ BEGIN
     DECLARE v_active_tx INT;
     DECLARE v_result TEXT;
 
-    SELECT CONCAT(first_name, ' ', last_name) INTO v_name FROM patients WHERE id = p_patient_id;
+    SELECT CONCAT(per.first_name, ' ', per.last_name) INTO v_name
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     IF v_name IS NULL THEN
         RETURN 'PACIENTE NO REGISTRADO';
     END IF;

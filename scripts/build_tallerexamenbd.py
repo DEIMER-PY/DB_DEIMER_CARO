@@ -95,6 +95,9 @@ def main():
     assert pos21 != -1 and pos22 != -1
 
     sec21_original = doc_part[pos21:pos22].rstrip()
+    if '### 21.1' in sec21_original:
+        sec21_original = sec21_original.split('### 21.1')[0].rstrip()
+
     sec21_enriched = sec21_original + f"""
 
 ### 21.1 Inicialización de la Base de Datos (`00_init_database.sql`)
@@ -107,7 +110,7 @@ Crea la base de datos `oftalmologia_glaucoma_db` con codificación `utf8mb4` y `
 
 ### 21.2 Esquema Físico Relacional en 4FN (`01_ddl_schema.sql`)
 
-Crea las 25 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 4 tablas de respaldo para auditoría histórica, índices de rendimiento y restricciones de integridad:
+Crea las 32 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 5 tablas de respaldo para auditoría histórica, índices de rendimiento y restricciones de integridad:
 
 ```sql
 {sql_01}
@@ -124,6 +127,9 @@ Crea las 25 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 4 tab
     assert pos24 != -1 and pos25 != -1
 
     sec24_original = doc_part[pos24:pos25].rstrip()
+    if '### 24.1' in sec24_original:
+        sec24_original = sec24_original.split('### 24.1')[0].rstrip()
+
     sec24_enriched = sec24_original + f"""
 
 ### 24.1 Dataset Clínico Semilla (`02_dml_seed_data.sql`)
@@ -147,6 +153,9 @@ Carga el dataset clínico completo de prueba con departamentos, ciudades, tipos 
     events_sql = '-- ==============================================================================\n-- EVENTOS PROGRAMADOS' + sql_08.split('-- ==============================================================================\n-- EVENTOS PROGRAMADOS')[1].strip()
 
     sec36_original = doc_part[pos36:pos37].rstrip()
+    if '### 36.1' in sec36_original:
+        sec36_original = sec36_original.split('### 36.1')[0].rstrip()
+
     sec36_enriched = sec36_original + f"""
 
 ### 36.1 Implementación de Eventos Programados (`08_views_and_events.sql`)
@@ -169,6 +178,9 @@ Eventos programados en el motor MySQL (`event_scheduler = ON`) para el mantenimi
     views_sql = sql_08.split('-- ==============================================================================\n-- EVENTOS PROGRAMADOS')[0].strip()
 
     sec37_original = doc_part[pos37:pos38].rstrip()
+    if '### 37.1' in sec37_original:
+        sec37_original = sec37_original.split('### 37.1')[0].rstrip()
+
     sec37_enriched = sec37_original + f"""
 
 ### 37.1 Implementación de Vistas Clínicas y Analíticas (`08_views_and_events.sql`)
@@ -190,6 +202,9 @@ Ocho vistas analíticas especializadas para resumen integral de historias clíni
     assert pos40 != -1 and pos42 != -1
 
     sec40_original = doc_part[pos40:pos42].rstrip()
+    if '### 40.1' in sec40_original:
+        sec40_original = sec40_original.split('### 40.1')[0].rstrip()
+
     sec40_enriched = sec40_original + f"""
 
 ### 40.1 Arquitectura Maestra de Scripts del Repositorio
@@ -197,7 +212,7 @@ Ocho vistas analíticas especializadas para resumen integral de historias clíni
 La solución integral implementada y verificada en MySQL 8.0 se estructura en la siguiente suite de scripts ordenados:
 
 1. **`00_init_database.sql`**: Crea la base de datos `oftalmologia_glaucoma_db` con codificación `utf8mb4` y activa el programador de eventos (`event_scheduler = ON`).
-2. **`01_ddl_schema.sql`**: Crea las 25 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 4 tablas de backup, llaves primarias, llaves foráneas con integridad referencial, índices y restricciones CHECK/UNIQUE.
+2. **`01_ddl_schema.sql`**: Crea las 32 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 5 tablas de backup, llaves primarias, llaves foráneas con integridad referencial, índices y restricciones CHECK/UNIQUE.
 3. **`02_dml_seed_data.sql`**: Carga el dataset clínico completo de prueba con pacientes, antecedentes, visitas, exámenes paraclínicos, tratamientos y controles de glaucoma.
 4. **`03_part1_queries.sql`**: Ejecuta las 50 consultas SQL (básicas, intermedias y avanzadas).
 5. **`04_part2_subqueries.sql`**: Ejecuta las 50 subconsultas SQL (escalares, IN, NOT EXISTS, correlacionadas y avanzadas).
@@ -240,6 +255,9 @@ La solución integral implementada y verificada en MySQL 8.0 se estructura en la
             else:
                 prompt = body.strip()
                 trailing = '\n\n'
+
+            # Clean previous code blocks from prompt
+            prompt = re.sub(r'```sql.*?```', '', prompt, flags=re.DOTALL).strip()
 
             sql_code = sql_dict[ex_num]
 

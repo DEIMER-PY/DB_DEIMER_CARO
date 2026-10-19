@@ -63,8 +63,8 @@ SELECT '==================================================' AS separador;
 
 SELECT 
     p.id,
-    p.document_number,
-    fn_full_name(p.first_name, p.last_name) AS nombre_completo,
+    per.document_number,
+    fn_full_name(per.first_name, per.last_name) AS nombre_completo,
     fn_get_patient_age(p.id) AS edad,
     fn_patient_visits_count(p.id) AS total_consultas,
     fn_patient_avg_iop(p.id) AS pio_promedio,
@@ -72,6 +72,7 @@ SELECT
     fn_clinical_exam_completeness(p.id) AS completitud_examenes,
     fn_classify_patient_frequency(p.id) AS categoria_frecuencia
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 LIMIT 5;
 
 -- Prueba de la Ficha Resumen Textual (Función 50)

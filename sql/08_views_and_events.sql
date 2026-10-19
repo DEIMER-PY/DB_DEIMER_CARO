@@ -17,21 +17,22 @@ DROP VIEW IF EXISTS vw_patient_summary;
 CREATE VIEW vw_patient_summary AS
 SELECT 
     p.id AS patient_id,
-    p.document_number,
+    per.document_number,
     dt.code AS doc_type,
-    CONCAT(p.first_name, ' ', p.last_name) AS full_name,
-    p.birth_date,
-    TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS age,
-    p.gender,
+    CONCAT(per.first_name, ' ', per.last_name) AS full_name,
+    per.birth_date,
+    TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age,
+    per.gender,
     c.name AS city_name,
-    p.phone,
-    p.email,
+    per.phone,
+    per.email,
     ch.history_number,
     ch.status AS history_status,
     ch.created_at AS history_created_at
 FROM patients p
-JOIN document_types dt ON p.document_type_id = dt.id
-JOIN cities c ON p.city_id = c.id
+JOIN persons per ON p.person_id = per.id
+JOIN document_types dt ON per.document_type_id = dt.id
+JOIN cities c ON per.city_id = c.id
 JOIN clinical_histories ch ON p.id = ch.patient_id;
 
 -- 2. Vista de Última Consulta por Paciente
@@ -39,12 +40,13 @@ DROP VIEW IF EXISTS vw_patient_last_visit;
 CREATE VIEW vw_patient_last_visit AS
 SELECT 
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     ch.history_number,
     COUNT(mv.id) AS total_visits,
     MAX(mv.visit_date) AS last_visit_date,
     DATEDIFF(CURDATE(), DATE(MAX(mv.visit_date))) AS days_since_last_visit
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name, ch.history_number;
@@ -55,8 +57,9 @@ CREATE VIEW vw_active_treatments AS
 SELECT 
     t.id AS treatment_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     m.name AS medication_name,
+    mc.name AS medication_class,
     m.generic_name,
     m.concentration,
     t.eye,
@@ -67,9 +70,11 @@ SELECT
     t.notes
 FROM treatments t
 JOIN medications m ON t.medication_id = m.id
+JOIN medication_classes mc ON m.medication_class_id = mc.id
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.is_active = TRUE;
 
 -- 4. Vista de Monitoreo Integral de Glaucoma
@@ -78,7 +83,7 @@ CREATE VIEW vw_glaucoma_monitoring AS
 SELECT 
     gr.id AS glaucoma_record_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     gr.clinical_stage,
     gr.target_iop_od,
     gr.target_iop_oi,
@@ -88,6 +93,7 @@ SELECT
     MAX(gc.is_progression_detected) AS progression_flag
 FROM glaucoma_records gr
 JOIN patients p ON gr.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 LEFT JOIN glaucoma_controls gc ON gr.id = gc.glaucoma_record_id
 GROUP BY gr.id, p.id, patient_name, gr.clinical_stage, gr.target_iop_od, gr.target_iop_oi, gr.diagnosis_date;
 
@@ -97,7 +103,7 @@ CREATE VIEW vw_iop_bilateral AS
 SELECT 
     mv.id AS visit_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     mv.visit_date,
     MAX(CASE WHEN iop.eye = 'OD' THEN iop.pressure END) AS iop_od,
     MAX(CASE WHEN iop.eye = 'OI' THEN iop.pressure END) AS iop_oi,
@@ -105,6 +111,7 @@ SELECT
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
 GROUP BY mv.id, p.id, patient_name, mv.visit_date;
 
@@ -148,6 +155,32 @@ SELECT
     pe.method
 FROM pachymetry_exams pe
 JOIN medical_visits mv ON pe.visit_id = mv.id
+JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+UNION ALL
+SELECT 
+    'AGUDEZA_VISUAL',
+    va.id,
+    va.visit_id,
+    ch.patient_id,
+    va.eye,
+    va.exam_date,
+    CONCAT('SC: ', va.uncorrected_va, ' | CC: ', va.corrected_va),
+    CONCAT('Esfera: ', IFNULL(va.sphere, 0.00), ' Cil: ', IFNULL(va.cylinder, 0.00), ' Eje: ', IFNULL(va.axis, 0))
+FROM visual_acuity_exams va
+JOIN medical_visits mv ON va.visit_id = mv.id
+JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+UNION ALL
+SELECT 
+    'BIOMICROSCOPIA',
+    bio.id,
+    bio.visit_id,
+    ch.patient_id,
+    bio.eye,
+    bio.exam_date,
+    CONCAT('Cámara: ', bio.anterior_chamber_depth, ' | Cristalino: ', bio.lens_status),
+    CONCAT('Córnea: ', bio.cornea_status, ' | Iris: ', bio.iris_status, ' | PXF: ', IF(bio.pseudoexfoliation_present, 'SI', 'NO'))
+FROM biomicroscopy_exams bio
+JOIN medical_visits mv ON bio.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id;
 
 -- 7. Vista de Productividad por Profesional
@@ -155,13 +188,15 @@ DROP VIEW IF EXISTS vw_physician_workload;
 CREATE VIEW vw_physician_workload AS
 SELECT 
     hp.id AS professional_id,
-    CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS professional_name,
     s.name AS specialty,
-    COUNT(mv.id) AS total_visits,
+    COUNT(DISTINCT mv.id) AS total_visits,
     COUNT(DISTINCT ch.patient_id) AS distinct_patients_seen,
+    (SELECT COUNT(*) FROM appointments a WHERE a.professional_id = hp.id) AS total_appointments,
     MIN(mv.visit_date) AS first_visit_attended,
     MAX(mv.visit_date) AS last_visit_attended
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id

@@ -143,27 +143,34 @@ def diagram(name, columns=None, default=False, doc='', centers=None, line_style=
     return dg
 
 # Diagrama completo: dos ejes. Arriba patients con sus catálogos, 4FN, historia y ficha de glaucoma;
-# abajo medical_visits con sus 8 tablas hijas en una fila. Líneas rectas (oblicuas) para que ninguna cruce una caja.
+# abajo medical_visits con sus 10 tablas hijas en una fila. Líneas rectas (oblicuas) para que ninguna cruce una caja.
 DX = 800
 FULL = {t: (x + DX, y) for t, (x, y) in {
-    'patient_antecedents': (1600, 100), 'patient_allergies': (2450, 230), 'patient_family_histories': (2450, 470),
-    'departments': (400, 470), 'cities': (900, 470), 'patients': (1600, 470),
-    'document_types': (350, 830), 'clinical_documents': (900, 830), 'clinical_histories': (1600, 830), 'glaucoma_records': (2600, 830),
-    'specialties': (350, 1250), 'healthcare_professionals': (900, 1250), 'medical_visits': (1600, 1250), 'glaucoma_controls': (2600, 1250),
+    'departments': (350, 470), 'cities': (850, 470),
+    'document_types': (350, 750), 'persons': (1350, 600),
+    'patients': (1950, 600),
+    'patient_allergies': (2650, 200), 'patient_family_histories': (2650, 420),
+    'patient_antecedents': (2650, 640), 'glaucoma_risk_factors': (2650, 860),
+    'specialties': (350, 1250), 'healthcare_professionals': (1350, 1250),
+    'appointments': (1950, 1250),
+    'clinical_histories': (1950, 920), 'clinical_documents': (1350, 920),
+    'glaucoma_records': (2650, 1120), 'glaucoma_controls': (2650, 1400),
+    'medical_visits': (1950, 1650),
 }.items()}
 FULL['audit_logs'] = (500, 160)
 x = 100
 for t in ['visit_diagnoses', 'intraocular_pressures', 'pachymetry_exams', 'gonioscopy_exams', 'oct_exams',
-          'visual_field_exams', 'treatments', 'procedures']:
-    w, _ = size_of(t); FULL[t] = (x + w / 2, 2000); x += w + 130
-FULL['diagnoses'] = (FULL['visit_diagnoses'][0], 2440)
-FULL['medications'] = (FULL['treatments'][0], 2440)
+          'visual_field_exams', 'visual_acuity_exams', 'biomicroscopy_exams', 'treatments', 'procedures']:
+    w, _ = size_of(t); FULL[t] = (x + w / 2, 2150); x += w + 110
+FULL['diagnoses'] = (FULL['visit_diagnoses'][0], 2550)
+FULL['medications'] = (FULL['treatments'][0], 2550)
+FULL['medication_classes'] = (FULL['treatments'][0] - 180, 2900)
+FULL['procedure_types'] = (FULL['procedures'][0], 2550)
 assert sorted(FULL) == sorted(t for t in T if T[t]['tag'] != 'respaldo')
 diagram('0. Modelo lógico completo', centers=FULL, line_style=1, default=True,
-        doc='Las 25 tablas relacionales y sus 25 llaves foráneas. Cardinalidad: 1 : 0..* (FK simple) y 1 : 0..1 (FK con UNIQUE).')
+        doc='Las 32 tablas relacionales y sus 33 llaves foráneas. Cardinalidad: 1 : 0..* (FK simple) y 1 : 0..1 (FK con UNIQUE).')
 # StarUML traza las líneas en ángulo recto entre centros: se evita que una relación atraviese otra tabla
-STARUML_LAYOUT = dict(DER_LAYOUT, m3=[['patients'], ['clinical_histories', 'clinical_documents'],
-                                      ['medical_visits', 'healthcare_professionals'], ['visit_diagnoses'], ['diagnoses']])
+STARUML_LAYOUT = DER_LAYOUT
 for mk, (mname, _) in MODS.items():
     diagram(f'{mk[1]}. {mname}', STARUML_LAYOUT[mk], doc=f'Módulo {mk[1]}: {mname}. Las tablas de otros módulos se incluyen para mostrar sus relaciones.')
 

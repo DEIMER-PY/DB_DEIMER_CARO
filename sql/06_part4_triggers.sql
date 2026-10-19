@@ -15,9 +15,9 @@ DELIMITER $$
 -- ------------------------------------------------------------------------------
 
 -- 1. Eliminar espacios externos de los nombres de pacientes antes de insertarlos.
-DROP TRIGGER IF EXISTS trg_bi_patients_trim_names $$
-CREATE TRIGGER trg_bi_patients_trim_names
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_trim_names $$
+CREATE TRIGGER trg_bi_persons_trim_names
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.first_name = TRIM(NEW.first_name);
@@ -25,9 +25,9 @@ BEGIN
 END $$
 
 -- 2. Convertir automáticamente el correo del paciente a minúsculas.
-DROP TRIGGER IF EXISTS trg_bi_patients_lower_email $$
-CREATE TRIGGER trg_bi_patients_lower_email
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_lower_email $$
+CREATE TRIGGER trg_bi_persons_lower_email
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.email IS NOT NULL THEN
@@ -36,18 +36,18 @@ BEGIN
 END $$
 
 -- 3. Convertir el número de documento a mayúsculas cuando contenga caracteres.
-DROP TRIGGER IF EXISTS trg_bi_patients_upper_document $$
-CREATE TRIGGER trg_bi_patients_upper_document
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_upper_document $$
+CREATE TRIGGER trg_bi_persons_upper_document
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.document_number = UPPER(TRIM(NEW.document_number));
 END $$
 
 -- 4. Impedir registrar una fecha de nacimiento futura.
-DROP TRIGGER IF EXISTS trg_bi_patients_check_birth_date $$
-CREATE TRIGGER trg_bi_patients_check_birth_date
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_check_birth_date $$
+CREATE TRIGGER trg_bi_persons_check_birth_date
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.birth_date > CURDATE() THEN
@@ -140,7 +140,7 @@ AFTER INSERT ON patients
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, new_values, performed_by, changed_at)
-    VALUES ('patients', NEW.id, 'INSERT', JSON_OBJECT('document', NEW.document_number, 'name', CONCAT(NEW.first_name, ' ', NEW.last_name)), 'SYSTEM', NOW());
+    VALUES ('patients', NEW.id, 'INSERT', JSON_OBJECT('person_id', NEW.person_id, 'insurance', NEW.health_insurance, 'affiliation', NEW.affiliation_type), 'SYSTEM', NOW());
 END $$
 
 -- 12. Registrar en auditoría la creación de una historia clínica.
@@ -200,7 +200,7 @@ AFTER INSERT ON procedures
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, new_values, performed_by, changed_at)
-    VALUES ('procedures', NEW.id, 'INSERT', JSON_OBJECT('visit_id', NEW.visit_id, 'name', NEW.name, 'eye', NEW.eye), 'SYSTEM', NOW());
+    VALUES ('procedures', NEW.id, 'INSERT', JSON_OBJECT('visit_id', NEW.visit_id, 'procedure_type_id', NEW.procedure_type_id, 'eye', NEW.eye), 'SYSTEM', NOW());
 END $$
 
 -- 18. Registrar en auditoría cada nuevo estudio OCT.
@@ -240,10 +240,10 @@ END $$
 -- BEFORE UPDATE (21 a 30)
 -- ------------------------------------------------------------------------------
 
--- 21. Actualizar automáticamente updated_at antes de modificar un paciente.
-DROP TRIGGER IF EXISTS trg_bu_patients_updated_at $$
-CREATE TRIGGER trg_bu_patients_updated_at
-BEFORE UPDATE ON patients
+-- 21. Actualizar automáticamente updated_at antes de modificar una persona.
+DROP TRIGGER IF EXISTS trg_bu_persons_updated_at $$
+CREATE TRIGGER trg_bu_persons_updated_at
+BEFORE UPDATE ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.first_name = TRIM(NEW.first_name);
@@ -264,13 +264,13 @@ BEGIN
 END $$
 
 -- 23. Impedir modificar el número de documento una vez creada la historia clínica.
-DROP TRIGGER IF EXISTS trg_bu_patients_freeze_doc $$
-CREATE TRIGGER trg_bu_patients_freeze_doc
-BEFORE UPDATE ON patients
+DROP TRIGGER IF EXISTS trg_bu_persons_freeze_doc $$
+CREATE TRIGGER trg_bu_persons_freeze_doc
+BEFORE UPDATE ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.document_number <> OLD.document_number THEN
-        IF EXISTS (SELECT 1 FROM clinical_histories WHERE patient_id = OLD.id) THEN
+        IF EXISTS (SELECT 1 FROM patients p JOIN clinical_histories ch ON p.id = ch.patient_id WHERE p.person_id = OLD.id) THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Integridad clínica: No se permite modificar el número de documento una vez expedida la historia clínica.';
         END IF;
@@ -369,23 +369,23 @@ END $$
 -- AFTER UPDATE (31 a 40)
 -- ------------------------------------------------------------------------------
 
--- 31. Registrar cambios de datos personales del paciente.
-DROP TRIGGER IF EXISTS trg_au_audit_patient_update $$
-CREATE TRIGGER trg_au_audit_patient_update
-AFTER UPDATE ON patients
+-- 31. Registrar cambios de datos personales de personas.
+DROP TRIGGER IF EXISTS trg_au_audit_person_update $$
+CREATE TRIGGER trg_au_audit_person_update
+AFTER UPDATE ON persons
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, performed_by, changed_at)
-    VALUES ('patients', NEW.id, 'UPDATE',
+    VALUES ('persons', NEW.id, 'UPDATE',
             JSON_OBJECT('phone', OLD.phone, 'address', OLD.address),
             JSON_OBJECT('phone', NEW.phone, 'address', NEW.address),
             'SYSTEM', NOW());
 END $$
 
--- 32. Guardar valor anterior y nuevo del correo del paciente.
-DROP TRIGGER IF EXISTS trg_au_audit_patient_email $$
-CREATE TRIGGER trg_au_audit_patient_email
-AFTER UPDATE ON patients
+-- 32. Guardar valor anterior y nuevo del correo de personas.
+DROP TRIGGER IF EXISTS trg_au_audit_person_email $$
+CREATE TRIGGER trg_au_audit_person_email
+AFTER UPDATE ON persons
 FOR EACH ROW
 BEGIN
     IF OLD.email <=> NEW.email THEN
@@ -393,7 +393,7 @@ BEGIN
         BEGIN END;
     ELSE
         INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, performed_by, changed_at)
-        VALUES ('patients', NEW.id, 'UPDATE',
+        VALUES ('persons', NEW.id, 'UPDATE',
                 JSON_OBJECT('email', OLD.email),
                 JSON_OBJECT('email', NEW.email),
                 'SECURITY_AUDIT', NOW());
@@ -524,8 +524,8 @@ CREATE TRIGGER trg_bd_patients_backup
 BEFORE DELETE ON patients
 FOR EACH ROW
 BEGIN
-    INSERT INTO patients_backup (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email, created_at, updated_at)
-    VALUES (OLD.id, OLD.document_type_id, OLD.document_number, OLD.first_name, OLD.last_name, OLD.birth_date, OLD.gender, OLD.city_id, OLD.address, OLD.phone, OLD.email, OLD.created_at, OLD.updated_at);
+    INSERT INTO patients_backup (id, person_id, blood_type, health_insurance, affiliation_type, occupation, emergency_contact_name, emergency_contact_phone, created_at, updated_at)
+    VALUES (OLD.id, OLD.person_id, OLD.blood_type, OLD.health_insurance, OLD.affiliation_type, OLD.occupation, OLD.emergency_contact_name, OLD.emergency_contact_phone, OLD.created_at, OLD.updated_at);
 END $$
 
 -- 42. Guardar una copia de una consulta eliminada.
@@ -619,16 +619,14 @@ BEGIN
             'DOCUMENT_SYSTEM', NOW());
 END $$
 
--- 50. Implementar un esquema completo de auditoría mediante triggers para DELETE sobre patients.
-DROP TRIGGER IF EXISTS trg_ad_patients_full_audit $$
-CREATE TRIGGER trg_ad_patients_full_audit
-AFTER DELETE ON patients
+-- 50. Guardar una copia de respaldo histórico en persons_backup antes de eliminar una persona.
+DROP TRIGGER IF EXISTS trg_bd_persons_backup $$
+CREATE TRIGGER trg_bd_persons_backup
+BEFORE DELETE ON persons
 FOR EACH ROW
 BEGIN
-    INSERT INTO audit_logs (table_name, record_id, action, old_values, performed_by, changed_at)
-    VALUES ('patients', OLD.id, 'DELETE',
-            JSON_OBJECT('document', OLD.document_number, 'name', CONCAT(OLD.first_name, ' ', OLD.last_name), 'email', OLD.email),
-            'AUDIT_CONTROLLER', NOW());
+    INSERT INTO persons_backup (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email, created_at, updated_at)
+    VALUES (OLD.id, OLD.document_type_id, OLD.document_number, OLD.first_name, OLD.last_name, OLD.birth_date, OLD.gender, OLD.city_id, OLD.address, OLD.phone, OLD.email, OLD.created_at, OLD.updated_at);
 END $$
 
 DELIMITER ;

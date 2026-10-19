@@ -15,7 +15,7 @@ erDiagram
         varchar code UK "VARCHAR(10) NOT NULL"
         varchar name "VARCHAR(50) NOT NULL"
     }
-    PATIENTS {
+    PERSONS {
         bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
         int document_type_id FK "INT NOT NULL"
         varchar document_number UK "VARCHAR(30) NOT NULL"
@@ -27,6 +27,18 @@ erDiagram
         varchar address "VARCHAR(255) NULL"
         varchar phone "VARCHAR(30) NULL"
         varchar email UK "VARCHAR(150) NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
+    }
+    PATIENTS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint person_id FK, UK "BIGINT NOT NULL"
+        enum blood_type "ENUM('O+','O-','A+','A-','B+','B-','AB+','AB-') NULL"
+        varchar health_insurance "VARCHAR(100) NULL"
+        enum affiliation_type "ENUM('COTIZANTE','BENEFICIARIO','PARTICULAR','SUBSIDIADO') NOT NULL"
+        varchar occupation "VARCHAR(100) NULL"
+        varchar emergency_contact_name "VARCHAR(100) NULL"
+        varchar emergency_contact_phone "VARCHAR(30) NULL"
         datetime created_at "DATETIME NOT NULL"
         datetime updated_at "DATETIME NOT NULL"
     }
@@ -51,6 +63,12 @@ erDiagram
         text description "TEXT NOT NULL"
         year year_diagnosed "YEAR NULL"
     }
+    GLAUCOMA_RISK_FACTORS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK "BIGINT NOT NULL"
+        enum risk_factor "ENUM('CCT_DELGADO','MIOPIA_ALTA','ANTECEDENTE_FAMILIAR_1ER_GRADO','HIPOTENSION_NOCTURNA','VASOESPASMO_MIGRAÑA','HEMORRAGIA_DISCO','SINDROME_PSEUDOEXFOLIATIVO','SINDROME_DISPERSION_PIGMENTARIA') NOT NULL"
+        varchar notes "VARCHAR(255) NULL"
+    }
     SPECIALTIES {
         int id PK "INT NOT NULL AUTO_INCREMENT"
         varchar name UK "VARCHAR(100) NOT NULL"
@@ -58,15 +76,20 @@ erDiagram
     }
     HEALTHCARE_PROFESSIONALS {
         bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
-        int document_type_id FK "INT NOT NULL"
-        varchar document_number UK "VARCHAR(30) NOT NULL"
-        varchar first_name "VARCHAR(100) NOT NULL"
-        varchar last_name "VARCHAR(100) NOT NULL"
+        bigint person_id FK, UK "BIGINT NOT NULL"
         varchar medical_license UK "VARCHAR(50) NOT NULL"
         int specialty_id FK "INT NOT NULL"
-        varchar email UK "VARCHAR(150) NOT NULL"
-        varchar phone "VARCHAR(30) NULL"
         boolean is_active "BOOLEAN NOT NULL"
+        datetime created_at "DATETIME NOT NULL"
+    }
+    APPOINTMENTS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint patient_id FK "BIGINT NOT NULL"
+        bigint professional_id FK "BIGINT NOT NULL"
+        datetime appointment_date "DATETIME NOT NULL"
+        enum appointment_type "ENUM('PRIMERA_VEZ','CONTROL_GLAUCOMA','POST_QUIRURGICO','LECTURA_EXAMENES','URGENCIA') NOT NULL"
+        enum status "ENUM('PROGRAMADA','CONFIRMADA','ATENDIDA','CANCELADA','NO_ASISTIO') NOT NULL"
+        varchar reason "VARCHAR(255) NULL"
         datetime created_at "DATETIME NOT NULL"
     }
     CLINICAL_HISTORIES {
@@ -164,8 +187,38 @@ erDiagram
         text interpretation "TEXT NULL"
         datetime exam_date "DATETIME NOT NULL"
     }
+    VISUAL_ACUITY_EXAMS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        decimal sphere "DECIMAL(4,2) NULL"
+        decimal cylinder "DECIMAL(4,2) NULL"
+        int axis "INT NULL"
+        varchar uncorrected_va "VARCHAR(20) NOT NULL"
+        varchar corrected_va "VARCHAR(20) NOT NULL"
+        varchar pinhole_va "VARCHAR(20) NULL"
+        datetime exam_date "DATETIME NOT NULL"
+    }
+    BIOMICROSCOPY_EXAMS {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint visit_id FK "BIGINT NOT NULL"
+        enum eye "ENUM('OD','OI') NOT NULL"
+        varchar cornea_status "VARCHAR(100) NOT NULL"
+        enum anterior_chamber_depth "ENUM('VAN_HERICK_I','VAN_HERICK_II','VAN_HERICK_III','VAN_HERICK_IV') NOT NULL"
+        varchar iris_status "VARCHAR(100) NOT NULL"
+        enum lens_status "ENUM('TRANSPARENTE','CATARATA_NUCLEAR','CATARATA_CORTICAL','CATARATA_SUBCAPSULAR','PSEUDOFAQUICO','AFAQUICO') NOT NULL"
+        boolean pseudoexfoliation_present "BOOLEAN NOT NULL"
+        boolean pigment_dispersion_present "BOOLEAN NOT NULL"
+        datetime exam_date "DATETIME NOT NULL"
+    }
+    MEDICATION_CLASSES {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar name UK "VARCHAR(100) NOT NULL"
+        text mechanism_of_action "TEXT NULL"
+    }
     MEDICATIONS {
         int id PK "INT NOT NULL AUTO_INCREMENT"
+        int medication_class_id FK "INT NOT NULL"
         varchar name UK "VARCHAR(150) NOT NULL"
         varchar generic_name "VARCHAR(150) NOT NULL"
         varchar concentration "VARCHAR(50) NOT NULL"
@@ -184,10 +237,17 @@ erDiagram
         boolean is_active "BOOLEAN NOT NULL"
         text notes "TEXT NULL"
     }
+    PROCEDURE_TYPES {
+        int id PK "INT NOT NULL AUTO_INCREMENT"
+        varchar code UK "VARCHAR(20) NOT NULL"
+        varchar name "VARCHAR(150) NOT NULL"
+        enum category "ENUM('LASER','QUIRURGICO','DIAGNOSTICO') NOT NULL"
+        text description "TEXT NULL"
+    }
     PROCEDURES {
         bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
         bigint visit_id FK "BIGINT NOT NULL"
-        varchar name "VARCHAR(150) NOT NULL"
+        int procedure_type_id FK "INT NOT NULL"
         enum eye "ENUM('OD','OI','AMBOS') NOT NULL"
         datetime procedure_date "DATETIME NOT NULL"
         text complications "TEXT NULL"
@@ -221,7 +281,7 @@ erDiagram
         varchar performed_by "VARCHAR(100) NOT NULL"
         datetime changed_at "DATETIME NOT NULL"
     }
-    PATIENTS_BACKUP {
+    PERSONS_BACKUP {
         bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
         int document_type_id "INT NOT NULL"
         varchar document_number UK "VARCHAR(30) NOT NULL"
@@ -233,6 +293,18 @@ erDiagram
         varchar address "VARCHAR(255) NULL"
         varchar phone "VARCHAR(30) NULL"
         varchar email UK "VARCHAR(150) NULL"
+        datetime created_at "DATETIME NOT NULL"
+        datetime updated_at "DATETIME NOT NULL"
+    }
+    PATIENTS_BACKUP {
+        bigint id PK "BIGINT NOT NULL AUTO_INCREMENT"
+        bigint person_id UK "BIGINT NOT NULL"
+        enum blood_type "ENUM('O+','O-','A+','A-','B+','B-','AB+','AB-') NULL"
+        varchar health_insurance "VARCHAR(100) NULL"
+        enum affiliation_type "ENUM('COTIZANTE','BENEFICIARIO','PARTICULAR','SUBSIDIADO') NOT NULL"
+        varchar occupation "VARCHAR(100) NULL"
+        varchar emergency_contact_name "VARCHAR(100) NULL"
+        varchar emergency_contact_phone "VARCHAR(30) NULL"
         datetime created_at "DATETIME NOT NULL"
         datetime updated_at "DATETIME NOT NULL"
     }
@@ -275,13 +347,17 @@ erDiagram
     }
 
     DEPARTMENTS ||--o{ CITIES : "pertenece a (1:N)"
-    DOCUMENT_TYPES ||--o{ PATIENTS : "identifica (1:N)"
-    CITIES ||--o{ PATIENTS : "reside en (1:N)"
+    DOCUMENT_TYPES ||--o{ PERSONS : "identifica (1:N)"
+    CITIES ||--o{ PERSONS : "reside en (1:N)"
+    PERSONS ||--o| PATIENTS : "especializa (1:0..1)"
     PATIENTS ||--o{ PATIENT_ALLERGIES : "presenta (1:N)"
     PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "reporta (1:N)"
     PATIENTS ||--o{ PATIENT_ANTECEDENTS : "registra (1:N)"
-    DOCUMENT_TYPES ||--o{ HEALTHCARE_PROFESSIONALS : "identifica (1:N)"
+    PATIENTS ||--o{ GLAUCOMA_RISK_FACTORS : "pondera (1:N)"
+    PERSONS ||--o| HEALTHCARE_PROFESSIONALS : "identifica (1:0..1)"
     SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : "ejerce (1:N)"
+    PATIENTS ||--o{ APPOINTMENTS : "agenda (1:N)"
+    HEALTHCARE_PROFESSIONALS ||--o{ APPOINTMENTS : "atiende (1:N)"
     PATIENTS ||--o| CLINICAL_HISTORIES : "tiene (1:1)"
     CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "acumula (1:N)"
     HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "atiende (1:N)"
@@ -293,9 +369,13 @@ erDiagram
     MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : "inspecciona (1:N)"
     MEDICAL_VISITS ||--o{ OCT_EXAMS : "escanea (1:N)"
     MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "cuantifica (1:N)"
+    MEDICAL_VISITS ||--o{ VISUAL_ACUITY_EXAMS : "determina (1:N)"
+    MEDICAL_VISITS ||--o{ BIOMICROSCOPY_EXAMS : "examina (1:N)"
+    MEDICATION_CLASSES ||--o{ MEDICATIONS : "clasifica (1:N)"
     MEDICAL_VISITS ||--o{ TREATMENTS : "prescribe (1:N)"
     MEDICATIONS ||--o{ TREATMENTS : "suministra (1:N)"
     MEDICAL_VISITS ||--o{ PROCEDURES : "realiza (1:N)"
+    PROCEDURE_TYPES ||--o{ PROCEDURES : "tipifica (1:N)"
     PATIENTS ||--o| GLAUCOMA_RECORDS : "posee (1:0..1)"
     GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "monitorea (1:N)"
     MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "asocia (1:N)"

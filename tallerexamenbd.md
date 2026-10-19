@@ -675,14 +675,14 @@ SELECT 'Base de datos oftalmologia_glaucoma_db inicializada correctamente' AS es
 
 ### 21.2 Esquema Físico Relacional en 4FN (`01_ddl_schema.sql`)
 
-Crea las 25 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 4 tablas de respaldo para auditoría histórica, índices de rendimiento y restricciones de integridad:
+Crea las 32 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 5 tablas de respaldo para auditoría histórica, índices de rendimiento y restricciones de integridad:
 
 ```sql
 -- =============================================================================
 -- PROYECTO: HISTORIAS CLÍNICAS DE OFTALMOLOGÍA Y GLAUCOMA
 -- AUTOR: Deimer Caro
 -- ARCHIVO: 01_ddl_schema.sql
--- DESCRIPCIÓN: Definición física DDL de todas las tablas con restricciones 4FN
+-- DESCRIPCIÓN: Definición física DDL super-normalizada (4FN/5FN) con personas, citas y exámenes especializados
 -- =============================================================================
 
 USE oftalmologia_glaucoma_db;
@@ -712,38 +712,8 @@ CREATE TABLE document_types (
     CONSTRAINT uq_document_type_code UNIQUE (code)
 ) ENGINE=InnoDB;
 
--- 4. Catálogo de Especialidades Médicas
-CREATE TABLE specialties (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    CONSTRAINT uq_specialty_name UNIQUE (name)
-) ENGINE=InnoDB;
-
--- 5. Profesionales de la Salud
-CREATE TABLE healthcare_professionals (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    document_type_id INT NOT NULL,
-    document_number VARCHAR(30) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    medical_license VARCHAR(50) NOT NULL,
-    specialty_id INT NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    phone VARCHAR(30) NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_prof_document UNIQUE (document_number),
-    CONSTRAINT uq_prof_license UNIQUE (medical_license),
-    CONSTRAINT uq_prof_email UNIQUE (email),
-    CONSTRAINT fk_prof_doc_type FOREIGN KEY (document_type_id) 
-        REFERENCES document_types(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_prof_specialty FOREIGN KEY (specialty_id) 
-        REFERENCES specialties(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
-
--- 6. Pacientes (Normalizado en 3FN/BCNF)
-CREATE TABLE patients (
+-- 4. Personas Naturales (Super-tipo generalizador 3FN/BCNF)
+CREATE TABLE persons (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     document_type_id INT NOT NULL,
     document_number VARCHAR(30) NOT NULL,
@@ -757,15 +727,56 @@ CREATE TABLE patients (
     email VARCHAR(150) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT uq_patient_document UNIQUE (document_number),
-    CONSTRAINT uq_patient_email UNIQUE (email),
-    CONSTRAINT fk_patient_doc_type FOREIGN KEY (document_type_id) 
+    CONSTRAINT uq_person_document UNIQUE (document_number),
+    CONSTRAINT uq_person_email UNIQUE (email),
+    CONSTRAINT fk_person_doc_type FOREIGN KEY (document_type_id) 
         REFERENCES document_types(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_patient_city FOREIGN KEY (city_id) 
+    CONSTRAINT fk_person_city FOREIGN KEY (city_id) 
         REFERENCES cities(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 7. Alergias del Paciente (Desacoplado por 4FN: Independiente de Antecedentes Familiares)
+-- 5. Catálogo de Especialidades Médicas
+CREATE TABLE specialties (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    CONSTRAINT uq_specialty_name UNIQUE (name)
+) ENGINE=InnoDB;
+
+-- 6. Profesionales de la Salud (Sub-tipo de persons)
+CREATE TABLE healthcare_professionals (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    person_id BIGINT NOT NULL,
+    medical_license VARCHAR(50) NOT NULL,
+    specialty_id INT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_prof_person UNIQUE (person_id),
+    CONSTRAINT uq_prof_license UNIQUE (medical_license),
+    CONSTRAINT fk_prof_person FOREIGN KEY (person_id) 
+        REFERENCES persons(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_prof_specialty FOREIGN KEY (specialty_id) 
+        REFERENCES specialties(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 7. Pacientes (Sub-tipo clínico de persons normalizado en 4FN)
+CREATE TABLE patients (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    person_id BIGINT NOT NULL,
+    blood_type ENUM('O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-') NULL,
+    health_insurance VARCHAR(100) NULL,
+    affiliation_type ENUM('COTIZANTE', 'BENEFICIARIO', 'PARTICULAR', 'SUBSIDIADO') NOT NULL DEFAULT 'COTIZANTE',
+    occupation VARCHAR(100) NULL,
+    emergency_contact_name VARCHAR(100) NULL,
+    emergency_contact_phone VARCHAR(30) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uq_patient_person UNIQUE (person_id),
+    CONSTRAINT fk_patient_person FOREIGN KEY (person_id) 
+        REFERENCES persons(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 8. Alergias del Paciente (Desacoplado por 4FN)
 CREATE TABLE patient_allergies (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -777,7 +788,7 @@ CREATE TABLE patient_allergies (
     CONSTRAINT uq_patient_allergen UNIQUE (patient_id, allergen)
 ) ENGINE=InnoDB;
 
--- 8. Antecedentes Familiares (Desacoplado por 4FN: Independiente de Alergias)
+-- 9. Antecedentes Familiares (Desacoplado por 4FN)
 CREATE TABLE patient_family_histories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -788,7 +799,7 @@ CREATE TABLE patient_family_histories (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 9. Antecedentes Personales (Desacoplado por 4FN)
+-- 10. Antecedentes Personales (Desacoplado por 4FN)
 CREATE TABLE patient_antecedents (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -799,7 +810,18 @@ CREATE TABLE patient_antecedents (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 10. Historias Clínicas (Relación 1 a 1 obligatoria con Paciente)
+-- 11. Factores de Riesgo Específicos de Glaucoma (Desacoplado por 4FN)
+CREATE TABLE glaucoma_risk_factors (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    patient_id BIGINT NOT NULL,
+    risk_factor ENUM('CCT_DELGADO', 'MIOPIA_ALTA', 'ANTECEDENTE_FAMILIAR_1ER_GRADO', 'HIPOTENSION_NOCTURNA', 'VASOESPASMO_MIGRAÑA', 'HEMORRAGIA_DISCO', 'SINDROME_PSEUDOEXFOLIATIVO', 'SINDROME_DISPERSION_PIGMENTARIA') NOT NULL,
+    notes VARCHAR(255) NULL,
+    CONSTRAINT fk_grisk_patient FOREIGN KEY (patient_id) 
+        REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT uq_patient_risk_factor UNIQUE (patient_id, risk_factor)
+) ENGINE=InnoDB;
+
+-- 12. Historias Clínicas (Relación 1 a 1 obligatoria con Paciente)
 CREATE TABLE clinical_histories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -812,7 +834,23 @@ CREATE TABLE clinical_histories (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 11. Consultas Médicas
+-- 13. Agendamiento de Citas Clínicas
+CREATE TABLE appointments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    patient_id BIGINT NOT NULL,
+    professional_id BIGINT NOT NULL,
+    appointment_date DATETIME NOT NULL,
+    appointment_type ENUM('PRIMERA_VEZ', 'CONTROL_GLAUCOMA', 'POST_QUIRURGICO', 'LECTURA_EXAMENES', 'URGENCIA') NOT NULL DEFAULT 'CONTROL_GLAUCOMA',
+    status ENUM('PROGRAMADA', 'CONFIRMADA', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO') NOT NULL DEFAULT 'PROGRAMADA',
+    reason VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_app_patient FOREIGN KEY (patient_id) 
+        REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_app_professional FOREIGN KEY (professional_id) 
+        REFERENCES healthcare_professionals(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 14. Consultas Médicas
 CREATE TABLE medical_visits (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     clinical_history_id BIGINT NOT NULL,
@@ -831,7 +869,7 @@ CREATE TABLE medical_visits (
         REFERENCES healthcare_professionals(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 12. Catálogo de Diagnósticos
+-- 15. Catálogo de Diagnósticos
 CREATE TABLE diagnoses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
@@ -841,7 +879,7 @@ CREATE TABLE diagnoses (
     CONSTRAINT uq_diagnosis_code UNIQUE (code)
 ) ENGINE=InnoDB;
 
--- 13. Diagnósticos de la Consulta (Asociativa 2FN/3FN)
+-- 16. Diagnósticos de la Consulta (Asociativa 2FN/3FN)
 CREATE TABLE visit_diagnoses (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -855,7 +893,25 @@ CREATE TABLE visit_diagnoses (
         REFERENCES diagnoses(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 14. Mediciones de Presión Intraocular (PIO)
+-- 17. Exámenes de Agudeza Visual y Refracción
+CREATE TABLE visual_acuity_exams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT NOT NULL,
+    eye ENUM('OD', 'OI') NOT NULL,
+    sphere DECIMAL(4,2) NULL,
+    cylinder DECIMAL(4,2) NULL,
+    axis INT NULL,
+    uncorrected_va VARCHAR(20) NOT NULL,
+    corrected_va VARCHAR(20) NOT NULL,
+    pinhole_va VARCHAR(20) NULL,
+    exam_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_va_eye CHECK (eye IN ('OD', 'OI')),
+    CONSTRAINT chk_va_axis CHECK (axis IS NULL OR (axis >= 0 AND axis <= 180)),
+    CONSTRAINT fk_va_visit FOREIGN KEY (visit_id) 
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 18. Mediciones de Presión Intraocular (PIO)
 CREATE TABLE intraocular_pressures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -870,7 +926,7 @@ CREATE TABLE intraocular_pressures (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 15. Exámenes de Paquimetría Corneal (CCT)
+-- 19. Exámenes de Paquimetría Corneal (CCT)
 CREATE TABLE pachymetry_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -884,7 +940,24 @@ CREATE TABLE pachymetry_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 16. Exámenes de Gonioscopía
+-- 20. Exámenes de Biomicroscopía con Lámpara de Hendidura
+CREATE TABLE biomicroscopy_exams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT NOT NULL,
+    eye ENUM('OD', 'OI') NOT NULL,
+    cornea_status VARCHAR(100) NOT NULL DEFAULT 'TRANSPARENTE',
+    anterior_chamber_depth ENUM('VAN_HERICK_I', 'VAN_HERICK_II', 'VAN_HERICK_III', 'VAN_HERICK_IV') NOT NULL DEFAULT 'VAN_HERICK_IV',
+    iris_status VARCHAR(100) NOT NULL DEFAULT 'NORMAL',
+    lens_status ENUM('TRANSPARENTE', 'CATARATA_NUCLEAR', 'CATARATA_CORTICAL', 'CATARATA_SUBCAPSULAR', 'PSEUDOFAQUICO', 'AFAQUICO') NOT NULL DEFAULT 'TRANSPARENTE',
+    pseudoexfoliation_present BOOLEAN NOT NULL DEFAULT FALSE,
+    pigment_dispersion_present BOOLEAN NOT NULL DEFAULT FALSE,
+    exam_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_biomicro_eye CHECK (eye IN ('OD', 'OI')),
+    CONSTRAINT fk_biomicro_visit FOREIGN KEY (visit_id) 
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 21. Exámenes de Gonioscopía
 CREATE TABLE gonioscopy_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -898,7 +971,7 @@ CREATE TABLE gonioscopy_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 17. Exámenes de Tomografía de Coherencia Óptica (OCT)
+-- 22. Exámenes de Tomografía de Coherencia Óptica (OCT)
 CREATE TABLE oct_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -917,7 +990,7 @@ CREATE TABLE oct_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 18. Exámenes de Campo Visual (Campimetría)
+-- 23. Exámenes de Campo Visual (Campimetría)
 CREATE TABLE visual_field_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -937,18 +1010,29 @@ CREATE TABLE visual_field_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 19. Catálogo de Medicamentos
+-- 24. Catálogo de Clases Farmacológicas de Medicamentos (3FN)
+CREATE TABLE medication_classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    mechanism_of_action TEXT NULL,
+    CONSTRAINT uq_med_class_name UNIQUE (name)
+) ENGINE=InnoDB;
+
+-- 25. Catálogo de Medicamentos Hipotensores
 CREATE TABLE medications (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    medication_class_id INT NOT NULL,
     name VARCHAR(150) NOT NULL,
     generic_name VARCHAR(150) NOT NULL,
     concentration VARCHAR(50) NOT NULL,
     presentation VARCHAR(100) NOT NULL DEFAULT 'Frasco gotero x 2.5 ml',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_medication_name UNIQUE (name)
+    CONSTRAINT uq_medication_name UNIQUE (name),
+    CONSTRAINT fk_med_class FOREIGN KEY (medication_class_id) 
+        REFERENCES medication_classes(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 20. Tratamientos Médicos Prescritos
+-- 26. Tratamientos Médicos Prescritos
 CREATE TABLE treatments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -967,20 +1051,32 @@ CREATE TABLE treatments (
         REFERENCES medications(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 21. Procedimientos y Cirugías
+-- 27. Catálogo de Tipos de Procedimientos y Cirugías (3FN)
+CREATE TABLE procedure_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    category ENUM('LASER', 'QUIRURGICO', 'DIAGNOSTICO') NOT NULL DEFAULT 'QUIRURGICO',
+    description TEXT NULL,
+    CONSTRAINT uq_procedure_type_code UNIQUE (code)
+) ENGINE=InnoDB;
+
+-- 28. Procedimientos y Cirugías Ejecutados
 CREATE TABLE procedures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
-    name VARCHAR(150) NOT NULL,
+    procedure_type_id INT NOT NULL,
     eye ENUM('OD', 'OI', 'AMBOS') NOT NULL,
     procedure_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     complications TEXT NULL,
     results TEXT NULL,
     CONSTRAINT fk_procedure_visit FOREIGN KEY (visit_id) 
-        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_procedure_type FOREIGN KEY (procedure_type_id) 
+        REFERENCES procedure_types(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 22. Registro Principal de Glaucoma (1 a 1 por Paciente con Glaucoma)
+-- 29. Registro Principal de Glaucoma (1 a 1 por Paciente con Glaucoma)
 CREATE TABLE glaucoma_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -996,7 +1092,7 @@ CREATE TABLE glaucoma_records (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 23. Controles Evolutivos de Glaucoma
+-- 30. Controles Evolutivos de Glaucoma
 CREATE TABLE glaucoma_controls (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     glaucoma_record_id BIGINT NOT NULL,
@@ -1011,7 +1107,7 @@ CREATE TABLE glaucoma_controls (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 24. Documentos Clínicos y Adjuntos
+-- 31. Documentos Clínicos y Adjuntos
 CREATE TABLE clinical_documents (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     clinical_history_id BIGINT NOT NULL,
@@ -1024,7 +1120,7 @@ CREATE TABLE clinical_documents (
         REFERENCES clinical_histories(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 25. Bitácora General de Auditoría
+-- 32. Bitácora General de Auditoría
 CREATE TABLE audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     table_name VARCHAR(100) NOT NULL,
@@ -1037,21 +1133,23 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB;
 
 -- Tablas de respaldo histórico para eliminaciones auditadas
+CREATE TABLE persons_backup LIKE persons;
 CREATE TABLE patients_backup LIKE patients;
 CREATE TABLE medical_visits_backup LIKE medical_visits;
 CREATE TABLE treatments_backup LIKE treatments;
 CREATE TABLE oct_exams_backup LIKE oct_exams;
 
 -- Índices de Rendimiento
-CREATE INDEX idx_patients_name ON patients(last_name, first_name);
+CREATE INDEX idx_persons_name ON persons(last_name, first_name);
 CREATE INDEX idx_visits_date ON medical_visits(visit_date);
+CREATE INDEX idx_app_date ON appointments(appointment_date);
 CREATE INDEX idx_iop_eye_pressure ON intraocular_pressures(eye, pressure);
 CREATE INDEX idx_oct_exam_date ON oct_exams(exam_date);
 CREATE INDEX idx_vf_exam_date ON visual_field_exams(exam_date);
 CREATE INDEX idx_treatments_active ON treatments(is_active);
 CREATE INDEX idx_audit_table_date ON audit_logs(table_name, changed_at);
 
-SELECT 'Esquema físico DDL creado exitosamente con 25 tablas relacionales e índices' AS estado;
+SELECT 'Esquema físico DDL creado exitosamente con 32 tablas relacionales e índices' AS estado;
 ```
 
 # 22. Restricciones
@@ -1119,7 +1217,7 @@ Carga el dataset clínico completo de prueba con departamentos, ciudades, tipos 
 -- PROYECTO: Sistema de Gestión de Historias Clínicas (Oftalmología y Glaucoma)
 -- AUTOR: Deimer Caro
 -- ARCHIVO: 02_dml_seed_data.sql
--- DESCRIPCIÓN: Inserción de datos semilla clínicamente coherentes y exhaustivos.
+-- DESCRIPCIÓN: Inserción de datos semilla clínicamente coherentes y exhaustivos (4FN/5FN)
 -- MOTOR: MySQL 8.0 (InnoDB)
 -- ==============================================================================
 
@@ -1132,23 +1230,30 @@ TRUNCATE TABLE clinical_documents;
 TRUNCATE TABLE glaucoma_controls;
 TRUNCATE TABLE glaucoma_records;
 TRUNCATE TABLE procedures;
+TRUNCATE TABLE procedure_types;
 TRUNCATE TABLE treatments;
 TRUNCATE TABLE medications;
+TRUNCATE TABLE medication_classes;
 TRUNCATE TABLE visual_field_exams;
 TRUNCATE TABLE oct_exams;
 TRUNCATE TABLE gonioscopy_exams;
+TRUNCATE TABLE biomicroscopy_exams;
 TRUNCATE TABLE pachymetry_exams;
 TRUNCATE TABLE intraocular_pressures;
+TRUNCATE TABLE visual_acuity_exams;
 TRUNCATE TABLE visit_diagnoses;
 TRUNCATE TABLE diagnoses;
 TRUNCATE TABLE medical_visits;
+TRUNCATE TABLE appointments;
 TRUNCATE TABLE clinical_histories;
+TRUNCATE TABLE glaucoma_risk_factors;
 TRUNCATE TABLE patient_antecedents;
 TRUNCATE TABLE patient_family_histories;
 TRUNCATE TABLE patient_allergies;
 TRUNCATE TABLE patients;
 TRUNCATE TABLE healthcare_professionals;
 TRUNCATE TABLE specialties;
+TRUNCATE TABLE persons;
 TRUNCATE TABLE document_types;
 TRUNCATE TABLE cities;
 TRUNCATE TABLE departments;
@@ -1183,26 +1288,10 @@ INSERT INTO document_types (id, code, name) VALUES
 (4, 'PAS', 'Pasaporte'),
 (5, 'RC', 'Registro Civil');
 
--- 4. Especialidades
-INSERT INTO specialties (id, name, description) VALUES
-(1, 'Oftalmología', 'Atención médica y quirúrgica general de los ojos'),
-(2, 'Glaucoma', 'Subespecialidad dedicada al diagnóstico y manejo del glaucoma y neuropatías ópticas'),
-(3, 'Córnea y Segmento Anterior', 'Especialista en superficie ocular, trasplante corneal y cirugía refractiva'),
-(4, 'Retina y Vítreo', 'Diagnóstico y cirugía de patologías de polo posterior'),
-(5, 'Neuroftalmología', 'Trastornos visuales relacionados con el sistema nervioso central'),
-(6, 'Optometría', 'Exámenes refractivos, agudeza visual y adaptación de lentes');
-
--- 5. Profesionales de la Salud
-INSERT INTO healthcare_professionals (id, document_type_id, document_number, first_name, last_name, medical_license, specialty_id, email, phone) VALUES
-(1, 1, '1098765432', 'Deimer', 'Caro', 'MP-OFT-2026-001', 2, 'deimer.caro@oftalmologia.com', '3157894512'),
-(2, 1, '1095432187', 'Roberto', 'Silva Gómez', 'MP-OFT-2018-044', 1, 'roberto.silva@oftalmologia.com', '3104561234'),
-(3, 1, '63456789', 'Elena', 'Vega Rincón', 'MP-GLA-2015-089', 2, 'elena.vega@glaucomaclinic.com', '3189876543'),
-(4, 1, '1098712345', 'Carlos', 'Mendoza Duarte', 'MP-COR-2020-112', 3, 'carlos.mendoza@oftalmologia.com', '3123456789'),
-(5, 1, '37890123', 'Sofía', 'Gómez Serrano', 'MP-OFT-2016-077', 1, 'sofia.gomez@oftalmologia.com', '3161239874'),
-(6, 1, '1098654321', 'Javier', 'Hernández Plata', 'MP-RET-2019-204', 4, 'javier.hernandez@retinaclinic.com', '3176543210');
-
--- 6. Pacientes (Diversidad de edades, apellidos, correos y prefijos de documento)
-INSERT INTO patients (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email) VALUES
+-- 4. Personas Naturales (Super-tipo generalizador 3FN/BCNF)
+-- IDs 1 a 15: Pacientes
+-- IDs 16 a 21: Profesionales de la salud
+INSERT INTO persons (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email) VALUES
 (1, 1, '1098123456', 'Juan Carlos', 'Gómez Pérez', '1958-03-15', 'M', 1, 'Cra 27 # 45-12 Cabecera', '3151112233', 'juan.gomez@gmail.com'),
 (2, 1, '1098234567', 'María Fernanda', 'Rodríguez López', '1964-07-22', 'F', 2, 'Cll 30 # 25-10 Cañaveral', '3162223344', 'maria.rodriguez@gmail.com'),
 (3, 1, '91234567', 'Carlos Alberto', 'Gómez Mendoza', '1952-11-05', 'M', 1, 'Cra 33 # 52-20 San Pío', '3173334455', 'carlos.gomez@hotmail.com'),
@@ -1217,9 +1306,51 @@ INSERT INTO patients (id, document_type_id, document_number, first_name, last_na
 (12, 1, '1098901234', 'Patricia', 'Herrera Díaz', '1970-10-28', 'F', 6, 'Cll 38Sur # 42-10 Zuñiga', '3172223355', 'patricia.herrera@gmail.com'),
 (13, 1, '52123456', 'Rosa María', 'Villamizar León', '1945-12-15', 'F', 7, 'Cra 15 # 85-30 Chicó', '3183334466', NULL),
 (14, 1, '1099012345', 'Andrés Felipe', 'García Jaimes', '1995-04-02', 'M', 1, 'Cra 35 # 48-18 Provenza', '3194445577', 'andres.garcia@gmail.com'),
-(15, 3, 'CE987654', 'John David', 'Smith Miller', '1968-07-04', 'M', 7, 'Cll 93 # 11-40 Parque 93', '3105556688', 'john.smith@expat.com');
+(15, 3, 'CE987654', 'John David', 'Smith Miller', '1968-07-04', 'M', 7, 'Cll 93 # 11-40 Parque 93', '3105556688', 'john.smith@expat.com'),
+(16, 1, '1098765432', 'Deimer', 'Caro', '1985-05-10', 'M', 1, 'Cra 28 # 50-10 Cabecera', '3157894512', 'deimer.caro@oftalmologia.com'),
+(17, 1, '1095432187', 'Roberto', 'Silva Gómez', '1978-08-20', 'M', 1, 'Cll 45 # 29-15 Sotomayor', '3104561234', 'roberto.silva@oftalmologia.com'),
+(18, 1, '63456789', 'Elena', 'Vega Rincón', '1982-11-14', 'F', 1, 'Cra 33 # 48-10 San Pío', '3189876543', 'elena.vega@glaucomaclinic.com'),
+(19, 1, '1098712345', 'Carlos', 'Mendoza Duarte', '1980-03-25', 'M', 2, 'Cll 31 # 26-05 Cañaveral', '3123456789', 'carlos.mendoza@oftalmologia.com'),
+(20, 1, '37890123', 'Sofía', 'Gómez Serrano', '1976-09-30', 'F', 1, 'Cra 25 # 34-12 Centro', '3161239874', 'sofia.gomez@oftalmologia.com'),
+(21, 1, '1098654321', 'Javier', 'Hernández Plata', '1984-01-18', 'M', 1, 'Cll 52 # 31-20 Conucos', '3176543210', 'javier.hernandez@retinaclinic.com');
 
--- 7. Alergias del Paciente (Normalización 4FN)
+-- 5. Especialidades Médicas
+INSERT INTO specialties (id, name, description) VALUES
+(1, 'Oftalmología', 'Atención médica y quirúrgica general de los ojos'),
+(2, 'Glaucoma', 'Subespecialidad dedicada al diagnóstico y manejo del glaucoma y neuropatías ópticas'),
+(3, 'Córnea y Segmento Anterior', 'Especialista en superficie ocular, trasplante corneal y cirugía refractiva'),
+(4, 'Retina y Vítreo', 'Diagnóstico y cirugía de patologías de polo posterior'),
+(5, 'Neuroftalmología', 'Trastornos visuales relacionados con el sistema nervioso central'),
+(6, 'Optometría', 'Exámenes refractivos, agudeza visual y adaptación de lentes');
+
+-- 6. Profesionales de la Salud (Sub-tipo de persons)
+INSERT INTO healthcare_professionals (id, person_id, medical_license, specialty_id, is_active) VALUES
+(1, 16, 'MP-OFT-2026-001', 2, TRUE),
+(2, 17, 'MP-OFT-2018-044', 1, TRUE),
+(3, 18, 'MP-GLA-2015-089', 2, TRUE),
+(4, 19, 'MP-COR-2020-112', 3, TRUE),
+(5, 20, 'MP-OFT-2016-077', 1, TRUE),
+(6, 21, 'MP-RET-2019-204', 4, TRUE);
+
+-- 7. Pacientes (Sub-tipo de persons con datos clínicos)
+INSERT INTO patients (id, person_id, blood_type, health_insurance, affiliation_type, occupation, emergency_contact_name, emergency_contact_phone) VALUES
+(1, 1, 'O+', 'Sanitas', 'COTIZANTE', 'Contador Público', 'María Gómez', '3151119988'),
+(2, 2, 'A+', 'Sura', 'COTIZANTE', 'Docente Universitaria', 'Pedro Rodríguez', '3162229988'),
+(3, 3, 'O+', 'Nueva EPS', 'PARTICULAR', 'Pensionado', 'Elena Gómez', '3173339988'),
+(4, 4, 'B+', 'Compensar', 'BENEFICIARIO', 'Ingeniera Civil', 'Luis Martínez', '3184449988'),
+(5, 5, 'AB+', 'Salud Total', 'SUBSIDIADO', 'Ama de Casa', 'Carmen Gómez', '3105559988'),
+(6, 6, 'O+', 'Sanitas', 'COTIZANTE', 'Comerciante', 'Rosa Sánchez', '3116669988'),
+(7, 7, 'A-', 'Sura', 'COTIZANTE', 'Abogada', 'Jorge Torres', '3127779988'),
+(8, 8, 'O+', 'Nueva EPS', 'SUBSIDIADO', 'Agricultor', 'Luz Ramírez', '3138889988'),
+(9, 9, 'B-', 'Sanitas', 'COTIZANTE', 'Bióloga', 'Mario Navarro', '3149999988'),
+(10, 10, 'A+', 'Compensar', 'COTIZANTE', 'Arquitecto', 'Claudia Álvarez', '3150009988'),
+(11, 11, 'O+', 'Sura', 'BENEFICIARIO', 'Estudiante', 'Andrés Vargas', '3161119988'),
+(12, 12, 'AB-', 'Nueva EPS', 'COTIZANTE', 'Psicóloga', 'Martín Herrera', '3172229988'),
+(13, 13, 'O+', 'Salud Total', 'SUBSIDIADO', 'Pensionada', 'Carlos Villamizar', '3183339988'),
+(14, 14, 'A+', 'Sanitas', 'COTIZANTE', 'Diseñador Gráfico', 'Paola García', '3194449988'),
+(15, 15, 'O-', 'Seguros Bolívar', 'PARTICULAR', 'Consultor Financiero', 'Sarah Smith', '3105559988');
+
+-- 8. Alergias del Paciente (Normalización 4FN)
 INSERT INTO patient_allergies (id, patient_id, allergen, reaction, severity) VALUES
 (1, 1, 'Penicilina', 'Rash cutáneo y prurito intenso', 'MODERADA'),
 (2, 1, 'Sulfas', 'Edema facial y urticaria', 'SEVERA'),
@@ -1230,7 +1361,7 @@ INSERT INTO patient_allergies (id, patient_id, allergen, reaction, severity) VAL
 (7, 10, 'AINEs', 'Gastritis erosiva y angioedema', 'MODERADA'),
 (8, 13, 'Penicilina', 'Choque anafiláctico previo', 'SEVERA');
 
--- 8. Antecedentes Familiares (Normalización 4FN - Independiente de Alergias)
+-- 9. Antecedentes Familiares (Normalización 4FN - Independiente de Alergias)
 INSERT INTO patient_family_histories (id, patient_id, condition_name, relationship, notes) VALUES
 (1, 1, 'Glaucoma Primario de Ángulo Abierto', 'Madre', 'Pérdida severa de campo visual en ojo izquierdo'),
 (2, 1, 'Diabetes Mellitus Tipo 2', 'Padre', 'Diagnosticado a los 50 años'),
@@ -1241,7 +1372,7 @@ INSERT INTO patient_family_histories (id, patient_id, condition_name, relationsh
 (7, 10, 'Glaucoma Primario de Ángulo Abierto', 'Tía paterna', 'Tratamiento crónico con análogos de prostaglandinas'),
 (8, 12, 'Desprendimiento de Retina', 'Hermano', 'Miopía alta asociada');
 
--- 9. Antecedentes Personales (Normalización 4FN)
+-- 10. Antecedentes Personales (Normalización 4FN)
 INSERT INTO patient_antecedents (id, patient_id, antecedent_type, description, year_diagnosed) VALUES
 (1, 1, 'PATOLOGICO', 'Hipertensión Arterial Primaria controlada con Losartán 50mg', 2012),
 (2, 1, 'QUIRURGICO', 'Apendicectomía por laparoscopia sin complicaciones', 2005),
@@ -1253,7 +1384,18 @@ INSERT INTO patient_antecedents (id, patient_id, antecedent_type, description, y
 (8, 10, 'PATOLOGICO', 'Hipertensión ocular detectada en tamizaje de optometría', 2024),
 (9, 13, 'QUIRURGICO', 'Facoemulsificación con lente intraocular bilateral', 2019);
 
--- 10. Historias Clínicas (1 a 1 con Pacientes)
+-- 11. Factores de Riesgo de Glaucoma (Normalización 4FN)
+INSERT INTO glaucoma_risk_factors (id, patient_id, risk_factor, notes) VALUES
+(1, 1, 'ANTECEDENTE_FAMILIAR_1ER_GRADO', 'Madre con GPAA severo'),
+(2, 1, 'CCT_DELGADO', 'Paquimetría central inferior a 520 micras'),
+(3, 2, 'HIPOTENSION_NOCTURNA', 'Monitoreo MAPA confirma dips tensionales nocturnos'),
+(4, 3, 'VASOESPASMO_MIGRAÑA', 'Migraña clásica con aura y fenómeno de Raynaud'),
+(5, 5, 'MIOPIA_ALTA', 'Miopía axial superior a 26 mm bilateral'),
+(6, 8, 'HEMORRAGIA_DISCO', 'Hemorragia en astilla inferotemporal observada en 2025'),
+(7, 10, 'SINDROME_PSEUDOEXFOLIATIVO', 'Depósitos de material blanco en borde pupilar y cápsula anterior'),
+(8, 12, 'SINDROME_DISPERSION_PIGMENTARIA', 'Husillo de Krukenberg en endotelio y transiluminación en hendiduras');
+
+-- 12. Historias Clínicas (1 a 1 con Pacientes)
 INSERT INTO clinical_histories (id, patient_id, history_number, status, created_at) VALUES
 (1, 1, 'HC-2026-0001', 'ACTIVA', '2025-01-15 08:30:00'),
 (2, 2, 'HC-2026-0002', 'ACTIVA', '2025-02-10 09:15:00'),
@@ -1264,212 +1406,273 @@ INSERT INTO clinical_histories (id, patient_id, history_number, status, created_
 (7, 7, 'HC-2026-0007', 'ACTIVA', '2025-07-22 08:00:00'),
 (8, 8, 'HC-2026-0008', 'ACTIVA', '2025-08-14 09:45:00'),
 (9, 9, 'HC-2026-0009', 'ACTIVA', '2025-09-09 10:30:00'),
-(10, 10, 'HC-2026-0010', 'ACTIVA', '2025-10-17 11:15:00'),
-(11, 11, 'HC-2026-0011', 'ACTIVA', '2025-11-25 14:45:00'),
-(12, 12, 'HC-2026-0012', 'ACTIVA', '2025-12-05 16:00:00'),
-(13, 13, 'HC-2026-0013', 'ACTIVA', '2026-01-08 08:30:00'),
-(14, 14, 'HC-2026-0014', 'ACTIVA', '2026-01-20 10:00:00'),
-(15, 15, 'HC-2026-0015', 'ACTIVA', '2026-02-02 11:30:00');
+(10, 10, 'HC-2026-0010', 'ACTIVA', '2025-10-17 11:15:00');
 
--- 11. Consultas Médicas (Años 2025 y 2026, diversos meses)
+-- 13. Agendamiento de Citas Clínicas
+INSERT INTO appointments (id, patient_id, professional_id, appointment_date, appointment_type, status, reason) VALUES
+(1, 1, 1, '2026-01-10 08:30:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Control periódico y evaluación de PIO'),
+(2, 1, 1, '2026-03-12 10:00:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Seguimiento tras ajuste terapéutico'),
+(3, 2, 3, '2026-01-15 09:30:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Control de glaucoma avanzado'),
+(4, 3, 1, '2026-01-20 11:00:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Manejo de glaucoma por corticoides'),
+(5, 4, 2, '2026-02-01 08:00:00', 'PRIMERA_VEZ', 'ATENDIDA', 'Examen oftalmológico de rutina'),
+(6, 5, 1, '2026-02-05 14:30:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Sospecha de progresión campimétrica'),
+(7, 6, 4, '2026-02-12 16:00:00', 'PRIMERA_VEZ', 'ATENDIDA', 'Valoración post-trauma contuso'),
+(8, 7, 5, '2026-02-18 09:00:00', 'PRIMERA_VEZ', 'ATENDIDA', 'Tamizaje visual por fatiga ocular'),
+(9, 8, 3, '2026-02-25 10:30:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Control de PIO no controlada'),
+(10, 10, 1, '2026-03-05 11:30:00', 'CONTROL_GLAUCOMA', 'ATENDIDA', 'Sospecha de glaucoma pseudoexfoliativo');
+
+-- 14. Consultas Médicas
 INSERT INTO medical_visits (id, clinical_history_id, professional_id, visit_date, reason, symptoms, assessment, plan, is_closed) VALUES
-(1, 1, 1, '2026-01-10 09:00:00', 'Control periódico de glaucoma y ajuste de medicación', 'Visión borrosa ocasional en ojo derecho, halos leves', 'Glaucoma primario de ángulo abierto moderado bilateral con PIO fuera de meta', 'Ajustar análogo de prostaglandina y solicitar campo visual de control', TRUE),
-(2, 1, 1, '2026-03-12 10:30:00', 'Seguimiento post-ajuste farmacológico', 'Asintomático, buena tolerancia a colirios', 'Presión intraocular dentro de rango meta terapéutico', 'Continuar tratamiento actual y control en 3 meses', TRUE),
-(3, 2, 3, '2026-01-15 11:00:00', 'Evaluación inicial por sospecha de hipertensión ocular', 'Cefalea frontal leve vespertina', 'PIO elevada bilateralmente sin daño glaucomatoso evidente en fondo de ojo', 'Ordenar paquimetría y gonioscopía', TRUE),
-(4, 2, 3, '2026-02-18 14:30:00', 'Revisión de exámenes diagnósticos especializados', 'Sin cambios en sintomatología', 'Córneas gruesas que sobrestiman PIO; hipertensión ocular confirmada', 'Iniciar monoterapia hipotensora y vigilar', TRUE),
-(5, 3, 1, '2026-02-05 08:30:00', 'Urgencia: dolor ocular agudo ojo derecho', 'Dolor intenso hemicraneano, náuseas, visión en halos', 'Glaucoma agudo de ángulo cerrado ojo derecho con PIO 48 mmHg', 'Manejo hipotensor endovenoso inmediato e iridotomía láser de urgencia', TRUE),
-(6, 3, 1, '2026-02-06 09:00:00', 'Control post-procedimiento iridotomía periférica', 'Alivio del dolor, visión recuperando gradualmente', 'Ángulo abierto en sector iridotomizado, PIO controlada en 16 mmHg', 'Gotas antiinflamatorias y control profiláctico ojo izquierdo', TRUE),
-(7, 4, 2, '2026-02-20 15:00:00', 'Examen rutinario de oftalmología general', 'Dificultad para lectura cercana y fatiga visual', 'Presbicia y leve ojo seco evaporativo', 'Prescripción óptica y lágrimas artificiales', TRUE),
-(8, 5, 1, '2026-01-25 10:00:00', 'Control semestral de glaucoma avanzado', 'Pérdida notable de visión periférica bilateral', 'Glaucoma crónico en estadio severo con excavación 0.85 bilateral', 'Tratamiento combinado triple y valorar cirugía filtrante', TRUE),
-(9, 5, 1, '2026-03-05 11:30:00', 'Evaluación prequirúrgica para trabeculectomía', 'Estable dentro de su limitación campimétrica', 'Candidata idónea para trabeculectomía ojo derecho', 'Programar cirugía y solicitar exámenes preoperatorios', TRUE),
-(10, 6, 4, '2026-02-10 16:00:00', 'Control por trauma ocular previo', 'Visión estable, sin dolor', 'Sin evidencia de recesión angular traumática', 'Alta por trauma y control anual', TRUE),
-(11, 7, 5, '2026-03-01 08:30:00', 'Consulta por prurito y secreción matutina', 'Ojo rojo bilateral y sensación de cuerpo extraño', 'Conjuntivitis alérgica estacional activa', 'Antihistamínico tópico y compresas frías', TRUE),
-(12, 8, 3, '2026-01-18 09:30:00', 'Control de glaucoma primario con contraindicación a betabloqueadores', 'Tolerancia adecuada a inhibidor de anhidrasa carbónica', 'PIO en meta con brimonidina y dorzolamida', 'Mantener régimen y cita en 4 meses', TRUE),
-(13, 9, 2, '2025-11-12 14:00:00', 'Valoración de agudeza visual y fondo de ojo', 'Miodesopsias esporádicas', 'Vítreo transparente, retina aplicada 360 grados', 'Educación en signos de alarma', TRUE),
-(14, 10, 1, '2026-02-28 10:00:00', 'Remisión por excavación papilar sospechosa 0.7', 'Asintomático general', 'Sospecha de glaucoma primario normotensional', 'Solicitar OCT de nervio óptico y paquimetría', TRUE),
-(15, 11, 6, '2026-03-15 15:30:00', 'Examen optométrico para certificado escolar', 'Baja agudeza visual de lejos', 'Miopía simple escolar bilateral', 'Prescripción de lentes monofocales', TRUE),
-(16, 12, 1, '2026-01-30 11:00:00', 'Control anual de glaucoma de ángulo abierto', 'Sin quejas visuales agudas', 'Enfermedad estable sin progresión detectada', 'Continuar con Latanoprost nocturno', TRUE),
-(17, 13, 2, '2026-02-15 08:30:00', 'Seguimiento postquirúrgico de facoemulsificación', 'Excelente recuperación visual', 'Pseudofaquia bilateral bien centrada, PIO normal', 'Control anual preventivo', TRUE),
-(18, 14, 5, '2026-03-20 16:30:00', 'Consulta oftalmológica general', 'Cansancio ocular tras uso prolongado de pantallas', 'Astenopía acomodativa y queratitis punctata leve', 'Higiene visual y lubricante ocular', FALSE),
-(19, 15, 3, '2026-03-25 09:00:00', 'Chequeo especializado por antecedentes familiares de ceguera', 'Preocupación por pérdida visual en su familia', 'Examen basal normal, PIO limítrofe 21 mmHg OD', 'Seguimiento preventivo con curva de PIO', FALSE);
+(1, 1, 1, '2026-01-10 09:00:00', 'Control periódico de glaucoma y ajuste de medicación', 'Visión borrosa ocasional matutina', 'Glaucoma Primario de Ángulo Abierto estable en OD, leve sospecha de progresión en OI', 'Se solicita OCT de papila y campo visual 24-2. Ajustar tratamiento tópico.', TRUE),
+(2, 1, 1, '2026-03-12 10:30:00', 'Seguimiento post-ajuste farmacológico', 'Asintomático, buena tolerancia a colirios', 'Presión intraocular dentro de metas en ambos ojos. Tolerancia adecuada a Latanoprost', 'Continuar misma pauta médica. Control en 6 meses con nueva tonometría.', TRUE),
+(3, 2, 3, '2026-01-15 10:00:00', 'Pérdida progresiva de campo visual en ojo izquierdo', 'Escotomas periféricos en sector nasal', 'Glaucoma Primario de Ángulo Abierto en estadio avanzado OI, moderado OD', 'Adicionar inhibidor de anhidrasa carbónica. Programar SLT si persiste PIO > 18.', TRUE),
+(4, 2, 3, '2026-02-20 11:30:00', 'Control evolutivo y revisión de perimetría', 'Sin cambios visuales subjetivos', 'Defecto perimétrico estable respecto al previo. PIO meta alcanzada bilateralmente', 'Mantener terapia dual con Latanoprost y Dorzolamida/Timolol.', TRUE),
+(5, 3, 1, '2026-01-20 11:30:00', 'Hipertensión ocular severa refractaria a monoterapia', 'Cefalea retroocular y halos de colores', 'Glaucoma inducido por corticoides con PIO > 28 mmHg en ambos ojos', 'Suspender corticoides inmediatamente. Iniciar terapia triple hipotensora.', TRUE),
+(6, 3, 1, '2026-02-15 09:30:00', 'Control de PIO tras desmonte de corticoide', 'Cefalea resuelta', 'Descenso marcado de PIO tras desmonte de corticoide. Nervio óptico sin daño adicional', 'Monitoreo estricto cada 3 meses.', TRUE),
+(7, 4, 2, '2026-02-01 08:30:00', 'Examen oftalmológico de rutina por cefalea tensional', 'Fatiga visual al trabajar en computador', 'Emetropía, fondo de ojo normal, PIO limítrofe fisiológica sin daño de fibras', 'Pautas de ergonomía visual. Control en 1 año.', TRUE),
+(8, 5, 1, '2026-02-05 15:00:00', 'Sospecha de glaucoma en paciente con alta miopía', 'Dificultad de adaptación a la oscuridad', 'Glaucoma primario de ángulo abierto en ojo con miopía magna. Excavación papilar 0.75', 'Iniciar análogo de prostaglandinas. Realizar curva de PIO.', TRUE),
+(9, 5, 1, '2026-03-18 14:00:00', 'Control post-inicio de análogo de prostaglandina', 'Hiperemia conjuntival leve autolimitada', 'Respuesta hipotensora adecuada en ambos ojos. Disminución del 28% respecto a basal', 'Continuar Bimatoprost nocturno.', TRUE),
+(10, 6, 4, '2026-02-12 16:30:00', 'Valoración post-traumatismo en ojo derecho', 'Dolor leve y fotofobia transitoria', 'Ángulo abierto sin recesión angular traumática. PIO normal simétrica', 'Antiinflamatorio tópico de corta duración.', TRUE),
+(11, 7, 5, '2026-02-18 09:30:00', 'Tamizaje visual laboral', 'Sensación de arenilla ocular', 'Ojo seco evaporativo leve. Presión intraocular normal de 14 mmHg bilateral', 'Lágrimas artificiales lubricantes.', TRUE),
+(12, 8, 3, '2026-02-25 11:00:00', 'Control de glaucoma con antecedente de asma severo', 'Discreta disminución de visión nocturna', 'Glaucoma crónico. Contraindicación absoluta para betabloqueadores por asma', 'Tratamiento exclusivo con Prostaglandina + Alfa agonista.', TRUE),
+(13, 8, 3, '2026-03-22 08:30:00', 'Revisión de tolerancia farmacológica', 'Excelente tolerancia sin crisis broncoespástica', 'PIO controlada en 15 mmHg en ambos ojos.', 'Mantener esquema actual.', TRUE),
+(14, 9, 2, '2026-03-01 10:15:00', 'Evaluación refractiva y fondo de ojo', 'Miopía leve conocida', 'Nervios ópticos con simetría y excavación fisiológica 0.3.', 'Fórmula de lentes actualizada.', TRUE),
+(15, 10, 1, '2026-03-05 12:00:00', 'Valoración de síndrome pseudoexfoliativo', 'Asintomático, remitido por hallazgo en lámpara de hendidura', 'Glaucoma pseudoexfoliativo incipiente con material fibrilar en reborde pupilar', 'Monitoreo trimestral e inicio de Latanoprost por PIO asimétrica elevada.', TRUE);
 
--- 12. Catálogo de Diagnósticos
+-- 15. Diagnósticos CIE-10
 INSERT INTO diagnoses (id, code, name, is_glaucoma_type, description) VALUES
 (1, 'H40.1', 'Glaucoma primario de ángulo abierto', TRUE, 'Neuropatía óptica progresiva con ángulo iridocorneal abierto'),
-(2, 'H40.2', 'Glaucoma primario de ángulo cerrado', TRUE, 'Aumento rápido o crónico de PIO por aposición o sinequias del iris'),
-(3, 'H40.0', 'Sospecha de glaucoma e Hipertensión Ocular', TRUE, 'PIO persistentemente > 21 mmHg sin daño campimétrico evidente'),
-(4, 'H40.5', 'Glaucoma secundario a otros trastornos oculares', TRUE, 'Glaucoma inducido por traumatismo, uveítis o neovascularización'),
-(5, 'H25.0', 'Catarata senil incipiente', FALSE, 'Opacificación del cristalino asociada a la edad'),
-(6, 'H52.1', 'Miopía', FALSE, 'Error de refracción donde los rayos convergen delante de la retina'),
-(7, 'H52.2', 'Astigmatismo', FALSE, 'Curvatura corneal asimétrica'),
-(8, 'H52.4', 'Presbicia', FALSE, 'Pérdida fisiológica de la acomodación visual cercana'),
-(9, 'H10.1', 'Conjuntivitis alérgica aguda', FALSE, 'Inflamación de la conjuntiva mediada por alérgenos'),
-(10, 'H04.1', 'Síndrome de disfunción lagrimal (Ojo seco)', FALSE, 'Deficiencia cualitativa o cuantitativa de la película lagrimal');
+(2, 'H40.2', 'Glaucoma primario de ángulo cerrado', TRUE, 'Aumento de PIO secundario a aposición u oclusión iridocorneal'),
+(3, 'H40.0', 'Sospecha de glaucoma / Hipertensión ocular', TRUE, 'PIO elevada o papila sospechosa sin daño campimétrico concluyente'),
+(4, 'H40.5', 'Glaucoma secundario a otros trastornos del ojo', TRUE, 'Glaucoma asociado a trauma, inflamación o pseudoexfoliación'),
+(5, 'H40.6', 'Glaucoma inducido por fármacos', TRUE, 'Aumento tensional inducido por administración de corticoides'),
+(6, 'H40.8', 'Otros glaucomas especificados (Pigmentario)', TRUE, 'Glaucoma secundario a síndrome de dispersión pigmentaria'),
+(7, 'H52.1', 'Miopía', FALSE, 'Defecto de refracción donde los rayos convergen delante de la retina'),
+(8, 'H52.2', 'Astigmatismo', FALSE, 'Defecto refractivo por curvatura corneal no homogénea'),
+(9, 'H52.4', 'Presbicia', FALSE, 'Pérdida fisiológica progresiva de la acomodación del cristalino'),
+(10, 'H04.1', 'Ojo seco (Síndrome de disfunción lagrimal)', FALSE, 'Trastorno de la película lagrimal que causa daño en la superficie ocular'),
+(11, 'H25.1', 'Catarata senil nuclear', FALSE, 'Opacificación del núcleo del cristalino ligada al envejecimiento'),
+(12, 'H40.3', 'Glaucoma secundario a traumatismo ocular', TRUE, 'Hipertensión ocular consecutiva a contusión o recesión angular');
 
--- 13. Diagnósticos de la Consulta
+-- 16. Diagnósticos de la Consulta
 INSERT INTO visit_diagnoses (id, visit_id, diagnosis_id, is_primary, notes) VALUES
-(1, 1, 1, TRUE, 'Glaucoma primario ángulo abierto bilateral descompensado'),
-(2, 2, 1, TRUE, 'Glaucoma primario compensado tras ajuste'),
-(3, 3, 3, TRUE, 'Hipertensión ocular bilateral en estudio'),
-(4, 4, 3, TRUE, 'Confirmada hipertensión ocular con paquimetría normal/gruesa'),
-(5, 5, 2, TRUE, 'Ataque agudo de glaucoma por cierre angular'),
-(6, 6, 2, TRUE, 'Glaucoma de ángulo cerrado post-iridotomía periférica'),
-(7, 7, 8, TRUE, 'Presbicia fisiológica'),
-(8, 7, 10, FALSE, 'Ojo seco evaporativo asociado'),
-(9, 8, 1, TRUE, 'Glaucoma primario estadio severo refractario'),
-(10, 9, 1, TRUE, 'Evaluación quirúrgica de glaucoma'),
-(11, 10, 4, TRUE, 'Antecedente de trauma contuso sin glaucoma secundario actual'),
-(12, 11, 9, TRUE, 'Conjuntivitis alérgica aguda en ambos ojos'),
-(13, 12, 1, TRUE, 'Glaucoma controlado con monoterapia alternativa'),
-(14, 14, 3, TRUE, 'Sospecha de neuropatía óptica glaucomatosa'),
-(15, 15, 6, TRUE, 'Miopía moderada bilateral'),
-(16, 16, 1, TRUE, 'Glaucoma estable bajo tratamiento crónico'),
-(17, 17, 5, FALSE, 'Pseudofaquia bilateral satisfactoria'),
-(18, 19, 3, TRUE, 'Hipertensión ocular limítrofe');
+(1, 1, 1, TRUE, 'Glaucoma primario de ángulo abierto bilateral en estadio moderado'),
+(2, 2, 1, TRUE, 'GPAA estable bajo terapia farmacológica'),
+(3, 3, 1, TRUE, 'GPAA avanzado en ojo izquierdo con compromiso pericentral'),
+(4, 4, 1, TRUE, 'Control favorable de GPAA avanzado'),
+(5, 5, 5, TRUE, 'Hipertensión ocular severa inducida por corticoterapia tópica'),
+(6, 6, 5, TRUE, 'Resolución progresiva de respuesta hipertensiva corticoidea'),
+(7, 7, 10, TRUE, 'Fatiga acomodativa y queratoconjuntivitis seca leve'),
+(8, 8, 1, TRUE, 'Glaucoma en ojo con alta miopía'),
+(9, 8, 7, FALSE, 'Miopía degenerativa / magna bilateral'),
+(10, 9, 1, TRUE, 'Glaucoma y miopía controlados'),
+(11, 10, 12, TRUE, 'Traumatismo cerrado ocular sin daño glaucomatoso'),
+(12, 11, 10, TRUE, 'Ojo seco moderado por uso excesivo de pantallas'),
+(13, 12, 1, TRUE, 'Glaucoma en paciente con asma bronquial activa'),
+(14, 14, 7, TRUE, 'Miopía simple de bajo grado'),
+(15, 15, 4, TRUE, 'Glaucoma pseudoexfoliativo incipiente');
 
--- 14. Mediciones de Presión Intraocular (PIO)
--- Valores normales (10-21 mmHg) y elevados (> 20 mmHg) para consultas y filtros
+-- 17. Exámenes de Agudeza Visual y Refracción
+INSERT INTO visual_acuity_exams (id, visit_id, eye, sphere, cylinder, axis, uncorrected_va, corrected_va, pinhole_va, exam_date) VALUES
+(1, 1, 'OD', -0.50, -0.75, 170, '20/30', '20/20', '20/20', '2026-01-10 09:15:00'),
+(2, 1, 'OI', -0.75, -1.00, 10, '20/40', '20/25', '20/20', '2026-01-10 09:15:00'),
+(3, 3, 'OD', 0.00, -0.50, 90, '20/25', '20/20', '20/20', '2026-01-15 10:10:00'),
+(4, 3, 'OI', +0.50, -1.25, 85, '20/60', '20/40', '20/30', '2026-01-15 10:10:00'),
+(5, 5, 'OD', -1.25, 0.00, NULL, '20/40', '20/20', '20/20', '2026-01-20 11:40:00'),
+(6, 5, 'OI', -1.50, -0.50, 15, '20/50', '20/25', '20/20', '2026-01-20 11:40:00'),
+(7, 8, 'OD', -6.50, -1.50, 165, '20/200', '20/30', '20/25', '2026-02-05 15:10:00'),
+(8, 8, 'OI', -7.00, -2.00, 15, '20/200', '20/40', '20/30', '2026-02-05 15:10:00'),
+(9, 15, 'OD', +0.75, -0.75, 180, '20/30', '20/20', '20/20', '2026-03-05 12:10:00'),
+(10, 15, 'OI', +1.00, -1.00, 5, '20/40', '20/25', '20/20', '2026-03-05 12:10:00');
+
+-- 18. Mediciones de Presión Intraocular (PIO)
 INSERT INTO intraocular_pressures (id, visit_id, eye, pressure, measurement_time, method, notes) VALUES
-(1, 1, 'OD', 24.50, '09:15:00', 'GOLDMANN', 'PIO elevada por encima de meta objetivo'),
-(2, 1, 'OI', 22.00, '09:16:00', 'GOLDMANN', 'Elevación moderada'),
-(3, 2, 'OD', 14.00, '10:45:00', 'GOLDMANN', 'Excelente respuesta a ajuste de dosis'),
-(4, 2, 'OI', 13.50, '10:46:00', 'GOLDMANN', 'Presión meta alcanzada'),
-(5, 3, 'OD', 23.00, '11:15:00', 'GOLDMANN', 'PIO confirmada en tonometría de aplanación'),
-(6, 3, 'OI', 22.50, '11:16:00', 'GOLDMANN', 'Bilateral simétrica'),
-(7, 4, 'OD', 21.00, '14:45:00', 'GOLDMANN', 'Discreta mejoría'),
-(8, 4, 'OI', 20.00, '14:46:00', 'GOLDMANN', 'Límite superior normal'),
-(9, 5, 'OD', 48.00, '08:40:00', 'GOLDMANN', 'Urgencia oftalmológica aguda'),
-(10, 5, 'OI', 18.00, '08:42:00', 'GOLDMANN', 'Ojo adelfo con cámara estrecha'),
-(11, 6, 'OD', 16.00, '09:15:00', 'GOLDMANN', 'Descenso marcado post-iridotomía láser'),
-(12, 6, 'OI', 15.00, '09:16:00', 'GOLDMANN', 'Normal'),
-(13, 8, 'OD', 26.00, '10:20:00', 'GOLDMANN', 'Descompensación severa con daño terminal'),
-(14, 8, 'OI', 25.00, '10:21:00', 'GOLDMANN', 'Fuera de rango meta de seguridad'),
-(15, 9, 'OD', 25.50, '11:45:00', 'GOLDMANN', 'Persistencia de hipertensión ocular prequirúrgica'),
-(16, 9, 'OI', 23.00, '11:46:00', 'GOLDMANN', 'Requiere control estrecho'),
-(17, 12, 'OD', 16.50, '09:45:00', 'GOLDMANN', 'Controlada adecuadamente'),
-(18, 12, 'OI', 15.50, '09:46:00', 'GOLDMANN', 'En meta terapéutica'),
-(19, 14, 'OD', 19.00, '10:15:00', 'GOLDMANN', 'Normotensional limítrofe'),
-(20, 14, 'OI', 18.50, '10:16:00', 'GOLDMANN', 'Normotensional'),
-(21, 16, 'OD', 15.00, '11:15:00', 'GOLDMANN', 'Estable'),
-(22, 16, 'OI', 14.50, '11:16:00', 'GOLDMANN', 'Estable'),
-(23, 19, 'OD', 21.50, '09:20:00', 'GOLDMANN', 'Hipertensión ocular incipiente'),
-(24, 19, 'OI', 20.00, '09:21:00', 'GOLDMANN', 'Límite normal');
+(1, 1, 'OD', 22.50, '09:15:00', 'GOLDMANN', 'Tonometría antes de ajuste terapéutico'),
+(2, 1, 'OI', 25.00, '09:15:00', 'GOLDMANN', 'Presión elevada respecto a la meta establecida'),
+(3, 2, 'OD', 14.00, '10:45:00', 'GOLDMANN', 'Excelente control post-tratamiento'),
+(4, 2, 'OI', 13.50, '10:45:00', 'GOLDMANN', 'Descenso marcado de 11.5 mmHg'),
+(5, 3, 'OD', 19.00, '10:15:00', 'GOLDMANN', 'PIO limítrofe'),
+(6, 3, 'OI', 28.50, '10:15:00', 'GOLDMANN', 'Descompensación severa de PIO con daño campimétrico'),
+(7, 4, 'OD', 14.50, '11:45:00', 'GOLDMANN', 'Control adecuado'),
+(8, 4, 'OI', 15.00, '11:45:00', 'GOLDMANN', 'Descenso del 47% con terapia dual'),
+(9, 5, 'OD', 31.00, '11:45:00', 'GOLDMANN', 'Pico tensional por corticoesteroides'),
+(10, 5, 'OI', 33.50, '11:45:00', 'GOLDMANN', 'Hipertensión ocular severa'),
+(11, 6, 'OD', 16.00, '09:45:00', 'GOLDMANN', 'Normalización tras desmonte de corticoide'),
+(12, 6, 'OI', 16.50, '09:45:00', 'GOLDMANN', 'Normalización completa'),
+(13, 7, 'OD', 13.00, '08:45:00', 'AIRE', 'Presión fisiológica'),
+(14, 7, 'OI', 13.50, '08:45:00', 'AIRE', 'Presión fisiológica'),
+(15, 8, 'OD', 24.00, '15:15:00', 'PERKINS', 'Elevada en paciente con miopía degenerativa'),
+(16, 8, 'OI', 26.50, '15:15:00', 'PERKINS', 'Riesgo alto de daño glaucomatoso progresivo'),
+(17, 9, 'OD', 15.50, '14:15:00', 'GOLDMANN', 'Buena respuesta hipotensora'),
+(18, 9, 'OI', 16.00, '14:15:00', 'GOLDMANN', 'Controlada'),
+(19, 10, 'OD', 15.00, '16:45:00', 'ICARE', 'Sin elevación tras contusión ocular'),
+(20, 10, 'OI', 14.50, '16:45:00', 'ICARE', 'Ojo adelfo simétrico'),
+(21, 15, 'OD', 23.50, '12:15:00', 'GOLDMANN', 'Asimetría marcada con PIO alta en ojo con pseudoexfoliación'),
+(22, 15, 'OI', 16.00, '12:15:00', 'GOLDMANN', 'Normotenso');
 
--- 15. Exámenes de Paquimetría Corneal (CCT)
+-- 19. Paquimetrías Corneales (CCT)
 INSERT INTO pachymetry_exams (id, visit_id, eye, corneal_thickness, method, exam_date) VALUES
-(1, 1, 'OD', 525.00, 'ULTRASONICA', '2026-01-10 09:30:00'),
-(2, 1, 'OI', 530.00, 'ULTRASONICA', '2026-01-10 09:32:00'),
-(3, 4, 'OD', 585.00, 'ULTRASONICA', '2026-02-18 14:50:00'),
-(4, 4, 'OI', 590.00, 'ULTRASONICA', '2026-02-18 14:52:00'),
-(5, 5, 'OD', 510.00, 'ULTRASONICA', '2026-02-05 08:50:00'),
-(6, 5, 'OI', 515.00, 'ULTRASONICA', '2026-02-05 08:52:00'),
-(7, 8, 'OD', 495.00, 'ULTRASONICA', '2026-01-25 10:30:00'),
-(8, 8, 'OI', 500.00, 'ULTRASONICA', '2026-01-25 10:32:00'),
-(9, 14, 'OD', 505.00, 'ULTRASONICA', '2026-02-28 10:20:00'),
-(10, 14, 'OI', 510.00, 'ULTRASONICA', '2026-02-28 10:22:00');
+(1, 1, 'OD', 510.00, 'ULTRASONICA', '2026-01-10 09:45:00'),
+(2, 1, 'OI', 505.00, 'ULTRASONICA', '2026-01-10 09:45:00'),
+(3, 3, 'OD', 535.00, 'ULTRASONICA', '2026-01-15 10:45:00'),
+(4, 3, 'OI', 525.00, 'ULTRASONICA', '2026-01-15 10:45:00'),
+(5, 5, 'OD', 570.00, 'OPTICA', '2026-01-20 12:00:00'),
+(6, 5, 'OI', 568.00, 'OPTICA', '2026-01-20 12:00:00'),
+(7, 8, 'OD', 495.00, 'ULTRASONICA', '2026-02-05 15:45:00'),
+(8, 8, 'OI', 490.00, 'ULTRASONICA', '2026-02-05 15:45:00'),
+(9, 15, 'OD', 528.00, 'OPTICA', '2026-03-05 12:30:00'),
+(10, 15, 'OI', 532.00, 'OPTICA', '2026-03-05 12:30:00');
 
--- 16. Exámenes de Gonioscopía
+-- 20. Biomicroscopías con Lámpara de Hendidura
+INSERT INTO biomicroscopy_exams (id, visit_id, eye, cornea_status, anterior_chamber_depth, iris_status, lens_status, pseudoexfoliation_present, pigment_dispersion_present, exam_date) VALUES
+(1, 1, 'OD', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'TRANSPARENTE', FALSE, FALSE, '2026-01-10 09:20:00'),
+(2, 1, 'OI', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'TRANSPARENTE', FALSE, FALSE, '2026-01-10 09:20:00'),
+(3, 3, 'OD', 'TRANSPARENTE', 'VAN_HERICK_III', 'NORMAL', 'CATARATA_NUCLEAR', FALSE, FALSE, '2026-01-15 10:20:00'),
+(4, 3, 'OI', 'TRANSPARENTE', 'VAN_HERICK_II', 'NORMAL', 'CATARATA_NUCLEAR', FALSE, FALSE, '2026-01-15 10:20:00'),
+(5, 5, 'OD', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'TRANSPARENTE', FALSE, FALSE, '2026-01-20 11:50:00'),
+(6, 5, 'OI', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'TRANSPARENTE', FALSE, FALSE, '2026-01-20 11:50:00'),
+(7, 8, 'OD', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'CATARATA_NUCLEAR', FALSE, FALSE, '2026-02-05 15:20:00'),
+(8, 8, 'OI', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'CATARATA_NUCLEAR', FALSE, FALSE, '2026-02-05 15:20:00'),
+(9, 15, 'OD', 'TRANSPARENTE', 'VAN_HERICK_III', 'DEFECTOS_TRANSILLUMINACION', 'CATARATA_NUCLEAR', TRUE, FALSE, '2026-03-05 12:20:00'),
+(10, 15, 'OI', 'TRANSPARENTE', 'VAN_HERICK_IV', 'NORMAL', 'CATARATA_NUCLEAR', FALSE, FALSE, '2026-03-05 12:20:00');
+
+-- 21. Gonioscopías
 INSERT INTO gonioscopy_exams (id, visit_id, eye, angle_grade, pigmentation, findings, exam_date) VALUES
-(1, 1, 'OD', 'GRADO IV', 'MODERADA', 'Ángulo abierto amplio, se visualiza espolón escleral y malla trabecular', '2026-01-10 09:40:00'),
-(2, 1, 'OI', 'GRADO IV', 'MODERADA', 'Ángulo abierto completo sin sinequias', '2026-01-10 09:42:00'),
-(3, 3, 'OD', 'GRADO III', 'LEVE', 'Ángulo abierto grado III sin depósitos pigmentarios anormales', '2026-01-15 11:30:00'),
-(4, 3, 'OI', 'GRADO III', 'LEVE', 'Ángulo abierto simétrico', '2026-01-15 11:32:00'),
-(5, 5, 'OD', 'GRADO 0', 'LEVE', 'Cierre angular completo por aposición iridocorneal', '2026-02-05 08:45:00'),
-(6, 5, 'OI', 'GRADO I', 'LEVE', 'Ángulo sumamente estrecho con alto riesgo oclusivo', '2026-02-05 08:47:00'),
-(7, 6, 'OD', 'GRADO II', 'LEVE', 'Apertura parcial post-iridotomía, trabéculo visible', '2026-02-06 09:20:00'),
-(8, 8, 'OD', 'GRADO IV', 'SEVERA', 'Ángulo abierto con severa hiperpigmentación trabecular', '2026-01-25 10:40:00');
+(1, 1, 'OD', 'GRADO IV', 'MODERADA', 'Todas las estructuras visibles: espolón escleral, malla trabecular y banda del cuerpo ciliar', '2026-01-10 09:50:00'),
+(2, 1, 'OI', 'GRADO IV', 'MODERADA', 'Ángulo ampliamente abierto en 360 grados sin sinequias', '2026-01-10 09:50:00'),
+(3, 3, 'OD', 'GRADO III', 'MODERADA', 'Ángulo abierto susceptible de SLT', '2026-01-15 10:50:00'),
+(4, 3, 'OI', 'GRADO II', 'SEVERA', 'Estrechamiento moderado del ángulo en cuadrante superior', '2026-01-15 10:50:00'),
+(5, 5, 'OD', 'GRADO IV', 'LEVE', 'Ángulo abierto grado IV según Shaffer sin sinequias', '2026-01-20 12:10:00'),
+(6, 5, 'OI', 'GRADO IV', 'LEVE', 'Malla trabecular normopigmentada', '2026-01-20 12:10:00'),
+(7, 8, 'OD', 'GRADO IV', 'LEVE', 'Ángulo profundo propio de miopía alta', '2026-02-05 15:50:00'),
+(8, 8, 'OI', 'GRADO IV', 'LEVE', 'Ángulo abierto amplio', '2026-02-05 15:50:00'),
+(9, 15, 'OD', 'GRADO III', 'SEVERA', 'Línea de Sampaolesi visible e hiperpigmentación trabecular irregular', '2026-03-05 12:35:00'),
+(10, 15, 'OI', 'GRADO IV', 'LEVE', 'Ángulo abierto normal', '2026-03-05 12:35:00');
 
--- 17. Exámenes de Tomografía de Coherencia Óptica (OCT)
+-- 22. Tomografías de Coherencia Óptica (OCT)
 INSERT INTO oct_exams (id, visit_id, eye, rnfl_average, rnfl_superior, rnfl_inferior, cup_to_disc_ratio, interpretation, is_validated, exam_date) VALUES
-(1, 1, 'OD', 74.50, 80.00, 68.00, 0.72, 'Pérdida moderada de capa de fibras nerviosas en polo inferior', TRUE, '2026-01-10 10:00:00'),
-(2, 1, 'OI', 79.00, 85.00, 72.00, 0.65, 'Adelgazamiento leve a moderado de CFNR', TRUE, '2026-01-10 10:05:00'),
-(3, 4, 'OD', 96.00, 115.00, 118.00, 0.40, 'Espesor de CFNR dentro de límites normales para la edad', TRUE, '2026-02-18 15:10:00'),
-(4, 4, 'OI', 98.00, 116.00, 120.00, 0.38, 'Nervio óptico sano sin signos de neuropatía', TRUE, '2026-02-18 15:15:00'),
-(5, 8, 'OD', 52.00, 55.00, 48.00, 0.88, 'Atrofia severa difusa de CFNR compatible con glaucoma terminal', TRUE, '2026-01-25 11:00:00'),
-(6, 8, 'OI', 58.00, 62.00, 54.00, 0.82, 'Daño estructural avanzado en nervio óptico', TRUE, '2026-01-25 11:05:00'),
-(7, 14, 'OD', 70.00, 75.00, 65.00, 0.75, 'Muesca focal inferior en reborde neurorretiniano', TRUE, '2026-02-28 10:40:00'),
-(8, 14, 'OI', 82.00, 90.00, 78.00, 0.60, 'Asimetría papilar significativa con ojo contralateral', TRUE, '2026-02-28 10:45:00');
+(1, 1, 'OD', 88.50, 105.00, 108.00, 0.55, 'Grosor de CFNR conservado dentro de límites normales', TRUE, '2026-01-10 10:05:00'),
+(2, 1, 'OI', 79.00, 92.00, 84.00, 0.65, 'Adelgazamiento leve a moderado de CFNR en cuadrante inferior', TRUE, '2026-01-10 10:05:00'),
+(3, 3, 'OD', 75.00, 88.00, 78.00, 0.68, 'Daño moderado de capa de fibras nerviosas en ambos polos', TRUE, '2026-01-15 11:05:00'),
+(4, 3, 'OI', 58.00, 64.00, 52.00, 0.85, 'Daño severo y excavación marcada subtotal', TRUE, '2026-01-15 11:05:00'),
+(5, 5, 'OD', 94.00, 115.00, 120.00, 0.40, 'Nervio óptico estructuralmente intacto', TRUE, '2026-01-20 12:30:00'),
+(6, 5, 'OI', 93.00, 112.00, 118.00, 0.42, 'Sin daño de CFNR por hipertensión ocular aguda', TRUE, '2026-01-20 12:30:00'),
+(7, 8, 'OD', 68.00, 74.00, 70.00, 0.72, 'Disminución de CFNR en paciente con disco miópico grande', TRUE, '2026-02-05 16:05:00'),
+(8, 8, 'OI', 65.00, 71.00, 67.00, 0.76, 'Pérdida concordante con daño glaucomatoso', TRUE, '2026-02-05 16:05:00'),
+(9, 15, 'OD', 72.00, 84.00, 76.00, 0.70, 'Adelgazamiento significativo en polo superior e inferior', TRUE, '2026-03-05 12:50:00'),
+(10, 15, 'OI', 91.00, 110.00, 115.00, 0.45, 'Simetría conservada sin signos de pérdida', TRUE, '2026-03-05 12:50:00');
 
--- 18. Exámenes de Campo Visual (Campimetría)
+-- 23. Campos Visuales (Campimetría Computarizada)
 INSERT INTO visual_field_exams (id, visit_id, eye, strategy, mean_deviation_md, pattern_std_deviation_psd, visual_field_index_vfi, false_positives_pct, false_negatives_pct, reliability, interpretation, exam_date) VALUES
-(1, 1, 'OD', 'SITA-Standard 24-2', -6.50, 5.20, 84.00, 2.00, 3.00, 'CONFIABLE', 'Escotoma arcuato superior que respeta la fijación central', '2026-01-10 10:20:00'),
-(2, 1, 'OI', 'SITA-Standard 24-2', -3.20, 3.10, 92.00, 1.00, 2.00, 'CONFIABLE', 'Escalón nasal incipiente en hemicampo superior', '2026-01-10 10:35:00'),
-(3, 4, 'OD', 'SITA-Standard 24-2', -0.80, 1.40, 99.00, 1.00, 1.00, 'CONFIABLE', 'Campo visual dentro de límites normales', '2026-02-18 15:30:00'),
-(4, 4, 'OI', 'SITA-Standard 24-2', -0.60, 1.30, 99.00, 0.00, 1.00, 'CONFIABLE', 'Campo visual normal bilateral', '2026-02-18 15:45:00'),
-(5, 8, 'OD', 'SITA-Standard 24-2', -18.50, 9.80, 52.00, 4.00, 6.00, 'CONFIABLE', 'Isla de visión tubular remanente menor a 10 grados', '2026-01-25 11:20:00'),
-(6, 8, 'OI', 'SITA-Standard 24-2', -14.20, 8.40, 64.00, 3.00, 5.00, 'CONFIABLE', 'Escotomas coalescentes densos altitudinales', '2026-01-25 11:35:00'),
-(7, 14, 'OD', 'SITA-Standard 24-2', -4.80, 4.10, 88.00, 2.00, 3.00, 'CONFIABLE', 'Defecto reproducible compatible con daño en OCT', '2026-02-28 11:00:00'),
-(8, 14, 'OI', 'SITA-Standard 24-2', -1.20, 1.60, 97.00, 1.00, 2.00, 'CONFIABLE', 'Sin defectos campimétricos relevantes', '2026-02-28 11:15:00');
+(1, 1, 'OD', 'SITA-Standard 24-2', -1.50, 1.80, 98.00, 2.00, 1.00, 'CONFIABLE', 'Campo visual dentro de límites normales', '2026-01-10 10:35:00'),
+(2, 1, 'OI', 'SITA-Standard 24-2', -3.20, 3.40, 92.00, 3.00, 4.00, 'CONFIABLE', 'Escalón nasal incipiente en hemicampo superior', '2026-01-10 10:35:00'),
+(3, 3, 'OD', 'SITA-Standard 24-2', -5.40, 4.80, 85.00, 4.00, 3.00, 'CONFIABLE', 'Escotoma paracentral superior y escalón nasal', '2026-01-15 11:35:00'),
+(4, 3, 'OI', 'SITA-Standard 24-2', -14.80, 8.20, 56.00, 5.00, 6.00, 'CONFIABLE', 'Defecto arciforme bi-hemicampo con islote central residual', '2026-01-15 11:35:00'),
+(5, 5, 'OD', 'SITA-Fast 24-2', -0.80, 1.40, 99.00, 1.00, 2.00, 'CONFIABLE', 'Sin defectos reproducibles de sensibilidad retiniana', '2026-01-20 12:55:00'),
+(6, 5, 'OI', 'SITA-Fast 24-2', -1.10, 1.50, 99.00, 2.00, 1.00, 'CONFIABLE', 'Sensibilidad foveal y periférica normal', '2026-01-20 12:55:00'),
+(7, 8, 'OD', 'SITA-Standard 24-2', -6.10, 5.20, 82.00, 4.00, 5.00, 'CONFIABLE', 'Escotoma arcuato superior que respeta fijación', '2026-02-05 16:35:00'),
+(8, 8, 'OI', 'SITA-Standard 24-2', -7.50, 6.10, 78.00, 3.00, 4.00, 'CONFIABLE', 'Depresión generalizada y defecto nasal profundo', '2026-02-05 16:35:00'),
+(9, 15, 'OD', 'SITA-Standard 24-2', -4.20, 4.10, 89.00, 2.00, 3.00, 'CONFIABLE', 'Escotoma en sector superior correspondiente a daño en CFNR', '2026-03-05 13:15:00'),
+(10, 15, 'OI', 'SITA-Standard 24-2', -0.90, 1.60, 99.00, 1.00, 2.00, 'CONFIABLE', 'Examen normal sin defectos de campo', '2026-03-05 13:15:00');
 
--- 19. Catálogo de Medicamentos
-INSERT INTO medications (id, name, generic_name, concentration, presentation, is_active) VALUES
-(1, 'Xalatan', 'Latanoprost', '0.005%', 'Frasco gotero x 2.5 ml', TRUE),
-(2, 'Timoptol', 'Maleato de Timolol', '0.5%', 'Frasco gotero x 5 ml', TRUE),
-(3, 'Alphagan P', 'Tartrato de Brimonidina', '0.15%', 'Frasco gotero x 5 ml', TRUE),
-(4, 'Trusopt', 'Clorhidrato de Dorzolamida', '2%', 'Frasco gotero x 5 ml', TRUE),
-(5, 'Cosopt', 'Dorzolamida + Timolol', '2% / 0.5%', 'Frasco gotero x 5 ml', TRUE),
-(6, 'Travatan', 'Travoprost', '0.004%', 'Frasco gotero x 2.5 ml', TRUE),
-(7, 'Lumigan', 'Bimatoprost', '0.01%', 'Frasco gotero x 3 ml', TRUE),
-(8, 'Diamox', 'Acetazolamida oral', '250 mg', 'Caja x 20 tabletas', TRUE),
-(9, 'Prednefrin Forte', 'Acetato de Prednisolona', '1%', 'Frasco gotero x 5 ml', TRUE),
-(10, 'Systane Ultra', 'Polietilenglicol + Propilenglicol', '0.4% / 0.3%', 'Frasco gotero x 10 ml', TRUE);
+-- 24. Catálogo de Clases Farmacológicas de Medicamentos (3FN)
+INSERT INTO medication_classes (id, name, mechanism_of_action) VALUES
+(1, 'Análogos de Prostaglandinas', 'Incrementan el drenaje uveoescleral del humor acuoso'),
+(2, 'Beta-bloqueadores adrenérgicos', 'Disminuyen la producción de humor acuoso por el cuerpo ciliar'),
+(3, 'Agonistas alfa-2 adrenérgicos', 'Mecanismo dual: reducen la producción acuosa y aumentan el flujo uveoescleral'),
+(4, 'Inhibidores de Anhidrasa Carbónica', 'Inhiben la secreción activa de bicarbonato disminuyendo la producción acuosa'),
+(5, 'Inhibidores de Rho-quinasa (ROCK)', 'Aumentan el drenaje trabecular relajando la malla trabecular'),
+(6, 'Mióticos / Colinérgicos', 'Provocan contracción del músculo ciliar abriendo la malla trabecular'),
+(7, 'Combinaciones Fijas Tópicas', 'Sinergia terapéutica con dos principios activos en un mismo frasco');
 
--- 20. Tratamientos Médicos Prescritos
+-- 25. Catálogo de Medicamentos
+INSERT INTO medications (id, medication_class_id, name, generic_name, concentration, presentation, is_active) VALUES
+(1, 1, 'Xalatan', 'Latanoprost', '0.005%', 'Frasco gotero x 2.5 ml', TRUE),
+(2, 2, 'Timoptol', 'Timolol maleato', '0.5%', 'Frasco gotero x 5 ml', TRUE),
+(3, 3, 'Alphagan P', 'Tartrato de Brimonidina', '0.15%', 'Frasco gotero x 5 ml', TRUE),
+(4, 4, 'Trusopt', 'Dorzolamida clorhidrato', '2.0%', 'Frasco gotero x 5 ml', TRUE),
+(5, 1, 'Travatan', 'Travoprost', '0.004%', 'Frasco gotero x 2.5 ml', TRUE),
+(6, 1, 'Lumigan', 'Bimatoprost', '0.01%', 'Frasco gotero x 3 ml', TRUE),
+(7, 7, 'Cosopt', 'Dorzolamida + Timolol', '2% + 0.5%', 'Frasco gotero x 5 ml', TRUE),
+(8, 7, 'Combigan', 'Brimonidina + Timolol', '0.2% + 0.5%', 'Frasco gotero x 5 ml', TRUE),
+(9, 4, 'Azopt', 'Brinzolamida', '1.0%', 'Frasco gotero suspensión x 5 ml', TRUE),
+(10, 7, 'Simbrinza', 'Brinzolamida + Brimonidina', '1% + 0.2%', 'Frasco gotero x 5 ml', TRUE);
+
+-- 26. Tratamientos Prescritos
 INSERT INTO treatments (id, visit_id, medication_id, eye, dosage, frequency, start_date, end_date, is_active, notes) VALUES
-(1, 1, 1, 'AMBOS', '1 gota', 'Cada 24 horas en la noche (9:00 PM)', '2026-01-10', '2026-07-10', TRUE, 'Aplicar con puntualidad nocturna'),
-(2, 1, 2, 'AMBOS', '1 gota', 'Cada 12 horas (8:00 AM y 8:00 PM)', '2026-01-10', '2026-07-10', TRUE, 'Oclusión puntual tras instilar'),
-(3, 4, 1, 'AMBOS', '1 gota', 'Cada 24 horas en la noche', '2026-02-18', '2026-08-18', TRUE, 'Monoterapia de primera línea para HTO'),
-(4, 5, 8, 'AMBOS', '250 mg vía oral', 'Cada 8 horas por 3 días', '2026-02-05', '2026-02-08', FALSE, 'Hipotensor sistémico de rescate agudo'),
-(5, 5, 9, 'OD', '1 gota', 'Cada 4 horas por 7 días', '2026-02-05', '2026-02-12', FALSE, 'Antiinflamatorio post-ataque agudo'),
-(6, 6, 9, 'OD', '1 gota', 'Cada 6 horas', '2026-02-06', '2026-02-13', FALSE, 'Control de reactividad post-láser'),
-(7, 7, 10, 'AMBOS', '1 gota', 'Cada 6 horas según necesidad', '2026-02-20', '2026-08-20', TRUE, 'Lágrimas artificiales'),
-(8, 8, 5, 'AMBOS', '1 gota', 'Cada 12 horas', '2026-01-25', '2026-07-25', TRUE, 'Terapia combinada fija'),
-(9, 8, 3, 'AMBOS', '1 gota', 'Cada 12 horas', '2026-01-25', '2026-07-25', TRUE, 'Tercer agente hipotensor'),
-(10, 11, 10, 'AMBOS', '1 gota', 'Cada 8 horas', '2026-03-01', '2026-04-01', TRUE, 'Alivio de síntomas alérgicos'),
-(11, 12, 3, 'AMBOS', '1 gota', 'Cada 12 horas', '2026-01-18', '2026-07-18', TRUE, 'Paciente asmático (sin betabloqueador)'),
-(12, 12, 4, 'AMBOS', '1 gota', 'Cada 8 horas', '2026-01-18', '2026-07-18', TRUE, 'Coadyuvante'),
-(13, 16, 1, 'AMBOS', '1 gota', 'Cada 24 horas noche', '2026-01-30', '2027-01-30', TRUE, 'Mantenimiento anual');
+(1, 1, 1, 'OI', '1 gota', 'Cada 24 horas por la noche', '2026-01-10', NULL, TRUE, 'Aplicar a las 21:00 horas'),
+(2, 1, 2, 'OD', '1 gota', 'Cada 12 horas', '2026-01-10', '2026-03-12', FALSE, 'Reemplazado por buena respuesta general'),
+(3, 3, 1, 'AMBOS', '1 gota', 'Cada 24 horas por la noche', '2026-01-15', NULL, TRUE, 'Base hipotensora primaria'),
+(4, 3, 7, 'OI', '1 gota', 'Cada 12 horas', '2026-01-15', NULL, TRUE, 'Terapia combinada por daño avanzado en OI'),
+(5, 5, 7, 'AMBOS', '1 gota', 'Cada 12 horas', '2026-01-20', '2026-02-15', FALSE, 'Tratamiento de ataque por pico hipertensivo'),
+(6, 5, 3, 'AMBOS', '1 gota', 'Cada 8 horas', '2026-01-20', '2026-02-15', FALSE, 'Tercer agente transitorio'),
+(7, 8, 6, 'AMBOS', '1 gota', 'Cada 24 horas noche', '2026-02-05', NULL, TRUE, 'Bimatoprost por alta eficacia tensional'),
+(8, 10, 2, 'OD', '1 gota', 'Cada 12 horas', '2026-02-12', '2026-02-26', FALSE, 'Uso profiláctico post-traumatismo'),
+(9, 12, 1, 'AMBOS', '1 gota', 'Cada 24 horas noche', '2026-02-25', NULL, TRUE, 'Evitar betabloqueador por asma'),
+(10, 12, 3, 'AMBOS', '1 gota', 'Cada 12 horas', '2026-02-25', NULL, TRUE, 'Coadyuvante alfa-adrenérgico'),
+(11, 15, 1, 'OD', '1 gota', 'Cada 24 horas noche', '2026-03-05', NULL, TRUE, 'Inicio temprano en ojo con pseudoexfoliación'),
+(12, 2, 1, 'AMBOS', '1 gota', 'Cada 24 horas noche', '2026-03-12', '2026-09-12', TRUE, 'Continuidad de pauta médica');
 
--- 21. Procedimientos y Cirugías Realizadas
-INSERT INTO procedures (id, visit_id, name, eye, procedure_date, complications, results) VALUES
-(1, 5, 'Iridotomía Periférica con Láser Nd:YAG', 'OD', '2026-02-05 09:30:00', 'Leve hifema transitorio resuelto espontáneamente', 'Permeabilidad de ventana iridiana confirmada, descenso inmediato de PIO'),
-(2, 6, 'Iridotomía Profiláctica con Láser Nd:YAG', 'OI', '2026-02-06 10:00:00', 'Ninguna', 'Apertura satisfactoria del iris periférico en ojo contralateral'),
-(3, 9, 'Trabeculectomía con Mitomicina C', 'OD', '2026-03-10 07:30:00', 'Ninguna', 'Bulla de filtración difusa y normotensa formada adecuadamente'),
-(4, 10, 'Lavado de Cámara Anterior y Sutura Corneal', 'OD', '2023-04-15 14:00:00', 'Ninguna', 'Cierre hermético post-trauma previo');
+-- 27. Catálogo de Tipos de Procedimientos y Cirugías (3FN)
+INSERT INTO procedure_types (id, code, name, category, description) VALUES
+(1, 'CUPS-124101', 'Trabeculectomía filtrante convencional', 'QUIRURGICO', 'Fístula quirúrgica escleral protegida con ampolla de filtración'),
+(2, 'CUPS-124201', 'Trabeculoplastia selectiva con láser (SLT)', 'LASER', 'Fototermólisis selectiva de células pigmentadas de la malla trabecular'),
+(3, 'CUPS-121201', 'Iridotomía periférica con láser Nd:YAG', 'LASER', 'Orificio en iris periférico para resolver o prevenir bloqueo pupilar'),
+(4, 'CUPS-124301', 'Implante de dispositivo de drenaje (Válvula de Ahmed)', 'QUIRURGICO', 'Dispositivo restrictivo de flujo con tubo en cámara anterior'),
+(5, 'CUPS-131100', 'Facoemulsificación de catarata con implante de LIO', 'QUIRURGICO', 'Extracción ultrasónica de cristalino opaco e implante de lente'),
+(6, 'CUPS-124401', 'Ciclofotocoagulación transescleral con láser diodo', 'LASER', 'Ablación térmica de procesos ciliares para reducir producción acuosa'),
+(7, 'CUPS-124501', 'Cirugía de glaucoma mínimamente invasiva (MIGS)', 'QUIRURGICO', 'Microimplante trabecular ab interno para derivación acuosa');
 
--- 22. Registros Maestros de Glaucoma (1 por Paciente con Glaucoma confirmado/sospecha)
+-- 28. Procedimientos Clínicos Ejecutados
+INSERT INTO procedures (id, visit_id, procedure_type_id, eye, procedure_date, complications, results) VALUES
+(1, 1, 2, 'OD', '2026-01-12 11:00:00', 'Ninguna', 'Tratamiento en 180 grados de trabéculo. Sin picos hipertensivos'),
+(2, 3, 3, 'AMBOS', '2026-01-18 15:30:00', 'Hifema microscópico autolimitado OI', 'Iridotomías permeables y patentes a las 11 horas bilateral'),
+(3, 3, 1, 'OI', '2026-02-05 08:00:00', 'Discreta atalamia transitoria día 1', 'Ampolla de filtración difusa posterior normofuncionante'),
+(4, 5, 2, 'AMBOS', '2026-02-18 10:00:00', 'Ninguna', 'SLT bilateral para acelerar reducción de PIO post-corticoide'),
+(5, 8, 4, 'OD', '2026-02-28 07:30:00', 'Ninguna', 'Válvula de Ahmed FP7 posicionada correctamente en cuadrante temporal superior'),
+(6, 15, 3, 'OD', '2026-03-08 14:00:00', 'Ninguna', 'Iridotomía profiláctica por dispersión de material y ángulo estrecho');
+
+-- 29. Fichas de Glaucoma
 INSERT INTO glaucoma_records (id, patient_id, target_iop_od, target_iop_oi, clinical_stage, diagnosis_date, notes) VALUES
-(1, 1, 14.00, 14.00, 'MODERADO', '2025-01-15', 'Glaucoma primario de ángulo abierto; meta estricta para evitar avance'),
-(2, 2, 16.00, 16.00, 'SOSPECHA', '2026-02-18', 'Hipertensión ocular con paquimetría corneal gruesa'),
-(3, 3, 15.00, 15.00, 'MODERADO', '2026-02-05', 'Glaucoma por cierre angular resuelto con iridotomía bilateral'),
-(4, 5, 12.00, 12.00, 'TERMINAL', '2024-03-10', 'Glaucoma avanzado terminal, daño campimétrico residual tubular'),
-(5, 8, 14.00, 14.00, 'AVANZADO', '2025-08-14', 'Manejo especial por intolerancia a betabloqueadores'),
-(6, 10, 15.00, 15.00, 'INICIAL', '2026-02-28', 'Diagnóstico temprano normotensional');
+(1, 1, 15.00, 14.00, 'MODERADO', '2025-01-20', 'Meta tensional ajustada por defecto campimétrico incipiente OI'),
+(2, 2, 14.00, 11.00, 'AVANZADO', '2024-11-10', 'Meta muy estricta en OI (< 12 mmHg) para frenar progresión'),
+(3, 3, 16.00, 16.00, 'INICIAL', '2026-01-20', 'Glaucoma secundario a esteroides en fase de recuperación'),
+(4, 5, 14.00, 13.00, 'AVANZADO', '2025-05-22', 'Riesgo elevado por elongación axial y adelgazamiento escleral'),
+(5, 8, 15.00, 14.00, 'MODERADO', '2024-08-30', 'Opciones limitadas por reactividad bronquial severa'),
+(6, 10, 16.00, 15.00, 'SOSPECHA', '2026-03-05', 'Monitoreo de conversión de síndrome pseudoexfoliativo a glaucoma');
 
--- 23. Controles Evolutivos de Glaucoma
+-- 30. Controles Evolutivos de Glaucoma
 INSERT INTO glaucoma_controls (id, glaucoma_record_id, visit_id, control_date, is_progression_detected, adherence_score, notes) VALUES
-(1, 1, 1, '2026-01-10', TRUE, 'REGULAR', 'El paciente omitía dosis nocturnas por olvido; se refuerza educación'),
-(2, 1, 2, '2026-03-12', FALSE, 'EXCELENTE', 'Excelente adherencia lograda con alarma en celular; PIO en meta'),
-(3, 2, 4, '2026-02-18', FALSE, 'BUENA', 'Buen cumplimiento de gotas de inicio'),
-(4, 3, 6, '2026-02-06', FALSE, 'EXCELENTE', 'Control postquirúrgico láser satisfactorio'),
-(5, 4, 8, '2026-01-25', TRUE, 'BUENA', 'Progresión estructural y funcional constatada, se define cirugía'),
-(6, 4, 9, '2026-03-05', TRUE, 'BUENA', 'Programación de cirugía de rescate trabeculectomía');
+(1, 1, 1, '2026-01-10', FALSE, 'BUENA', 'Presión fuera de meta en OI, requiere ajuste'),
+(2, 1, 2, '2026-03-12', FALSE, 'EXCELENTE', 'Meta alcanzada en ambos ojos tras adición terapéutica'),
+(3, 2, 3, '2026-01-15', TRUE, 'REGULAR', 'Progresión funcional detectada en hemicampo superior OI'),
+(4, 2, 4, '2026-02-20', FALSE, 'EXCELENTE', 'Estabilización con terapia dual'),
+(5, 3, 5, '2026-01-20', FALSE, 'BUENA', 'Pico hipertensivo severo secundario a medicación externa'),
+(6, 3, 6, '2026-02-15', FALSE, 'BUENA', 'Descenso marcado hacia la normalidad'),
+(7, 4, 8, '2026-02-05', TRUE, 'BUENA', 'Progresión estructural y funcional en ojo miope alto'),
+(8, 4, 9, '2026-03-18', FALSE, 'EXCELENTE', 'Excelente respuesta tensional con Bimatoprost');
 
--- 24. Documentos Clínicos y Adjuntos
-INSERT INTO clinical_documents (id, clinical_history_id, title, file_type, file_path, uploaded_at, deleted_by) VALUES
-(1, 1, 'Campimetría Humphrey 24-2 OD Enero 2026', 'application/pdf', '/storage/docs/2026/01/vf_1001_od.pdf', '2026-01-10 10:45:00', NULL),
-(2, 1, 'OCT Nervio Óptico Cirrus Enero 2026', 'application/pdf', '/storage/docs/2026/01/oct_1001.pdf', '2026-01-10 10:50:00', NULL),
-(3, 3, 'Fotografía de Polo Anterior con Lámpara de Hendidura', 'image/jpeg', '/storage/docs/2026/02/slitlamp_1003.jpg', '2026-02-05 09:00:00', NULL),
-(4, 5, 'Consentimiento Informado para Trabeculectomía', 'application/pdf', '/storage/docs/2026/03/consent_trab_1005.pdf', '2026-03-05 12:00:00', NULL),
-(5, 8, 'Reporte de Curva Tensional de 24 Horas', 'application/pdf', '/storage/docs/2026/01/diurnal_curve_1008.pdf', '2026-01-18 10:00:00', NULL);
+-- 31. Documentos Clínicos y Adjuntos
+INSERT INTO clinical_documents (id, clinical_history_id, title, file_type, file_path, uploaded_at) VALUES
+(1, 1, 'Reporte OCT Cirrus Papilar 2026-01', 'application/pdf', '/docs/histories/1/oct_20260110.pdf', '2026-01-10 10:10:00'),
+(2, 1, 'Campimetría Humphrey 24-2 2026-01', 'application/pdf', '/docs/histories/1/vf_20260110.pdf', '2026-01-10 10:40:00'),
+(3, 2, 'Reporte OCT Macula y Nervio 2026-01', 'application/pdf', '/docs/histories/2/oct_20260115.pdf', '2026-01-15 11:10:00'),
+(4, 2, 'Campimetría Humphrey Bilateral 2026-01', 'application/pdf', '/docs/histories/2/vf_20260115.pdf', '2026-01-15 11:40:00'),
+(5, 5, 'Retinografía a Color de Papila', 'image/jpeg', '/docs/histories/5/retinografia_20260205.jpg', '2026-02-05 15:30:00'),
+(6, 3, 'Consentimiento Informado SLT', 'application/pdf', '/docs/histories/3/consent_slt_20260218.pdf', '2026-02-18 09:45:00');
 
--- 25. Auditoría Inicial
+-- 32. Bitácora Inicial de Auditoría
 INSERT INTO audit_logs (id, table_name, record_id, action, old_values, new_values, performed_by, changed_at) VALUES
-(1, 'patients', 1, 'INSERT', NULL, '{"first_name": "Juan Carlos", "last_name": "Gómez Pérez"}', 'SYSTEM', '2025-01-15 08:30:00'),
-(2, 'patients', 3, 'INSERT', NULL, '{"first_name": "Carlos Alberto", "last_name": "Gómez Mendoza"}', 'SYSTEM', '2025-03-05 10:00:00'),
-(3, 'medical_visits', 5, 'INSERT', NULL, '{"reason": "Urgencia dolor ocular agudo"}', 'SYSTEM', '2026-02-05 08:30:00');
-
-SELECT 'Datos semilla insertados exitosamente en oftalmologia_glaucoma_db' AS estado;
+(1, 'patients', 1, 'INSERT', NULL, '{"document": "1098123456", "name": "Juan Carlos Gómez Pérez"}', 'SYSTEM', '2025-01-15 08:30:00'),
+(2, 'clinical_histories', 1, 'INSERT', NULL, '{"patient_id": 1, "history_number": "HC-2026-0001"}', 'SYSTEM', '2025-01-15 08:30:00'),
+(3, 'medical_visits', 1, 'INSERT', NULL, '{"clinical_history_id": 1, "professional_id": 1}', 'SYSTEM', '2026-01-10 09:00:00'),
+(4, 'intraocular_pressures', 2, 'INSERT', NULL, '{"eye": "OI", "pressure": 25.00}', 'SYSTEM', '2026-01-10 09:15:00'),
+(5, 'intraocular_pressures', 9, 'ALERT', NULL, '{"alert": "PIO CRITICA DETECTADA", "eye": "OD", "pressure": 31.00}', 'CLINICAL_MONITOR', '2026-01-20 11:45:00'),
+(6, 'intraocular_pressures', 10, 'ALERT', NULL, '{"alert": "PIO CRITICA DETECTADA", "eye": "OI", "pressure": 33.50}', 'CLINICAL_MONITOR', '2026-01-20 11:45:00'),
+(7, 'treatments', 2, 'UPDATE', '{"is_active": true}', '{"is_active": false}', 'PHARMACY_AUDIT', '2026-03-12 10:30:00'),
+(8, 'glaucoma_records', 1, 'UPDATE', '{"clinical_stage": "SOSPECHA"}', '{"clinical_stage": "MODERADO"}', 'CLINICAL_AUDIT', '2026-01-10 09:30:00'),
+(9, 'treatments', 5, 'UPDATE', '{"is_active": true}', '{"is_active": false}', 'TREATMENT_CLOSURE', '2026-02-15 09:30:00'),
+(10, 'treatments', 6, 'UPDATE', '{"is_active": true}', '{"is_active": false}', 'TREATMENT_CLOSURE', '2026-02-15 09:30:00');
 ```
 
 # 25. Consultas básicas
@@ -1870,21 +2073,22 @@ DROP VIEW IF EXISTS vw_patient_summary;
 CREATE VIEW vw_patient_summary AS
 SELECT 
     p.id AS patient_id,
-    p.document_number,
+    per.document_number,
     dt.code AS doc_type,
-    CONCAT(p.first_name, ' ', p.last_name) AS full_name,
-    p.birth_date,
-    TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS age,
-    p.gender,
+    CONCAT(per.first_name, ' ', per.last_name) AS full_name,
+    per.birth_date,
+    TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age,
+    per.gender,
     c.name AS city_name,
-    p.phone,
-    p.email,
+    per.phone,
+    per.email,
     ch.history_number,
     ch.status AS history_status,
     ch.created_at AS history_created_at
 FROM patients p
-JOIN document_types dt ON p.document_type_id = dt.id
-JOIN cities c ON p.city_id = c.id
+JOIN persons per ON p.person_id = per.id
+JOIN document_types dt ON per.document_type_id = dt.id
+JOIN cities c ON per.city_id = c.id
 JOIN clinical_histories ch ON p.id = ch.patient_id;
 
 -- 2. Vista de Última Consulta por Paciente
@@ -1892,12 +2096,13 @@ DROP VIEW IF EXISTS vw_patient_last_visit;
 CREATE VIEW vw_patient_last_visit AS
 SELECT 
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     ch.history_number,
     COUNT(mv.id) AS total_visits,
     MAX(mv.visit_date) AS last_visit_date,
     DATEDIFF(CURDATE(), DATE(MAX(mv.visit_date))) AS days_since_last_visit
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name, ch.history_number;
@@ -1908,8 +2113,9 @@ CREATE VIEW vw_active_treatments AS
 SELECT 
     t.id AS treatment_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     m.name AS medication_name,
+    mc.name AS medication_class,
     m.generic_name,
     m.concentration,
     t.eye,
@@ -1920,9 +2126,11 @@ SELECT
     t.notes
 FROM treatments t
 JOIN medications m ON t.medication_id = m.id
+JOIN medication_classes mc ON m.medication_class_id = mc.id
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.is_active = TRUE;
 
 -- 4. Vista de Monitoreo Integral de Glaucoma
@@ -1931,7 +2139,7 @@ CREATE VIEW vw_glaucoma_monitoring AS
 SELECT 
     gr.id AS glaucoma_record_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     gr.clinical_stage,
     gr.target_iop_od,
     gr.target_iop_oi,
@@ -1941,6 +2149,7 @@ SELECT
     MAX(gc.is_progression_detected) AS progression_flag
 FROM glaucoma_records gr
 JOIN patients p ON gr.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 LEFT JOIN glaucoma_controls gc ON gr.id = gc.glaucoma_record_id
 GROUP BY gr.id, p.id, patient_name, gr.clinical_stage, gr.target_iop_od, gr.target_iop_oi, gr.diagnosis_date;
 
@@ -1950,7 +2159,7 @@ CREATE VIEW vw_iop_bilateral AS
 SELECT 
     mv.id AS visit_id,
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     mv.visit_date,
     MAX(CASE WHEN iop.eye = 'OD' THEN iop.pressure END) AS iop_od,
     MAX(CASE WHEN iop.eye = 'OI' THEN iop.pressure END) AS iop_oi,
@@ -1958,6 +2167,7 @@ SELECT
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
 GROUP BY mv.id, p.id, patient_name, mv.visit_date;
 
@@ -2001,6 +2211,32 @@ SELECT
     pe.method
 FROM pachymetry_exams pe
 JOIN medical_visits mv ON pe.visit_id = mv.id
+JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+UNION ALL
+SELECT 
+    'AGUDEZA_VISUAL',
+    va.id,
+    va.visit_id,
+    ch.patient_id,
+    va.eye,
+    va.exam_date,
+    CONCAT('SC: ', va.uncorrected_va, ' | CC: ', va.corrected_va),
+    CONCAT('Esfera: ', IFNULL(va.sphere, 0.00), ' Cil: ', IFNULL(va.cylinder, 0.00), ' Eje: ', IFNULL(va.axis, 0))
+FROM visual_acuity_exams va
+JOIN medical_visits mv ON va.visit_id = mv.id
+JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+UNION ALL
+SELECT 
+    'BIOMICROSCOPIA',
+    bio.id,
+    bio.visit_id,
+    ch.patient_id,
+    bio.eye,
+    bio.exam_date,
+    CONCAT('Cámara: ', bio.anterior_chamber_depth, ' | Cristalino: ', bio.lens_status),
+    CONCAT('Córnea: ', bio.cornea_status, ' | Iris: ', bio.iris_status, ' | PXF: ', IF(bio.pseudoexfoliation_present, 'SI', 'NO'))
+FROM biomicroscopy_exams bio
+JOIN medical_visits mv ON bio.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id;
 
 -- 7. Vista de Productividad por Profesional
@@ -2008,13 +2244,15 @@ DROP VIEW IF EXISTS vw_physician_workload;
 CREATE VIEW vw_physician_workload AS
 SELECT 
     hp.id AS professional_id,
-    CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS professional_name,
     s.name AS specialty,
-    COUNT(mv.id) AS total_visits,
+    COUNT(DISTINCT mv.id) AS total_visits,
     COUNT(DISTINCT ch.patient_id) AS distinct_patients_seen,
+    (SELECT COUNT(*) FROM appointments a WHERE a.professional_id = hp.id) AS total_appointments,
     MIN(mv.visit_date) AS first_visit_attended,
     MAX(mv.visit_date) AS last_visit_attended
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
@@ -2102,7 +2340,7 @@ El proyecto deberá entregar:
 La solución integral implementada y verificada en MySQL 8.0 se estructura en la siguiente suite de scripts ordenados:
 
 1. **`00_init_database.sql`**: Crea la base de datos `oftalmologia_glaucoma_db` con codificación `utf8mb4` y activa el programador de eventos (`event_scheduler = ON`).
-2. **`01_ddl_schema.sql`**: Crea las 25 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 4 tablas de backup, llaves primarias, llaves foráneas con integridad referencial, índices y restricciones CHECK/UNIQUE.
+2. **`01_ddl_schema.sql`**: Crea las 32 tablas relacionales normalizadas en Cuarta Forma Normal (4FN), 5 tablas de backup, llaves primarias, llaves foráneas con integridad referencial, índices y restricciones CHECK/UNIQUE.
 3. **`02_dml_seed_data.sql`**: Carga el dataset clínico completo de prueba con pacientes, antecedentes, visitas, exámenes paraclínicos, tratamientos y controles de glaucoma.
 4. **`03_part1_queries.sql`**: Ejecuta las 50 consultas SQL (básicas, intermedias y avanzadas).
 5. **`04_part2_subqueries.sql`**: Ejecuta las 50 subconsultas SQL (escalares, IN, NOT EXISTS, correlacionadas y avanzadas).
@@ -2160,31 +2398,49 @@ audit_logs
 ### 1.
 
 
+
+
+
 Mostrar todos los pacientes registrados en la base de datos.
 
 ```sql
-SELECT * FROM patients;
+SELECT p.id, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, p.blood_type, p.health_insurance, p.affiliation_type
+FROM patients p
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 2.
 
 
+
+
+
 Mostrar únicamente el número de documento, nombres y apellidos de todos los pacientes.
 
 ```sql
-SELECT document_number, first_name, last_name FROM patients;
+SELECT per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 3.
 
 
+
+
+
 Listar todos los profesionales de salud registrados.
 
 ```sql
-SELECT * FROM healthcare_professionals;
+SELECT hp.id, per.document_number, per.first_name, per.last_name, hp.medical_license, hp.specialty_id, hp.is_active
+FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id;
 ```
 
 ### 4.
+
+
+
 
 
 Mostrar todos los diagnósticos disponibles en el catálogo.
@@ -2196,6 +2452,9 @@ SELECT * FROM diagnoses;
 ### 5.
 
 
+
+
+
 Consultar todas las historias clínicas registradas.
 
 ```sql
@@ -2205,70 +2464,113 @@ SELECT * FROM clinical_histories;
 ### 6.
 
 
+
+
+
 Mostrar todos los pacientes ordenados alfabéticamente por apellido.
 
 ```sql
-SELECT * FROM patients ORDER BY last_name ASC, first_name ASC;
+SELECT p.id, per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+ORDER BY per.last_name ASC, per.first_name ASC;
 ```
 
 ### 7.
 
 
+
+
+
 Mostrar los pacientes ordenados por fecha de nacimiento desde el más joven hasta el de mayor edad.
 
 ```sql
-SELECT * FROM patients ORDER BY birth_date DESC;
+SELECT p.id, per.first_name, per.last_name, per.birth_date
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+ORDER BY per.birth_date DESC;
 ```
 
 ### 8.
 
 
+
+
+
 Consultar los pacientes cuyo apellido sea `Gómez`.
 
 ```sql
-SELECT * FROM patients WHERE last_name LIKE '%Gómez%' OR last_name LIKE '%Gomez%';
+SELECT p.id, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.last_name LIKE '%Gómez%' OR per.last_name LIKE '%Gomez%';
 ```
 
 ### 9.
 
 
+
+
+
 Mostrar los pacientes cuyo número de documento comience por `10`.
 
 ```sql
-SELECT * FROM patients WHERE document_number LIKE '10%';
+SELECT p.id, per.document_number, per.first_name, per.last_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.document_number LIKE '10%';
 ```
 
 ### 10.
 
 
+
+
+
 Consultar los pacientes cuyo correo electrónico pertenezca al dominio `gmail.com`.
 
 ```sql
-SELECT * FROM patients WHERE email LIKE '%@gmail.com';
+SELECT p.id, per.first_name, per.last_name, per.email
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.email LIKE '%@gmail.com';
 ```
 
 ### 11.
 
 
+
+
+
 Mostrar los pacientes que no tengan correo electrónico registrado.
 
 ```sql
-SELECT * FROM patients WHERE email IS NULL;
+SELECT p.id, per.first_name, per.last_name, per.email
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE per.email IS NULL;
 ```
 
 ### 12.
 
 
+
+
+
 Mostrar los profesionales cuya especialidad sea Oftalmología.
 
 ```sql
-SELECT hp.* 
+SELECT hp.id, per.first_name, per.last_name, hp.medical_license, s.name AS specialty
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 WHERE s.name = 'Oftalmología';
 ```
 
 ### 13.
+
+
+
 
 
 Consultar todas las consultas médicas realizadas durante el año 2026.
@@ -2280,6 +2582,9 @@ SELECT * FROM medical_visits WHERE YEAR(visit_date) = 2026;
 ### 14.
 
 
+
+
+
 Mostrar las consultas realizadas durante un mes determinado.
 
 ```sql
@@ -2287,6 +2592,9 @@ SELECT * FROM medical_visits WHERE YEAR(visit_date) = 2026 AND MONTH(visit_date)
 ```
 
 ### 15.
+
+
+
 
 
 Consultar las mediciones de presión intraocular superiores a 20 mmHg.
@@ -2298,6 +2606,9 @@ SELECT * FROM intraocular_pressures WHERE pressure > 20.00;
 ### 16.
 
 
+
+
+
 Mostrar las mediciones de presión intraocular correspondientes únicamente al ojo derecho.
 
 ```sql
@@ -2305,6 +2616,9 @@ SELECT * FROM intraocular_pressures WHERE eye = 'OD';
 ```
 
 ### 17.
+
+
+
 
 
 Mostrar las mediciones correspondientes únicamente al ojo izquierdo.
@@ -2316,6 +2630,9 @@ SELECT * FROM intraocular_pressures WHERE eye = 'OI';
 ### 18.
 
 
+
+
+
 Consultar todos los tratamientos que se encuentren activos.
 
 ```sql
@@ -2325,6 +2642,9 @@ SELECT * FROM treatments WHERE is_active = TRUE;
 ### 19.
 
 
+
+
+
 Mostrar todos los tratamientos que hayan finalizado.
 
 ```sql
@@ -2332,6 +2652,9 @@ SELECT * FROM treatments WHERE is_active = FALSE OR (end_date IS NOT NULL AND en
 ```
 
 ### 20.
+
+
+
 
 
 Consultar los procedimientos realizados después de una fecha determinada.
@@ -2345,52 +2668,71 @@ SELECT * FROM procedures WHERE procedure_date >= '2026-01-01 00:00:00';
 ### 21.
 
 
+
+
+
 Mostrar cada paciente junto con el número de su historia clínica.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, ch.history_number, ch.status
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, ch.history_number, ch.status
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id;
 ```
 
 ### 22.
 
 
+
+
+
 Mostrar cada consulta indicando el nombre completo del paciente.
 
 ```sql
-SELECT mv.id AS visit_id, mv.visit_date, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.reason
+SELECT mv.id AS visit_id, mv.visit_date, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.reason
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 23.
 
 
+
+
+
 Mostrar cada consulta junto con el nombre del profesional que la realizó.
 
 ```sql
-SELECT mv.id AS visit_id, mv.visit_date, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, s.name AS specialty, mv.reason
+SELECT mv.id AS visit_id, mv.visit_date, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, s.name AS specialty, mv.reason
 FROM medical_visits mv
 JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id;
 ```
 
 ### 24.
 
 
+
+
+
 Listar todos los pacientes junto con la fecha de sus consultas.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.id AS visit_id, mv.visit_date
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.id AS visit_id, mv.visit_date
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 ORDER BY p.id, mv.visit_date;
 ```
 
 ### 25.
+
+
+
 
 
 Mostrar los diagnósticos asociados a cada consulta.
@@ -2406,11 +2748,15 @@ ORDER BY mv.id, vd.is_primary DESC;
 ### 26.
 
 
+
+
+
 Mostrar nombre del paciente, fecha de consulta y diagnóstico correspondiente.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, d.code, d.name AS diagnosis, vd.is_primary
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, d.code, d.name AS diagnosis, vd.is_primary
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -2420,11 +2766,15 @@ JOIN diagnoses d ON vd.diagnosis_id = d.id;
 ### 27.
 
 
+
+
+
 Consultar todos los pacientes que tengan diagnóstico de glaucoma.
 
 ```sql
-SELECT DISTINCT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, d.code, d.name AS glaucoma_diagnosis
+SELECT DISTINCT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, d.code, d.name AS glaucoma_diagnosis
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -2435,84 +2785,111 @@ WHERE d.is_glaucoma_type = TRUE;
 ### 28.
 
 
+
+
+
 Mostrar todos los controles de glaucoma indicando el paciente correspondiente.
 
 ```sql
-SELECT gc.id AS control_id, gc.control_date, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, gr.clinical_stage, gc.is_progression_detected, gc.adherence_score, gc.notes
+SELECT gc.id AS control_id, gc.control_date, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, gr.clinical_stage, gc.is_progression_detected, gc.adherence_score, gc.notes
 FROM glaucoma_controls gc
 JOIN glaucoma_records gr ON gc.glaucoma_record_id = gr.id
-JOIN patients p ON gr.patient_id = p.id;
+JOIN patients p ON gr.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 29.
 
 
+
+
+
 Mostrar cada medición de presión intraocular junto con nombre del paciente, fecha y ojo.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, iop.eye, iop.pressure, iop.method
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, iop.eye, iop.pressure, iop.method
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 ORDER BY mv.visit_date DESC, iop.eye;
 ```
 
 ### 30.
 
 
+
+
+
 Mostrar los estudios OCT realizados indicando paciente, ojo y fecha.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, oct.eye, oct.exam_date, oct.rnfl_average, oct.cup_to_disc_ratio, oct.interpretation
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, oct.eye, oct.exam_date, oct.rnfl_average, oct.cup_to_disc_ratio, oct.interpretation
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 31.
 
 
+
+
+
 Mostrar los campos visuales registrados indicando paciente, ojo, MD, PSD y VFI.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, vf.eye, vf.mean_deviation_md, vf.pattern_std_deviation_psd, vf.visual_field_index_vfi, vf.reliability, vf.exam_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, vf.eye, vf.mean_deviation_md, vf.pattern_std_deviation_psd, vf.visual_field_index_vfi, vf.reliability, vf.exam_date
 FROM visual_field_exams vf
 JOIN medical_visits mv ON vf.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 32.
 
 
+
+
+
 Mostrar las paquimetrías realizadas junto con el paciente y el espesor corneal registrado.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, pe.eye, pe.corneal_thickness, pe.method, pe.exam_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, pe.eye, pe.corneal_thickness, pe.method, pe.exam_date
 FROM pachymetry_exams pe
 JOIN medical_visits mv ON pe.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
-JOIN patients p ON ch.patient_id = p.id;
+JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id;
 ```
 
 ### 33.
 
 
+
+
+
 Mostrar los tratamientos activos incluyendo nombre del paciente y medicamento.
 
 ```sql
-SELECT CONCAT(p.first_name, ' ', p.last_name) AS patient_name, m.name AS medication_name, m.generic_name, t.dosage, t.frequency, t.eye, t.start_date
+SELECT CONCAT(per.first_name, ' ', per.last_name) AS patient_name, m.name AS medication_name, m.generic_name, t.dosage, t.frequency, t.eye, t.start_date
 FROM treatments t
 JOIN medications m ON t.medication_id = m.id
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.is_active = TRUE;
 ```
 
 ### 34.
+
+
+
 
 
 Mostrar cada medicamento y la cantidad de tratamientos en los que ha sido utilizado.
@@ -2528,6 +2905,9 @@ ORDER BY total_treatments_prescribed DESC;
 ### 35.
 
 
+
+
+
 Mostrar la cantidad total de pacientes registrados.
 
 ```sql
@@ -2535,6 +2915,9 @@ SELECT COUNT(*) AS total_patients_registered FROM patients;
 ```
 
 ### 36.
+
+
+
 
 
 Mostrar la cantidad de consultas realizadas.
@@ -2546,22 +2929,30 @@ SELECT COUNT(*) AS total_visits_conducted FROM medical_visits;
 ### 37.
 
 
+
+
+
 Mostrar la cantidad de pacientes por sexo.
 
 ```sql
-SELECT gender, COUNT(*) AS total_patients
-FROM patients
-GROUP BY gender;
+SELECT per.gender, COUNT(*) AS total_patients
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+GROUP BY per.gender;
 ```
 
 ### 38.
 
 
+
+
+
 Mostrar la cantidad de pacientes atendidos por cada profesional.
 
 ```sql
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, COUNT(DISTINCT ch.patient_id) AS distinct_patients_attended
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, COUNT(DISTINCT ch.patient_id) AS distinct_patients_attended
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 GROUP BY hp.id, professional_name
@@ -2571,6 +2962,9 @@ ORDER BY distinct_patients_attended DESC;
 ### 39.
 
 
+
+
+
 Calcular el promedio general de presión intraocular.
 
 ```sql
@@ -2578,6 +2972,9 @@ SELECT ROUND(AVG(pressure), 2) AS overall_average_iop FROM intraocular_pressures
 ```
 
 ### 40.
+
+
+
 
 
 Calcular la presión intraocular mínima y máxima registrada.
@@ -2591,6 +2988,9 @@ SELECT MIN(pressure) AS min_iop_recorded, MAX(pressure) AS max_iop_recorded FROM
 ### 41.
 
 
+
+
+
 Calcular la presión intraocular promedio para OD y OI por separado.
 
 ```sql
@@ -2602,11 +3002,15 @@ GROUP BY eye;
 ### 42.
 
 
+
+
+
 Mostrar la cantidad de consultas realizadas por cada paciente.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
@@ -2616,11 +3020,15 @@ ORDER BY total_visits DESC;
 ### 43.
 
 
+
+
+
 Mostrar únicamente los pacientes que tengan tres o más consultas.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
@@ -2631,11 +3039,15 @@ ORDER BY total_visits DESC;
 ### 44.
 
 
+
+
+
 Mostrar cada profesional junto con la cantidad de consultas realizadas.
 
 ```sql
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, s.name AS specialty, COUNT(mv.id) AS total_visits
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, s.name AS specialty, COUNT(mv.id) AS total_visits
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN specialties s ON hp.specialty_id = s.id
 LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name, s.name
@@ -2643,6 +3055,9 @@ ORDER BY total_visits DESC;
 ```
 
 ### 45.
+
+
+
 
 
 Mostrar los profesionales que hayan realizado más de 20 consultas.
@@ -2659,6 +3074,9 @@ HAVING visits_count > 0;
 ### 46.
 
 
+
+
+
 Calcular la cantidad de diagnósticos registrados por tipo de diagnóstico.
 
 ```sql
@@ -2670,6 +3088,9 @@ ORDER BY total_occurrences DESC;
 ```
 
 ### 47.
+
+
+
 
 
 Mostrar los cinco diagnósticos más frecuentes.
@@ -2686,6 +3107,9 @@ LIMIT 5;
 ### 48.
 
 
+
+
+
 Mostrar la cantidad de estudios OCT realizados por mes.
 
 ```sql
@@ -2696,6 +3120,9 @@ ORDER BY exam_month;
 ```
 
 ### 49.
+
+
+
 
 
 Mostrar la cantidad de campos visuales realizados por año.
@@ -2710,17 +3137,21 @@ ORDER BY exam_year;
 ### 50.
 
 
+
+
+
 Generar un reporte que muestre por paciente: nombre completo, número de consultas, cantidad de controles de glaucoma, promedio de PIO y fecha de última consulta.
 
 ```sql
 SELECT 
     p.id AS patient_id,
-    CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
     COUNT(DISTINCT mv.id) AS total_visits,
     COUNT(DISTINCT gc.id) AS total_glaucoma_controls,
     ROUND(AVG(iop.pressure), 2) AS avg_iop,
     MAX(mv.visit_date) AS last_visit_date
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 LEFT JOIN glaucoma_records gr ON p.id = gr.patient_id
@@ -2737,32 +3168,47 @@ ORDER BY total_visits DESC, p.id;
 ### 1.
 
 
+
+
+
 Mostrar los pacientes cuya edad sea superior a la edad promedio de todos los pacientes.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name,
-       TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age
-FROM patients
-WHERE TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) > (
-    SELECT AVG(TIMESTAMPDIFF(YEAR, birth_date, CURDATE())) FROM patients
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
+       TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) > (
+    SELECT AVG(TIMESTAMPDIFF(YEAR, per2.birth_date, CURDATE()))
+    FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
 );
 ```
 
 ### 2.
 
 
+
+
+
 Mostrar los pacientes cuya edad sea inferior a la edad promedio.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name,
-       TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) AS age
-FROM patients
-WHERE TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) < (
-    SELECT AVG(TIMESTAMPDIFF(YEAR, birth_date, CURDATE())) FROM patients
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
+       TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) < (
+    SELECT AVG(TIMESTAMPDIFF(YEAR, per2.birth_date, CURDATE()))
+    FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
 );
 ```
 
 ### 3.
+
+
+
 
 
 Consultar la medición de presión intraocular más alta registrada.
@@ -2774,6 +3220,9 @@ WHERE pressure = (SELECT MAX(pressure) FROM intraocular_pressures);
 ```
 
 ### 4.
+
+
+
 
 
 Mostrar todas las mediciones que tengan el mismo valor que la presión máxima registrada.
@@ -2788,6 +3237,9 @@ WHERE iop.pressure = (SELECT MAX(pressure) FROM intraocular_pressures);
 ### 5.
 
 
+
+
+
 Mostrar la presión intraocular mínima registrada.
 
 ```sql
@@ -2797,6 +3249,9 @@ WHERE pressure = (SELECT MIN(pressure) FROM intraocular_pressures);
 ```
 
 ### 6.
+
+
+
 
 
 Mostrar los estudios OCT cuyo RNFL sea inferior al promedio general.
@@ -2810,6 +3265,9 @@ WHERE rnfl_average < (SELECT AVG(rnfl_average) FROM oct_exams);
 ### 7.
 
 
+
+
+
 Mostrar los estudios OCT cuyo RNFL sea superior al promedio general.
 
 ```sql
@@ -2821,11 +3279,15 @@ WHERE rnfl_average > (SELECT AVG(rnfl_average) FROM oct_exams);
 ### 8.
 
 
+
+
+
 Consultar pacientes cuya cantidad de consultas sea mayor que el promedio de consultas por paciente.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(mv.id) AS total_visits
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(mv.id) AS total_visits
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 GROUP BY p.id, patient_name
@@ -2843,11 +3305,15 @@ HAVING COUNT(mv.id) > (
 ### 9.
 
 
+
+
+
 Mostrar profesionales cuya cantidad de consultas sea superior al promedio por profesional.
 
 ```sql
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, COUNT(mv.id) AS total_visits
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, COUNT(mv.id) AS total_visits
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name
 HAVING COUNT(mv.id) > (
@@ -2864,11 +3330,15 @@ HAVING COUNT(mv.id) > (
 ### 10.
 
 
+
+
+
 Consultar pacientes cuya última presión intraocular sea superior al promedio general.
 
 ```sql
-SELECT DISTINCT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, iop.pressure AS latest_iop
+SELECT DISTINCT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, iop.pressure AS latest_iop
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
@@ -2889,12 +3359,16 @@ AND iop.pressure > (SELECT AVG(pressure) FROM intraocular_pressures);
 ### 11.
 
 
+
+
+
 Mostrar pacientes que tengan al menos una consulta registrada.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -2904,12 +3378,16 @@ WHERE id IN (
 ### 12.
 
 
+
+
+
 Mostrar pacientes que tengan diagnóstico de glaucoma.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -2922,12 +3400,16 @@ WHERE id IN (
 ### 13.
 
 
+
+
+
 Mostrar pacientes que hayan recibido tratamiento farmacológico.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -2938,12 +3420,16 @@ WHERE id IN (
 ### 14.
 
 
+
+
+
 Mostrar pacientes que tengan estudios OCT registrados.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -2954,12 +3440,16 @@ WHERE id IN (
 ### 15.
 
 
+
+
+
 Mostrar pacientes que tengan campos visuales registrados.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -2968,6 +3458,9 @@ WHERE id IN (
 ```
 
 ### 16.
+
+
+
 
 
 Mostrar medicamentos que hayan sido utilizados en al menos un tratamiento.
@@ -2983,12 +3476,16 @@ WHERE id IN (
 ### 17.
 
 
+
+
+
 Mostrar profesionales que hayan atendido pacientes con glaucoma.
 
 ```sql
-SELECT id, CONCAT(first_name, ' ', last_name) AS professional_name, medical_license
-FROM healthcare_professionals
-WHERE id IN (
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, hp.medical_license
+FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
+WHERE hp.id IN (
     SELECT mv.professional_id
     FROM medical_visits mv
     JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -2998,6 +3495,9 @@ WHERE id IN (
 ```
 
 ### 18.
+
+
+
 
 
 Mostrar diagnósticos utilizados en alguna consulta.
@@ -3013,12 +3513,16 @@ WHERE id IN (
 ### 19.
 
 
+
+
+
 Mostrar pacientes que hayan tenido algún procedimiento quirúrgico.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -3029,12 +3533,16 @@ WHERE id IN (
 ### 20.
 
 
+
+
+
 Mostrar pacientes que tengan registros de paquimetría.
 
 ```sql
-SELECT id, document_number, CONCAT(first_name, ' ', last_name) AS patient_name
-FROM patients
-WHERE id IN (
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
+FROM patients p
+JOIN persons per ON p.person_id = per.id
+WHERE p.id IN (
     SELECT ch.patient_id
     FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -3047,11 +3555,15 @@ WHERE id IN (
 ### 21.
 
 
+
+
+
 Mostrar pacientes que nunca hayan tenido una consulta.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3063,11 +3575,15 @@ WHERE NOT EXISTS (
 ### 22.
 
 
+
+
+
 Mostrar pacientes que nunca hayan tenido un control de glaucoma.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM glaucoma_records gr
@@ -3079,11 +3595,15 @@ WHERE NOT EXISTS (
 ### 23.
 
 
+
+
+
 Mostrar pacientes que no tengan estudios OCT.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3096,11 +3616,15 @@ WHERE NOT EXISTS (
 ### 24.
 
 
+
+
+
 Mostrar pacientes que no tengan campos visuales.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3111,6 +3635,9 @@ WHERE NOT EXISTS (
 ```
 
 ### 25.
+
+
+
 
 
 Mostrar medicamentos que nunca hayan sido utilizados.
@@ -3126,17 +3653,24 @@ WHERE m.id NOT IN (
 ### 26.
 
 
+
+
+
 Mostrar profesionales que todavía no hayan registrado consultas.
 
 ```sql
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1 FROM medical_visits mv WHERE mv.professional_id = hp.id
 );
 ```
 
 ### 27.
+
+
+
 
 
 Mostrar diagnósticos que nunca hayan sido asociados a una consulta.
@@ -3152,11 +3686,15 @@ WHERE d.id NOT IN (
 ### 28.
 
 
+
+
+
 Mostrar pacientes que no tengan tratamientos activos.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3169,11 +3707,15 @@ WHERE NOT EXISTS (
 ### 29.
 
 
+
+
+
 Mostrar pacientes que nunca hayan tenido procedimientos.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3186,11 +3728,15 @@ WHERE NOT EXISTS (
 ### 30.
 
 
+
+
+
 Mostrar pacientes sin mediciones de presión intraocular.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE NOT EXISTS (
     SELECT 1
     FROM clinical_histories ch
@@ -3205,15 +3751,19 @@ WHERE NOT EXISTS (
 ### 31.
 
 
+
+
+
 Mostrar las mediciones de PIO superiores al promedio del mismo paciente.
 
 ```sql
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE iop.pressure > (
     SELECT AVG(iop2.pressure)
     FROM intraocular_pressures iop2
@@ -3226,15 +3776,19 @@ WHERE iop.pressure > (
 ### 32.
 
 
+
+
+
 Mostrar los estudios OCT cuyo RNFL sea inferior al promedio del mismo paciente.
 
 ```sql
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        oct.eye, oct.rnfl_average, oct.exam_date
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE oct.rnfl_average < (
     SELECT AVG(oct2.rnfl_average)
     FROM oct_exams oct2
@@ -3247,13 +3801,17 @@ WHERE oct.rnfl_average < (
 ### 33.
 
 
+
+
+
 Mostrar las consultas posteriores a la primera consulta de cada paciente.
 
 ```sql
-SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date
+SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date > (
     SELECT MIN(mv2.visit_date)
     FROM medical_visits mv2
@@ -3264,13 +3822,17 @@ WHERE mv.visit_date > (
 ### 34.
 
 
+
+
+
 Mostrar la última consulta de cada paciente utilizando una subconsulta correlacionada.
 
 ```sql
-SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, mv.visit_date, mv.reason
+SELECT mv.id AS visit_id, p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, mv.visit_date, mv.reason
 FROM medical_visits mv
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MAX(mv2.visit_date)
     FROM medical_visits mv2
@@ -3281,15 +3843,19 @@ WHERE mv.visit_date = (
 ### 35.
 
 
+
+
+
 Mostrar la primera medición de PIO de cada paciente.
 
 ```sql
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MIN(mv2.visit_date)
     FROM intraocular_pressures iop2
@@ -3302,15 +3868,19 @@ WHERE mv.visit_date = (
 ### 36.
 
 
+
+
+
 Mostrar la última medición de presión intraocular de cada paciente y ojo.
 
 ```sql
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        iop.eye, iop.pressure, mv.visit_date
 FROM intraocular_pressures iop
 JOIN medical_visits mv ON iop.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE mv.visit_date = (
     SELECT MAX(mv2.visit_date)
     FROM intraocular_pressures iop2
@@ -3323,14 +3893,18 @@ WHERE mv.visit_date = (
 ### 37.
 
 
+
+
+
 Mostrar los tratamientos cuya fecha de inicio sea posterior a la primera consulta del paciente.
 
 ```sql
-SELECT t.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, t.dosage, t.start_date
+SELECT t.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, t.dosage, t.start_date
 FROM treatments t
 JOIN medical_visits mv ON t.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE t.start_date > (
     SELECT MIN(DATE(mv2.visit_date))
     FROM medical_visits mv2
@@ -3341,20 +3915,25 @@ WHERE t.start_date > (
 ### 38.
 
 
+
+
+
 Mostrar pacientes cuyo número de consultas sea mayor que el de todos los demás pacientes de su misma ciudad.
 
 ```sql
-SELECT p1.id, CONCAT(p1.first_name, ' ', p1.last_name) AS patient_name, p1.city_id, COUNT(mv1.id) AS visit_count
+SELECT p1.id, CONCAT(per1.first_name, ' ', per1.last_name) AS patient_name, per1.city_id, COUNT(mv1.id) AS visit_count
 FROM patients p1
+JOIN persons per1 ON p1.person_id = per1.id
 JOIN clinical_histories ch1 ON p1.id = ch1.patient_id
 JOIN medical_visits mv1 ON ch1.id = mv1.clinical_history_id
-GROUP BY p1.id, patient_name, p1.city_id
+GROUP BY p1.id, patient_name, per1.city_id
 HAVING visit_count >= ALL (
     SELECT COUNT(mv2.id)
     FROM patients p2
+    JOIN persons per2 ON p2.person_id = per2.id
     JOIN clinical_histories ch2 ON p2.id = ch2.patient_id
     JOIN medical_visits mv2 ON ch2.id = mv2.clinical_history_id
-    WHERE p2.city_id = p1.city_id AND p2.id <> p1.id
+    WHERE per2.city_id = per1.city_id AND p2.id <> p1.id
     GROUP BY p2.id
 );
 ```
@@ -3362,11 +3941,15 @@ HAVING visit_count >= ALL (
 ### 39.
 
 
+
+
+
 Mostrar profesionales cuya cantidad de consultas sea superior al promedio de los profesionales de su especialidad.
 
 ```sql
-SELECT hp.id, CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name, hp.specialty_id, COUNT(mv.id) AS visits_count
+SELECT hp.id, CONCAT(per.first_name, ' ', per.last_name) AS professional_name, hp.specialty_id, COUNT(mv.id) AS visits_count
 FROM healthcare_professionals hp
+JOIN persons per ON hp.person_id = per.id
 JOIN medical_visits mv ON hp.id = mv.professional_id
 GROUP BY hp.id, professional_name, hp.specialty_id
 HAVING visits_count >= (
@@ -3384,15 +3967,19 @@ HAVING visits_count >= (
 ### 40.
 
 
+
+
+
 Mostrar el estudio OCT más reciente de cada paciente.
 
 ```sql
-SELECT p.id AS patient_id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+SELECT p.id AS patient_id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
        oct.eye, oct.rnfl_average, oct.exam_date
 FROM oct_exams oct
 JOIN medical_visits mv ON oct.visit_id = mv.id
 JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
 JOIN patients p ON ch.patient_id = p.id
+JOIN persons per ON p.person_id = per.id
 WHERE oct.exam_date = (
     SELECT MAX(oct2.exam_date)
     FROM oct_exams oct2
@@ -3407,11 +3994,15 @@ WHERE oct.exam_date = (
 ### 41.
 
 
+
+
+
 Mostrar pacientes cuya presión intraocular máxima sea mayor que la presión máxima promedio de todos los pacientes.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, MAX(iop.pressure) AS patient_max_iop
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, MAX(iop.pressure) AS patient_max_iop
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN intraocular_pressures iop ON mv.id = iop.visit_id
@@ -3431,11 +4022,15 @@ HAVING patient_max_iop > (
 ### 42.
 
 
+
+
+
 Mostrar pacientes cuya cantidad de diagnósticos diferentes sea superior al promedio.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(DISTINCT vd.diagnosis_id) AS distinct_diag_count
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(DISTINCT vd.diagnosis_id) AS distinct_diag_count
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN visit_diagnoses vd ON mv.id = vd.visit_id
@@ -3455,11 +4050,15 @@ HAVING distinct_diag_count > (
 ### 43.
 
 
+
+
+
 Mostrar los pacientes que tengan más tratamientos activos que el promedio de tratamientos activos por paciente.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(t.id) AS active_treatments
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(t.id) AS active_treatments
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN clinical_histories ch ON p.id = ch.patient_id
 JOIN medical_visits mv ON ch.id = mv.clinical_history_id
 JOIN treatments t ON mv.id = t.visit_id
@@ -3478,6 +4077,9 @@ HAVING active_treatments > (
 ```
 
 ### 44.
+
+
+
 
 
 Mostrar el medicamento más utilizado en tratamientos.
@@ -3500,6 +4102,9 @@ HAVING usage_count = (
 ### 45.
 
 
+
+
+
 Mostrar el diagnóstico más frecuente utilizando subconsultas.
 
 ```sql
@@ -3520,11 +4125,15 @@ HAVING occurrences = (
 ### 46.
 
 
+
+
+
 Mostrar los pacientes cuya última PIO sea inferior a su primera PIO.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE (
     SELECT iop_first.pressure
     FROM intraocular_pressures iop_first
@@ -3547,11 +4156,15 @@ WHERE (
 ### 47.
 
 
+
+
+
 Mostrar pacientes cuya presión promedio del ojo derecho sea mayor que la del ojo izquierdo.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE (
     SELECT AVG(iop_od.pressure)
     FROM intraocular_pressures iop_od
@@ -3570,11 +4183,15 @@ WHERE (
 ### 48.
 
 
+
+
+
 Mostrar los pacientes con mayor cantidad de controles de glaucoma que el promedio general.
 
 ```sql
-SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) AS patient_name, COUNT(gc.id) AS controls_count
+SELECT p.id, CONCAT(per.first_name, ' ', per.last_name) AS patient_name, COUNT(gc.id) AS controls_count
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 JOIN glaucoma_records gr ON p.id = gr.patient_id
 JOIN glaucoma_controls gc ON gr.id = gc.glaucoma_record_id
 GROUP BY p.id, patient_name
@@ -3590,6 +4207,9 @@ HAVING controls_count > (
 ```
 
 ### 49.
+
+
+
 
 
 Mostrar las consultas que tengan más diagnósticos asociados que el promedio de diagnósticos por consulta.
@@ -3613,11 +4233,15 @@ HAVING diag_count > (
 ### 50.
 
 
+
+
+
 Mostrar los pacientes que tengan simultáneamente OCT, campo visual, paquimetría y control de glaucoma registrados.
 
 ```sql
-SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name
 FROM patients p
+JOIN persons per ON p.person_id = per.id
 WHERE EXISTS (
     SELECT 1 FROM clinical_histories ch
     JOIN medical_visits mv ON ch.id = mv.clinical_history_id
@@ -3650,6 +4274,9 @@ AND EXISTS (
 ### 1.
 
 
+
+
+
 Crear un procedimiento que liste todos los pacientes.
 
 ```sql
@@ -3657,14 +4284,18 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_all_patients $$
 CREATE PROCEDURE sp_list_all_patients()
 BEGIN
-    SELECT id, document_number, first_name, last_name, birth_date, gender, phone, email
-    FROM patients
-    ORDER BY last_name, first_name;
+    SELECT p.id, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.phone, per.email
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    ORDER BY per.last_name, per.first_name;
 END $$
 DELIMITER ;
 ```
 
 ### 2.
+
+
+
 
 
 Crear un procedimiento que reciba el ID de un paciente y muestre sus datos.
@@ -3674,16 +4305,21 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_get_patient_by_id $$
 CREATE PROCEDURE sp_get_patient_by_id(IN p_patient_id BIGINT)
 BEGIN
-    SELECT p.*, dt.code AS doc_type, c.name AS city_name
+    SELECT p.*, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.address, per.phone, per.email,
+           dt.code AS doc_type, c.name AS city_name
     FROM patients p
-    JOIN document_types dt ON p.document_type_id = dt.id
-    JOIN cities c ON p.city_id = c.id
+    JOIN persons per ON p.person_id = per.id
+    JOIN document_types dt ON per.document_type_id = dt.id
+    JOIN cities c ON per.city_id = c.id
     WHERE p.id = p_patient_id;
 END $$
 DELIMITER ;
 ```
 
 ### 3.
+
+
+
 
 
 Crear un procedimiento que busque un paciente por número de documento.
@@ -3693,16 +4329,21 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_get_patient_by_document $$
 CREATE PROCEDURE sp_get_patient_by_document(IN p_doc_number VARCHAR(30))
 BEGIN
-    SELECT p.*, dt.code AS doc_type, c.name AS city_name
+    SELECT p.*, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.address, per.phone, per.email,
+           dt.code AS doc_type, c.name AS city_name
     FROM patients p
-    JOIN document_types dt ON p.document_type_id = dt.id
-    JOIN cities c ON p.city_id = c.id
-    WHERE p.document_number = p_doc_number;
+    JOIN persons per ON p.person_id = per.id
+    JOIN document_types dt ON per.document_type_id = dt.id
+    JOIN cities c ON per.city_id = c.id
+    WHERE per.document_number = p_doc_number;
 END $$
 DELIMITER ;
 ```
 
 ### 4.
+
+
+
 
 
 Crear un procedimiento que liste todas las consultas de un paciente.
@@ -3713,10 +4354,11 @@ DROP PROCEDURE IF EXISTS sp_list_visits_by_patient $$
 CREATE PROCEDURE sp_list_visits_by_patient(IN p_patient_id BIGINT)
 BEGIN
     SELECT mv.id AS visit_id, mv.visit_date, mv.reason, mv.assessment, mv.plan,
-           CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name
+           CONCAT(per.first_name, ' ', per.last_name) AS professional_name
     FROM medical_visits mv
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+    JOIN persons per ON hp.person_id = per.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC;
 END $$
@@ -3726,6 +4368,9 @@ DELIMITER ;
 ### 5.
 
 
+
+
+
 Crear un procedimiento que muestre todos los profesionales.
 
 ```sql
@@ -3733,16 +4378,20 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_all_professionals $$
 CREATE PROCEDURE sp_list_all_professionals()
 BEGIN
-    SELECT hp.id, hp.document_number, hp.first_name, hp.last_name, hp.medical_license,
-           s.name AS specialty, hp.email, hp.phone, hp.is_active
+    SELECT hp.id, per.document_number, per.first_name, per.last_name, hp.medical_license,
+           s.name AS specialty, per.email, per.phone, hp.is_active
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
-    ORDER BY hp.last_name;
+    ORDER BY per.last_name;
 END $$
 DELIMITER ;
 ```
 
 ### 6.
+
+
+
 
 
 Crear un procedimiento que reciba una especialidad y muestre sus profesionales.
@@ -3752,8 +4401,9 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_professionals_by_specialty $$
 CREATE PROCEDURE sp_list_professionals_by_specialty(IN p_specialty_name VARCHAR(100))
 BEGIN
-    SELECT hp.id, hp.first_name, hp.last_name, hp.medical_license, hp.email, hp.phone
+    SELECT hp.id, per.first_name, per.last_name, hp.medical_license, per.email, per.phone
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
     WHERE s.name LIKE CONCAT('%', p_specialty_name, '%');
 END $$
@@ -3761,6 +4411,9 @@ DELIMITER ;
 ```
 
 ### 7.
+
+
+
 
 
 Crear un procedimiento que liste diagnósticos.
@@ -3780,6 +4433,9 @@ DELIMITER ;
 ### 8.
 
 
+
+
+
 Crear un procedimiento que muestre medicamentos activos.
 
 ```sql
@@ -3787,15 +4443,19 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_active_medications $$
 CREATE PROCEDURE sp_list_active_medications()
 BEGIN
-    SELECT id, name, generic_name, concentration, presentation
-    FROM medications
-    WHERE is_active = TRUE
-    ORDER BY name;
+    SELECT m.id, m.name, mc.name AS class_name, m.generic_name, m.concentration, m.presentation
+    FROM medications m
+    JOIN medication_classes mc ON m.medication_class_id = mc.id
+    WHERE m.is_active = TRUE
+    ORDER BY mc.name, m.name;
 END $$
 DELIMITER ;
 ```
 
 ### 9.
+
+
+
 
 
 Crear un procedimiento que liste procedimientos clínicos realizados a un paciente.
@@ -3805,8 +4465,9 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_patient_procedures $$
 CREATE PROCEDURE sp_list_patient_procedures(IN p_patient_id BIGINT)
 BEGIN
-    SELECT pr.id, pr.name AS procedure_name, pr.eye, pr.procedure_date, pr.results, pr.complications
+    SELECT pr.id, pt.name AS procedure_name, pr.eye, pr.procedure_date, pr.results, pr.complications
     FROM procedures pr
+    JOIN procedure_types pt ON pr.procedure_type_id = pt.id
     JOIN medical_visits mv ON pr.visit_id = mv.id
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     WHERE ch.patient_id = p_patient_id
@@ -3816,6 +4477,9 @@ DELIMITER ;
 ```
 
 ### 10.
+
+
+
 
 
 Crear un procedimiento para consultar todos los controles de glaucoma de un paciente.
@@ -3840,6 +4504,9 @@ DELIMITER ;
 ### 11.
 
 
+
+
+
 Crear un procedimiento para registrar un nuevo paciente.
 
 ```sql
@@ -3859,14 +4526,30 @@ CREATE PROCEDURE sp_insert_patient(
     OUT p_new_id BIGINT
 )
 BEGIN
-    INSERT INTO patients (document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email)
+    DECLARE v_person_id BIGINT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+    INSERT INTO persons (document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email)
     VALUES (p_doc_type_id, p_doc_num, p_first_name, p_last_name, p_birth_date, p_gender, p_city_id, p_address, p_phone, p_email);
+    SET v_person_id = LAST_INSERT_ID();
+
+    INSERT INTO patients (person_id, blood_type, health_insurance, affiliation_type, occupation, emergency_contact_name, emergency_contact_phone)
+    VALUES (v_person_id, 'O+', 'Sanitas', 'COTIZANTE', 'No especificado', 'Contacto de Emergencia', p_phone);
     SET p_new_id = LAST_INSERT_ID();
+    COMMIT;
 END $$
 DELIMITER ;
 ```
 
 ### 12.
+
+
+
 
 
 Crear un procedimiento para crear una historia clínica.
@@ -3890,6 +4573,9 @@ DELIMITER ;
 ### 13.
 
 
+
+
+
 Crear un procedimiento para registrar una consulta médica.
 
 ```sql
@@ -3908,11 +4594,22 @@ BEGIN
     INSERT INTO medical_visits (clinical_history_id, professional_id, visit_date, reason, symptoms, assessment, plan, is_closed)
     VALUES (p_history_id, p_prof_id, NOW(), p_reason, p_symptoms, p_assessment, p_plan, FALSE);
     SET p_new_visit_id = LAST_INSERT_ID();
+
+    UPDATE appointments 
+    SET status = 'ATENDIDA'
+    WHERE professional_id = p_prof_id
+      AND patient_id = (SELECT patient_id FROM clinical_histories WHERE id = p_history_id)
+      AND status IN ('PROGRAMADA', 'CONFIRMADA')
+      AND DATE(appointment_date) = CURDATE()
+    LIMIT 1;
 END $$
 DELIMITER ;
 ```
 
 ### 14.
+
+
+
 
 
 Crear un procedimiento para registrar un diagnóstico asociado a una consulta.
@@ -3934,6 +4631,9 @@ DELIMITER ;
 ```
 
 ### 15.
+
+
+
 
 
 Crear un procedimiento para registrar una medición de PIO.
@@ -3958,6 +4658,9 @@ DELIMITER ;
 ### 16.
 
 
+
+
+
 Crear un procedimiento para registrar un control de glaucoma.
 
 ```sql
@@ -3978,6 +4681,9 @@ DELIMITER ;
 ```
 
 ### 17.
+
+
+
 
 
 Crear un procedimiento para registrar un examen OCT.
@@ -4004,6 +4710,9 @@ DELIMITER ;
 ### 18.
 
 
+
+
+
 Crear un procedimiento para registrar un campo visual.
 
 ```sql
@@ -4028,6 +4737,9 @@ DELIMITER ;
 ### 19.
 
 
+
+
+
 Crear un procedimiento para registrar una paquimetría.
 
 ```sql
@@ -4047,6 +4759,9 @@ DELIMITER ;
 ```
 
 ### 20.
+
+
+
 
 
 Crear un procedimiento para registrar un tratamiento.
@@ -4076,6 +4791,9 @@ DELIMITER ;
 ### 21.
 
 
+
+
+
 Crear un procedimiento para actualizar teléfono y correo de un paciente.
 
 ```sql
@@ -4087,14 +4805,18 @@ CREATE PROCEDURE sp_update_patient_contact(
     IN p_new_email VARCHAR(150)
 )
 BEGIN
-    UPDATE patients
-    SET phone = p_new_phone, email = p_new_email
-    WHERE id = p_patient_id;
+    UPDATE persons per
+    JOIN patients p ON per.id = p.person_id
+    SET per.phone = p_new_phone, per.email = p_new_email
+    WHERE p.id = p_patient_id;
 END $$
 DELIMITER ;
 ```
 
 ### 22.
+
+
+
 
 
 Crear un procedimiento para modificar el estado de una historia clínica.
@@ -4115,6 +4837,9 @@ DELIMITER ;
 ```
 
 ### 23.
+
+
+
 
 
 Crear un procedimiento para actualizar observaciones de una consulta.
@@ -4138,6 +4863,9 @@ DELIMITER ;
 ### 24.
 
 
+
+
+
 Crear un procedimiento para modificar la presión objetivo de un paciente con glaucoma.
 
 ```sql
@@ -4159,6 +4887,9 @@ DELIMITER ;
 ### 25.
 
 
+
+
+
 Crear un procedimiento para finalizar un tratamiento.
 
 ```sql
@@ -4174,6 +4905,9 @@ DELIMITER ;
 ```
 
 ### 26.
+
+
+
 
 
 Crear un procedimiento para cambiar el medicamento de un tratamiento.
@@ -4197,6 +4931,9 @@ DELIMITER ;
 ### 27.
 
 
+
+
+
 Crear un procedimiento para actualizar el estado clínico del glaucoma.
 
 ```sql
@@ -4217,6 +4954,9 @@ DELIMITER ;
 ### 28.
 
 
+
+
+
 Crear un procedimiento para actualizar información de un profesional.
 
 ```sql
@@ -4229,14 +4969,18 @@ CREATE PROCEDURE sp_update_professional_contact(
     IN p_is_active BOOLEAN
 )
 BEGIN
-    UPDATE healthcare_professionals
-    SET phone = p_phone, email = p_email, is_active = p_is_active
-    WHERE id = p_prof_id;
+    UPDATE healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
+    SET per.phone = p_phone, per.email = p_email, hp.is_active = p_is_active
+    WHERE hp.id = p_prof_id;
 END $$
 DELIMITER ;
 ```
 
 ### 29.
+
+
+
 
 
 Crear un procedimiento para modificar la interpretación de un OCT.
@@ -4257,6 +5001,9 @@ DELIMITER ;
 ```
 
 ### 30.
+
+
+
 
 
 Crear un procedimiento para actualizar la interpretación de un campo visual.
@@ -4280,6 +5027,9 @@ DELIMITER ;
 ## Procedimientos con validaciones
 
 ### 31.
+
+
+
 
 
 Crear un procedimiento que registre una PIO únicamente si el paciente existe.
@@ -4306,6 +5056,9 @@ DELIMITER ;
 ### 32.
 
 
+
+
+
 Crear un procedimiento que registre una consulta solo si existe la historia clínica.
 
 ```sql
@@ -4330,6 +5083,9 @@ DELIMITER ;
 ```
 
 ### 33.
+
+
+
 
 
 Crear un procedimiento que impida registrar un tratamiento con fecha final anterior a la inicial.
@@ -4359,6 +5115,9 @@ DELIMITER ;
 ### 34.
 
 
+
+
+
 Crear un procedimiento que impida registrar valores negativos de PIO.
 
 ```sql
@@ -4381,6 +5140,9 @@ DELIMITER ;
 ```
 
 ### 35.
+
+
+
 
 
 Crear un procedimiento que valide que el ojo recibido sea `OD` u `OI`.
@@ -4407,6 +5169,9 @@ DELIMITER ;
 ### 36.
 
 
+
+
+
 Crear un procedimiento que impida crear dos historias clínicas para el mismo paciente.
 
 ```sql
@@ -4428,6 +5193,9 @@ DELIMITER ;
 ```
 
 ### 37.
+
+
+
 
 
 Crear un procedimiento que registre un diagnóstico solo si existe en el catálogo.
@@ -4452,6 +5220,9 @@ DELIMITER ;
 ```
 
 ### 38.
+
+
+
 
 
 Crear un procedimiento que valide que el profesional se encuentre activo antes de registrar una consulta.
@@ -4484,6 +5255,9 @@ DELIMITER ;
 ### 39.
 
 
+
+
+
 Crear un procedimiento que registre un campo visual validando que VFI esté entre 0 y 100.
 
 ```sql
@@ -4508,6 +5282,9 @@ DELIMITER ;
 ```
 
 ### 40.
+
+
+
 
 
 Crear un procedimiento que registre una paquimetría validando que el valor sea positivo.
@@ -4536,6 +5313,9 @@ DELIMITER ;
 ### 41.
 
 
+
+
+
 Crear un procedimiento que devuelva un resumen completo de la historia clínica de un paciente.
 
 ```sql
@@ -4544,25 +5324,29 @@ DROP PROCEDURE IF EXISTS sp_patient_complete_summary $$
 CREATE PROCEDURE sp_patient_complete_summary(IN p_patient_id BIGINT)
 BEGIN
     -- Datos demográficos e Historia
-    SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS name,
-           p.birth_date, TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS age,
+    SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS name,
+           per.birth_date, TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age,
            ch.history_number, ch.status AS history_status
     FROM patients p
+    JOIN persons per ON p.person_id = per.id
     JOIN clinical_histories ch ON p.id = ch.patient_id
     WHERE p.id = p_patient_id;
     
-    -- Alergias y Antecedentes
+    -- Alergias, Antecedentes y Factores de Riesgo
     SELECT 'ALERGIAS' AS categoria, allergen AS detalle, severity AS extra FROM patient_allergies WHERE patient_id = p_patient_id
     UNION ALL
     SELECT 'ANTECEDENTE FAMILIAR', condition_name, relationship FROM patient_family_histories WHERE patient_id = p_patient_id
     UNION ALL
-    SELECT 'ANTECEDENTE PERSONAL', description, antecedent_type FROM patient_antecedents WHERE patient_id = p_patient_id;
+    SELECT 'ANTECEDENTE PERSONAL', description, antecedent_type FROM patient_antecedents WHERE patient_id = p_patient_id
+    UNION ALL
+    SELECT 'FACTOR RIESGO GLAUCOMA', risk_factor, IFNULL(notes, 'SIN OBSERVACIONES') FROM glaucoma_risk_factors WHERE patient_id = p_patient_id;
     
     -- Consultas Recientes
-    SELECT mv.id, mv.visit_date, mv.reason, CONCAT(hp.first_name, ' ', hp.last_name) AS professional
+    SELECT mv.id, mv.visit_date, mv.reason, CONCAT(per.first_name, ' ', per.last_name) AS professional
     FROM medical_visits mv
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+    JOIN persons per ON hp.person_id = per.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC LIMIT 5;
 END $$
@@ -4570,6 +5354,9 @@ DELIMITER ;
 ```
 
 ### 42.
+
+
+
 
 
 Crear un procedimiento que muestre la evolución de PIO de un paciente entre dos fechas.
@@ -4597,6 +5384,9 @@ DELIMITER ;
 ### 43.
 
 
+
+
+
 Crear un procedimiento que reciba paciente y ojo y muestre todas sus mediciones cronológicamente.
 
 ```sql
@@ -4618,6 +5408,9 @@ DELIMITER ;
 ```
 
 ### 44.
+
+
+
 
 
 Crear un procedimiento que genere estadísticas mensuales de consultas.
@@ -4642,6 +5435,9 @@ DELIMITER ;
 ### 45.
 
 
+
+
+
 Crear un procedimiento que calcule la cantidad de pacientes atendidos por cada especialista.
 
 ```sql
@@ -4650,9 +5446,10 @@ DROP PROCEDURE IF EXISTS sp_patients_per_specialist $$
 CREATE PROCEDURE sp_patients_per_specialist()
 BEGIN
     SELECT s.name AS specialty,
-           CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name,
+           CONCAT(per.first_name, ' ', per.last_name) AS professional_name,
            COUNT(DISTINCT ch.patient_id) AS total_unique_patients
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
     LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
     LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
@@ -4665,6 +5462,9 @@ DELIMITER ;
 ### 46.
 
 
+
+
+
 Crear un procedimiento que determine pacientes sin consulta durante un número de meses recibido como parámetro.
 
 ```sql
@@ -4672,13 +5472,14 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_patients_inactive_months $$
 CREATE PROCEDURE sp_patients_inactive_months(IN p_months INT)
 BEGIN
-    SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
            MAX(mv.visit_date) AS last_visit_date,
            TIMESTAMPDIFF(MONTH, MAX(mv.visit_date), NOW()) AS months_since_last_visit
     FROM patients p
+    JOIN persons per ON p.person_id = per.id
     JOIN clinical_histories ch ON p.id = ch.patient_id
     LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
-    GROUP BY p.id, patient_name
+    GROUP BY p.id, patient_name, per.document_number
     HAVING last_visit_date IS NULL OR months_since_last_visit >= p_months
     ORDER BY months_since_last_visit DESC;
 END $$
@@ -4686,6 +5487,9 @@ DELIMITER ;
 ```
 
 ### 47.
+
+
+
 
 
 Crear un procedimiento que genere un resumen de diagnósticos por paciente.
@@ -4711,6 +5515,9 @@ DELIMITER ;
 ```
 
 ### 48.
+
+
+
 
 
 Crear un procedimiento que devuelva el último OCT, último campo visual y última PIO de un paciente.
@@ -4749,11 +5556,34 @@ BEGIN
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC, iop.id DESC LIMIT 1;
+
+    -- Última Agudeza Visual
+    SELECT 'ÚLTIMA AGUDEZA VISUAL' AS exam_type, va.exam_date, va.eye,
+           CONCAT('SC: ', va.uncorrected_va, ' | CC: ', va.corrected_va) AS metrics,
+           CONCAT('Esfera: ', IFNULL(va.sphere, 0.00), ' Cil: ', IFNULL(va.cylinder, 0.00), ' Eje: ', IFNULL(va.axis, 0)) AS findings
+    FROM visual_acuity_exams va
+    JOIN medical_visits mv ON va.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+    WHERE ch.patient_id = p_patient_id
+    ORDER BY va.exam_date DESC LIMIT 1;
+
+    -- Última Biomicroscopía
+    SELECT 'ÚLTIMA BIOMICROSCOPIA' AS exam_type, bio.exam_date, bio.eye,
+           CONCAT('Cámara: ', bio.anterior_chamber_depth, ' | Cristalino: ', bio.lens_status) AS metrics,
+           CONCAT('Córnea: ', bio.cornea_status, ' | Iris: ', bio.iris_status, ' | PXF: ', IF(bio.pseudoexfoliation_present, 'SI', 'NO')) AS findings
+    FROM biomicroscopy_exams bio
+    JOIN medical_visits mv ON bio.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+    WHERE ch.patient_id = p_patient_id
+    ORDER BY bio.exam_date DESC LIMIT 1;
 END $$
 DELIMITER ;
 ```
 
 ### 49.
+
+
+
 
 
 Crear un procedimiento que registre en una sola transacción una consulta, un diagnóstico y una medición de PIO.
@@ -4798,6 +5628,9 @@ DELIMITER ;
 ```
 
 ### 50.
+
+
+
 
 
 Crear un procedimiento transaccional que registre un control completo de glaucoma y ejecute `ROLLBACK` si alguna operación falla.
@@ -4868,13 +5701,16 @@ DELIMITER ;
 ### 1.
 
 
+
+
+
 Crear un trigger que elimine espacios externos de los nombres de pacientes antes de insertarlos.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bi_patients_trim_names $$
-CREATE TRIGGER trg_bi_patients_trim_names
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_trim_names $$
+CREATE TRIGGER trg_bi_persons_trim_names
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.first_name = TRIM(NEW.first_name);
@@ -4886,13 +5722,16 @@ DELIMITER ;
 ### 2.
 
 
+
+
+
 Convertir automáticamente el correo del paciente a minúsculas.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bi_patients_lower_email $$
-CREATE TRIGGER trg_bi_patients_lower_email
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_lower_email $$
+CREATE TRIGGER trg_bi_persons_lower_email
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.email IS NOT NULL THEN
@@ -4905,13 +5744,16 @@ DELIMITER ;
 ### 3.
 
 
+
+
+
 Convertir el número de documento a mayúsculas cuando contenga caracteres.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bi_patients_upper_document $$
-CREATE TRIGGER trg_bi_patients_upper_document
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_upper_document $$
+CREATE TRIGGER trg_bi_persons_upper_document
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.document_number = UPPER(TRIM(NEW.document_number));
@@ -4922,13 +5764,16 @@ DELIMITER ;
 ### 4.
 
 
+
+
+
 Impedir registrar una fecha de nacimiento futura.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bi_patients_check_birth_date $$
-CREATE TRIGGER trg_bi_patients_check_birth_date
-BEFORE INSERT ON patients
+DROP TRIGGER IF EXISTS trg_bi_persons_check_birth_date $$
+CREATE TRIGGER trg_bi_persons_check_birth_date
+BEFORE INSERT ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.birth_date > CURDATE() THEN
@@ -4940,6 +5785,9 @@ DELIMITER ;
 ```
 
 ### 5.
+
+
+
 
 
 Impedir registrar una presión intraocular negativa.
@@ -4962,6 +5810,9 @@ DELIMITER ;
 ### 6.
 
 
+
+
+
 Impedir registrar una PIO superior a un límite definido para datos plausibles.
 
 ```sql
@@ -4980,6 +5831,9 @@ DELIMITER ;
 ```
 
 ### 7.
+
+
+
 
 
 Validar que el campo `eye` solo admita `OD` u `OI`.
@@ -5002,6 +5856,9 @@ DELIMITER ;
 ### 8.
 
 
+
+
+
 Impedir que un tratamiento tenga fecha final anterior a la inicial.
 
 ```sql
@@ -5022,6 +5879,9 @@ DELIMITER ;
 ### 9.
 
 
+
+
+
 Validar que el VFI de un campo visual esté entre 0 y 100.
 
 ```sql
@@ -5040,6 +5900,9 @@ DELIMITER ;
 ```
 
 ### 10.
+
+
+
 
 
 Validar que la paquimetría sea mayor que cero.
@@ -5064,6 +5927,9 @@ DELIMITER ;
 ### 11.
 
 
+
+
+
 Registrar en auditoría la creación de un nuevo paciente.
 
 ```sql
@@ -5074,12 +5940,15 @@ AFTER INSERT ON patients
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, new_values, performed_by, changed_at)
-    VALUES ('patients', NEW.id, 'INSERT', JSON_OBJECT('document', NEW.document_number, 'name', CONCAT(NEW.first_name, ' ', NEW.last_name)), 'SYSTEM', NOW());
+    VALUES ('patients', NEW.id, 'INSERT', JSON_OBJECT('person_id', NEW.person_id, 'insurance', NEW.health_insurance, 'affiliation', NEW.affiliation_type), 'SYSTEM', NOW());
 END $$
 DELIMITER ;
 ```
 
 ### 12.
+
+
+
 
 
 Registrar en auditoría la creación de una historia clínica.
@@ -5100,6 +5969,9 @@ DELIMITER ;
 ### 13.
 
 
+
+
+
 Registrar automáticamente en auditoría cada nueva consulta.
 
 ```sql
@@ -5116,6 +5988,9 @@ DELIMITER ;
 ```
 
 ### 14.
+
+
+
 
 
 Registrar cada nuevo diagnóstico asociado a una consulta.
@@ -5136,6 +6011,9 @@ DELIMITER ;
 ### 15.
 
 
+
+
+
 Registrar cada nueva medición de presión intraocular.
 
 ```sql
@@ -5152,6 +6030,9 @@ DELIMITER ;
 ```
 
 ### 16.
+
+
+
 
 
 Registrar cada nuevo tratamiento.
@@ -5172,6 +6053,9 @@ DELIMITER ;
 ### 17.
 
 
+
+
+
 Registrar cada nuevo procedimiento.
 
 ```sql
@@ -5182,12 +6066,15 @@ AFTER INSERT ON procedures
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, new_values, performed_by, changed_at)
-    VALUES ('procedures', NEW.id, 'INSERT', JSON_OBJECT('visit_id', NEW.visit_id, 'name', NEW.name, 'eye', NEW.eye), 'SYSTEM', NOW());
+    VALUES ('procedures', NEW.id, 'INSERT', JSON_OBJECT('visit_id', NEW.visit_id, 'procedure_type_id', NEW.procedure_type_id, 'eye', NEW.eye), 'SYSTEM', NOW());
 END $$
 DELIMITER ;
 ```
 
 ### 18.
+
+
+
 
 
 Registrar en auditoría cada nuevo estudio OCT.
@@ -5208,6 +6095,9 @@ DELIMITER ;
 ### 19.
 
 
+
+
+
 Registrar cada campo visual creado.
 
 ```sql
@@ -5224,6 +6114,9 @@ DELIMITER ;
 ```
 
 ### 20.
+
+
+
 
 
 Crear una notificación interna cuando se registre una PIO mayor que un valor determinado.
@@ -5248,13 +6141,16 @@ DELIMITER ;
 ### 21.
 
 
+
+
+
 Actualizar automáticamente `updated_at` antes de modificar un paciente.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bu_patients_updated_at $$
-CREATE TRIGGER trg_bu_patients_updated_at
-BEFORE UPDATE ON patients
+DROP TRIGGER IF EXISTS trg_bu_persons_updated_at $$
+CREATE TRIGGER trg_bu_persons_updated_at
+BEFORE UPDATE ON persons
 FOR EACH ROW
 BEGIN
     SET NEW.first_name = TRIM(NEW.first_name);
@@ -5268,6 +6164,9 @@ DELIMITER ;
 ```
 
 ### 22.
+
+
+
 
 
 Actualizar `updated_at` antes de modificar una consulta.
@@ -5287,17 +6186,20 @@ DELIMITER ;
 ### 23.
 
 
+
+
+
 Impedir modificar el número de documento una vez creada la historia clínica.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_bu_patients_freeze_doc $$
-CREATE TRIGGER trg_bu_patients_freeze_doc
-BEFORE UPDATE ON patients
+DROP TRIGGER IF EXISTS trg_bu_persons_freeze_doc $$
+CREATE TRIGGER trg_bu_persons_freeze_doc
+BEFORE UPDATE ON persons
 FOR EACH ROW
 BEGIN
     IF NEW.document_number <> OLD.document_number THEN
-        IF EXISTS (SELECT 1 FROM clinical_histories WHERE patient_id = OLD.id) THEN
+        IF EXISTS (SELECT 1 FROM patients p JOIN clinical_histories ch ON p.id = ch.patient_id WHERE p.person_id = OLD.id) THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Integridad clínica: No se permite modificar el número de documento una vez expedida la historia clínica.';
         END IF;
@@ -5307,6 +6209,9 @@ DELIMITER ;
 ```
 
 ### 24.
+
+
+
 
 
 Impedir asignar una fecha de consulta futura no permitida.
@@ -5329,6 +6234,9 @@ DELIMITER ;
 ### 25.
 
 
+
+
+
 Validar que una nueva presión objetivo sea positiva.
 
 ```sql
@@ -5349,6 +6257,9 @@ DELIMITER ;
 ### 26.
 
 
+
+
+
 Impedir establecer una fecha final de tratamiento anterior a su inicio.
 
 ```sql
@@ -5367,6 +6278,9 @@ DELIMITER ;
 ```
 
 ### 27.
+
+
+
 
 
 Evitar modificar un examen OCT que haya sido marcado como validado.
@@ -5391,6 +6305,9 @@ DELIMITER ;
 ### 28.
 
 
+
+
+
 Evitar modificar una consulta marcada como cerrada.
 
 ```sql
@@ -5413,6 +6330,9 @@ DELIMITER ;
 ### 29.
 
 
+
+
+
 Validar valores del campo visual antes de una actualización.
 
 ```sql
@@ -5431,6 +6351,9 @@ DELIMITER ;
 ```
 
 ### 30.
+
+
+
 
 
 Normalizar observaciones eliminando espacios innecesarios antes de actualizar.
@@ -5454,17 +6377,20 @@ DELIMITER ;
 ### 31.
 
 
+
+
+
 Registrar cambios de datos personales del paciente.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_au_audit_patient_update $$
-CREATE TRIGGER trg_au_audit_patient_update
-AFTER UPDATE ON patients
+DROP TRIGGER IF EXISTS trg_au_audit_person_update $$
+CREATE TRIGGER trg_au_audit_person_update
+AFTER UPDATE ON persons
 FOR EACH ROW
 BEGIN
     INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, performed_by, changed_at)
-    VALUES ('patients', NEW.id, 'UPDATE',
+    VALUES ('persons', NEW.id, 'UPDATE',
             JSON_OBJECT('phone', OLD.phone, 'address', OLD.address),
             JSON_OBJECT('phone', NEW.phone, 'address', NEW.address),
             'SYSTEM', NOW());
@@ -5475,13 +6401,16 @@ DELIMITER ;
 ### 32.
 
 
+
+
+
 Guardar valor anterior y nuevo del correo del paciente.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_au_audit_patient_email $$
-CREATE TRIGGER trg_au_audit_patient_email
-AFTER UPDATE ON patients
+DROP TRIGGER IF EXISTS trg_au_audit_person_email $$
+CREATE TRIGGER trg_au_audit_person_email
+AFTER UPDATE ON persons
 FOR EACH ROW
 BEGIN
     IF OLD.email <=> NEW.email THEN
@@ -5489,7 +6418,7 @@ BEGIN
         BEGIN END;
     ELSE
         INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, performed_by, changed_at)
-        VALUES ('patients', NEW.id, 'UPDATE',
+        VALUES ('persons', NEW.id, 'UPDATE',
                 JSON_OBJECT('email', OLD.email),
                 JSON_OBJECT('email', NEW.email),
                 'SECURITY_AUDIT', NOW());
@@ -5499,6 +6428,9 @@ DELIMITER ;
 ```
 
 ### 33.
+
+
+
 
 
 Registrar cambios en la presión objetivo.
@@ -5524,6 +6456,9 @@ DELIMITER ;
 ### 34.
 
 
+
+
+
 Auditar cambios en el estado del glaucoma.
 
 ```sql
@@ -5547,6 +6482,9 @@ DELIMITER ;
 ### 35.
 
 
+
+
+
 Registrar cambios en tratamientos.
 
 ```sql
@@ -5568,6 +6506,9 @@ DELIMITER ;
 ### 36.
 
 
+
+
+
 Registrar cambios en diagnósticos.
 
 ```sql
@@ -5587,6 +6528,9 @@ DELIMITER ;
 ```
 
 ### 37.
+
+
+
 
 
 Registrar cambios de interpretación de OCT.
@@ -5612,6 +6556,9 @@ DELIMITER ;
 ### 38.
 
 
+
+
+
 Registrar modificaciones de campos visuales.
 
 ```sql
@@ -5631,6 +6578,9 @@ DELIMITER ;
 ```
 
 ### 39.
+
+
+
 
 
 Generar una alerta cuando una PIO sea actualizada a un valor superior al objetivo.
@@ -5653,6 +6603,9 @@ DELIMITER ;
 ```
 
 ### 40.
+
+
+
 
 
 Registrar cuándo un tratamiento cambia de activo a finalizado.
@@ -5680,6 +6633,9 @@ DELIMITER ;
 ### 41.
 
 
+
+
+
 Guardar una copia de un paciente antes de eliminarlo.
 
 ```sql
@@ -5689,13 +6645,16 @@ CREATE TRIGGER trg_bd_patients_backup
 BEFORE DELETE ON patients
 FOR EACH ROW
 BEGIN
-    INSERT INTO patients_backup (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email, created_at, updated_at)
-    VALUES (OLD.id, OLD.document_type_id, OLD.document_number, OLD.first_name, OLD.last_name, OLD.birth_date, OLD.gender, OLD.city_id, OLD.address, OLD.phone, OLD.email, OLD.created_at, OLD.updated_at);
+    INSERT INTO patients_backup (id, person_id, blood_type, health_insurance, affiliation_type, occupation, emergency_contact_name, emergency_contact_phone, created_at, updated_at)
+    VALUES (OLD.id, OLD.person_id, OLD.blood_type, OLD.health_insurance, OLD.affiliation_type, OLD.occupation, OLD.emergency_contact_name, OLD.emergency_contact_phone, OLD.created_at, OLD.updated_at);
 END $$
 DELIMITER ;
 ```
 
 ### 42.
+
+
+
 
 
 Guardar una copia de una consulta eliminada.
@@ -5716,6 +6675,9 @@ DELIMITER ;
 ### 43.
 
 
+
+
+
 Guardar un histórico de un tratamiento eliminado.
 
 ```sql
@@ -5734,6 +6696,9 @@ DELIMITER ;
 ### 44.
 
 
+
+
+
 Registrar en auditoría la eliminación de un diagnóstico.
 
 ```sql
@@ -5750,6 +6715,9 @@ DELIMITER ;
 ```
 
 ### 45.
+
+
+
 
 
 Impedir eliminar pacientes que tengan historia clínica.
@@ -5772,6 +6740,9 @@ DELIMITER ;
 ### 46.
 
 
+
+
+
 Impedir eliminar profesionales con consultas registradas.
 
 ```sql
@@ -5792,6 +6763,9 @@ DELIMITER ;
 ### 47.
 
 
+
+
+
 Impedir eliminar medicamentos actualmente utilizados en tratamientos activos.
 
 ```sql
@@ -5810,6 +6784,9 @@ DELIMITER ;
 ```
 
 ### 48.
+
+
+
 
 
 Registrar automáticamente la eliminación de un examen OCT.
@@ -5833,6 +6810,9 @@ DELIMITER ;
 ### 49.
 
 
+
+
+
 Registrar quién eliminó un documento clínico.
 
 ```sql
@@ -5853,19 +6833,20 @@ DELIMITER ;
 ### 50.
 
 
+
+
+
 Implementar un esquema completo de auditoría mediante triggers para `INSERT`, `UPDATE` y `DELETE` sobre la tabla `patients`.
 
 ```sql
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_ad_patients_full_audit $$
-CREATE TRIGGER trg_ad_patients_full_audit
-AFTER DELETE ON patients
+DROP TRIGGER IF EXISTS trg_bd_persons_backup $$
+CREATE TRIGGER trg_bd_persons_backup
+BEFORE DELETE ON persons
 FOR EACH ROW
 BEGIN
-    INSERT INTO audit_logs (table_name, record_id, action, old_values, performed_by, changed_at)
-    VALUES ('patients', OLD.id, 'DELETE',
-            JSON_OBJECT('document', OLD.document_number, 'name', CONCAT(OLD.first_name, ' ', OLD.last_name), 'email', OLD.email),
-            'AUDIT_CONTROLLER', NOW());
+    INSERT INTO persons_backup (id, document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email, created_at, updated_at)
+    VALUES (OLD.id, OLD.document_type_id, OLD.document_number, OLD.first_name, OLD.last_name, OLD.birth_date, OLD.gender, OLD.city_id, OLD.address, OLD.phone, OLD.email, OLD.created_at, OLD.updated_at);
 END $$
 
 DELIMITER ;
@@ -5877,6 +6858,9 @@ DELIMITER ;
 ## Funciones básicas
 
 ### 1.
+
+
+
 
 
 Crear una función que calcule la edad de un paciente a partir de su fecha de nacimiento.
@@ -5896,6 +6880,9 @@ DELIMITER ;
 ### 2.
 
 
+
+
+
 Crear una función que reciba nombres y apellidos y retorne el nombre completo.
 
 ```sql
@@ -5913,6 +6900,9 @@ DELIMITER ;
 ### 3.
 
 
+
+
+
 Crear una función que reciba un ID de paciente y retorne su número de documento.
 
 ```sql
@@ -5923,13 +6913,19 @@ RETURNS VARCHAR(30)
 READS SQL DATA
 BEGIN
     DECLARE v_doc VARCHAR(30);
-    SELECT document_number INTO v_doc FROM patients WHERE id = p_patient_id;
+    SELECT per.document_number INTO v_doc
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     RETURN IFNULL(v_doc, 'NO ENCONTRADO');
 END $$
 DELIMITER ;
 ```
 
 ### 4.
+
+
+
 
 
 Crear una función que reciba un ID de paciente y retorne su edad.
@@ -5942,13 +6938,19 @@ RETURNS INT
 READS SQL DATA
 BEGIN
     DECLARE v_age INT;
-    SELECT TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) INTO v_age FROM patients WHERE id = p_patient_id;
+    SELECT TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) INTO v_age
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     RETURN IFNULL(v_age, 0);
 END $$
 DELIMITER ;
 ```
 
 ### 5.
+
+
+
 
 
 Crear una función que reciba el ID de una consulta y retorne su fecha.
@@ -5970,6 +6972,9 @@ DELIMITER ;
 ### 6.
 
 
+
+
+
 Crear una función que determine cuántos años han pasado desde una fecha.
 
 ```sql
@@ -5988,6 +6993,9 @@ DELIMITER ;
 ```
 
 ### 7.
+
+
+
 
 
 Crear una función que reciba un valor de PIO y retorne un texto descriptivo.
@@ -6015,6 +7023,9 @@ DELIMITER ;
 ### 8.
 
 
+
+
+
 Crear una función que reciba `OD` u `OI` y devuelva `Ojo derecho` u `Ojo izquierdo`.
 
 ```sql
@@ -6040,6 +7051,9 @@ DELIMITER ;
 ### 9.
 
 
+
+
+
 Crear una función que reciba un booleano y retorne `Activo` o `Inactivo`.
 
 ```sql
@@ -6059,6 +7073,9 @@ DELIMITER ;
 ```
 
 ### 10.
+
+
+
 
 
 Crear una función que formatee un número de historia clínica.
@@ -6084,6 +7101,9 @@ DELIMITER ;
 ### 11.
 
 
+
+
+
 Crear una función que retorne la cantidad de consultas de un paciente.
 
 ```sql
@@ -6104,6 +7124,9 @@ DELIMITER ;
 ```
 
 ### 12.
+
+
+
 
 
 Crear una función que retorne la cantidad de diagnósticos de un paciente.
@@ -6129,6 +7152,9 @@ DELIMITER ;
 ### 13.
 
 
+
+
+
 Crear una función que retorne la cantidad de controles de glaucoma de un paciente.
 
 ```sql
@@ -6149,6 +7175,9 @@ DELIMITER ;
 ```
 
 ### 14.
+
+
+
 
 
 Crear una función que retorne la última fecha de consulta.
@@ -6173,6 +7202,9 @@ DELIMITER ;
 ### 15.
 
 
+
+
+
 Crear una función que retorne la primera fecha de consulta.
 
 ```sql
@@ -6193,6 +7225,9 @@ DELIMITER ;
 ```
 
 ### 16.
+
+
+
 
 
 Crear una función que retorne la presión intraocular promedio de un paciente.
@@ -6218,6 +7253,9 @@ DELIMITER ;
 ### 17.
 
 
+
+
+
 Crear una función que retorne la presión promedio de OD.
 
 ```sql
@@ -6239,6 +7277,9 @@ DELIMITER ;
 ```
 
 ### 18.
+
+
+
 
 
 Crear una función que retorne la presión promedio de OI.
@@ -6264,6 +7305,9 @@ DELIMITER ;
 ### 19.
 
 
+
+
+
 Crear una función que retorne la PIO máxima registrada para un paciente.
 
 ```sql
@@ -6285,6 +7329,9 @@ DELIMITER ;
 ```
 
 ### 20.
+
+
+
 
 
 Crear una función que retorne la PIO mínima registrada.
@@ -6310,6 +7357,9 @@ DELIMITER ;
 ## Funciones clínicas y de clasificación
 
 ### 21.
+
+
+
 
 
 Crear una función que clasifique una PIO según rangos definidos para fines académicos.
@@ -6339,6 +7389,9 @@ DELIMITER ;
 ### 22.
 
 
+
+
+
 Crear una función que indique si una PIO supera una presión objetivo recibida como parámetro.
 
 ```sql
@@ -6354,6 +7407,9 @@ DELIMITER ;
 ```
 
 ### 23.
+
+
+
 
 
 Crear una función que determine si un paciente tiene diagnóstico de glaucoma.
@@ -6380,6 +7436,9 @@ DELIMITER ;
 ### 24.
 
 
+
+
+
 Crear una función que determine si un paciente tiene tratamientos activos.
 
 ```sql
@@ -6401,6 +7460,9 @@ DELIMITER ;
 ```
 
 ### 25.
+
+
+
 
 
 Crear una función que indique si el paciente tiene al menos un OCT registrado.
@@ -6426,6 +7488,9 @@ DELIMITER ;
 ### 26.
 
 
+
+
+
 Crear una función que indique si tiene campo visual registrado.
 
 ```sql
@@ -6449,6 +7514,9 @@ DELIMITER ;
 ### 27.
 
 
+
+
+
 Crear una función que determine si tiene paquimetría.
 
 ```sql
@@ -6470,6 +7538,9 @@ DELIMITER ;
 ```
 
 ### 28.
+
+
+
 
 
 Crear una función que determine si el paciente tiene controles pendientes según un número de meses.
@@ -6498,6 +7569,9 @@ DELIMITER ;
 ### 29.
 
 
+
+
+
 Crear una función que clasifique un paciente según cantidad de consultas: nuevo, recurrente o frecuente.
 
 ```sql
@@ -6521,6 +7595,9 @@ DELIMITER ;
 ```
 
 ### 30.
+
+
+
 
 
 Crear una función que retorne `Completo` si el paciente tiene OCT, campo visual, PIO y paquimetría, o `Incompleto` en caso contrario.
@@ -6549,6 +7626,9 @@ DELIMITER ;
 ### 31.
 
 
+
+
+
 Crear una función que calcule el promedio de PIO entre dos fechas para un paciente.
 
 ```sql
@@ -6571,6 +7651,9 @@ DELIMITER ;
 ```
 
 ### 32.
+
+
+
 
 
 Crear una función que calcule la diferencia entre la primera y última PIO.
@@ -6610,6 +7693,9 @@ DELIMITER ;
 ### 33.
 
 
+
+
+
 Crear una función que retorne el número de días desde la última consulta.
 
 ```sql
@@ -6630,6 +7716,9 @@ DELIMITER ;
 ```
 
 ### 34.
+
+
+
 
 
 Crear una función que retorne el número de meses desde el último OCT.
@@ -6659,6 +7748,9 @@ DELIMITER ;
 ### 35.
 
 
+
+
+
 Crear una función que retorne el número de meses desde el último campo visual.
 
 ```sql
@@ -6686,6 +7778,9 @@ DELIMITER ;
 ### 36.
 
 
+
+
+
 Crear una función que calcule el promedio de RNFL de los OCT de un paciente.
 
 ```sql
@@ -6707,6 +7802,9 @@ DELIMITER ;
 ```
 
 ### 37.
+
+
+
 
 
 Crear una función que retorne el valor más reciente de RNFL.
@@ -6733,6 +7831,9 @@ DELIMITER ;
 ### 38.
 
 
+
+
+
 Crear una función que calcule el promedio de VFI de un paciente.
 
 ```sql
@@ -6756,6 +7857,9 @@ DELIMITER ;
 ### 39.
 
 
+
+
+
 Crear una función que retorne la cantidad de tratamientos históricos.
 
 ```sql
@@ -6777,6 +7881,9 @@ DELIMITER ;
 ```
 
 ### 40.
+
+
+
 
 
 Crear una función que retorne la cantidad de medicamentos diferentes utilizados por un paciente.
@@ -6804,6 +7911,9 @@ DELIMITER ;
 ### 41.
 
 
+
+
+
 Crear una función que reciba paciente y ojo y retorne la última PIO registrada.
 
 ```sql
@@ -6826,6 +7936,9 @@ DELIMITER ;
 ```
 
 ### 42.
+
+
+
 
 
 Crear una función que reciba paciente y ojo y retorne la PIO promedio.
@@ -6851,6 +7964,9 @@ DELIMITER ;
 ### 43.
 
 
+
+
+
 Crear una función que determine si la última PIO es mayor o menor que la primera.
 
 ```sql
@@ -6874,6 +7990,9 @@ DELIMITER ;
 ```
 
 ### 44.
+
+
+
 
 
 Crear una función que retorne la diferencia porcentual entre primera y última PIO.
@@ -6913,6 +8032,9 @@ DELIMITER ;
 ### 45.
 
 
+
+
+
 Crear una función que retorne el diagnóstico principal más reciente de un paciente.
 
 ```sql
@@ -6936,6 +8058,9 @@ DELIMITER ;
 ```
 
 ### 46.
+
+
+
 
 
 Crear una función que retorne el nombre del medicamento activo más reciente.
@@ -6963,6 +8088,9 @@ DELIMITER ;
 ### 47.
 
 
+
+
+
 Crear una función que retorne la cantidad de procedimientos realizados a un paciente.
 
 ```sql
@@ -6984,6 +8112,9 @@ DELIMITER ;
 ```
 
 ### 48.
+
+
+
 
 
 Crear una función que determine si un profesional ha atendido alguna vez a un paciente específico.
@@ -7008,6 +8139,9 @@ DELIMITER ;
 ### 49.
 
 
+
+
+
 Crear una función que calcule la cantidad total de exámenes especializados registrados para un paciente.
 
 ```sql
@@ -7022,6 +8156,8 @@ BEGIN
     DECLARE v_vf INT DEFAULT 0;
     DECLARE v_pachy INT DEFAULT 0;
     DECLARE v_gonio INT DEFAULT 0;
+    DECLARE v_va INT DEFAULT 0;
+    DECLARE v_bio INT DEFAULT 0;
 
     SELECT COUNT(oct.id) INTO v_oct
     FROM oct_exams oct JOIN medical_visits mv ON oct.visit_id = mv.id
@@ -7039,13 +8175,24 @@ BEGIN
     FROM gonioscopy_exams ge JOIN medical_visits mv ON ge.visit_id = mv.id
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
 
-    SET v_total = v_oct + v_vf + v_pachy + v_gonio;
+    SELECT COUNT(va.id) INTO v_va
+    FROM visual_acuity_exams va JOIN medical_visits mv ON va.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
+
+    SELECT COUNT(bio.id) INTO v_bio
+    FROM biomicroscopy_exams bio JOIN medical_visits mv ON bio.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id WHERE ch.patient_id = p_patient_id;
+
+    SET v_total = v_oct + v_vf + v_pachy + v_gonio + v_va + v_bio;
     RETURN v_total;
 END $$
 DELIMITER ;
 ```
 
 ### 50.
+
+
+
 
 
 Crear una función que genere un resumen textual como:
@@ -7076,7 +8223,10 @@ BEGIN
     DECLARE v_active_tx INT;
     DECLARE v_result TEXT;
 
-    SELECT CONCAT(first_name, ' ', last_name) INTO v_name FROM patients WHERE id = p_patient_id;
+    SELECT CONCAT(per.first_name, ' ', per.last_name) INTO v_name
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    WHERE p.id = p_patient_id;
     IF v_name IS NULL THEN
         RETURN 'PACIENTE NO REGISTRADO';
     END IF;

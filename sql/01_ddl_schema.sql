@@ -2,7 +2,7 @@
 -- PROYECTO: HISTORIAS CLÍNICAS DE OFTALMOLOGÍA Y GLAUCOMA
 -- AUTOR: Deimer Caro
 -- ARCHIVO: 01_ddl_schema.sql
--- DESCRIPCIÓN: Definición física DDL de todas las tablas con restricciones 4FN
+-- DESCRIPCIÓN: Definición física DDL super-normalizada (4FN/5FN) con personas, citas y exámenes especializados
 -- =============================================================================
 
 USE oftalmologia_glaucoma_db;
@@ -32,38 +32,8 @@ CREATE TABLE document_types (
     CONSTRAINT uq_document_type_code UNIQUE (code)
 ) ENGINE=InnoDB;
 
--- 4. Catálogo de Especialidades Médicas
-CREATE TABLE specialties (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    CONSTRAINT uq_specialty_name UNIQUE (name)
-) ENGINE=InnoDB;
-
--- 5. Profesionales de la Salud
-CREATE TABLE healthcare_professionals (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    document_type_id INT NOT NULL,
-    document_number VARCHAR(30) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    medical_license VARCHAR(50) NOT NULL,
-    specialty_id INT NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    phone VARCHAR(30) NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_prof_document UNIQUE (document_number),
-    CONSTRAINT uq_prof_license UNIQUE (medical_license),
-    CONSTRAINT uq_prof_email UNIQUE (email),
-    CONSTRAINT fk_prof_doc_type FOREIGN KEY (document_type_id) 
-        REFERENCES document_types(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_prof_specialty FOREIGN KEY (specialty_id) 
-        REFERENCES specialties(id) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
-
--- 6. Pacientes (Normalizado en 3FN/BCNF)
-CREATE TABLE patients (
+-- 4. Personas Naturales (Super-tipo generalizador 3FN/BCNF)
+CREATE TABLE persons (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     document_type_id INT NOT NULL,
     document_number VARCHAR(30) NOT NULL,
@@ -77,15 +47,56 @@ CREATE TABLE patients (
     email VARCHAR(150) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT uq_patient_document UNIQUE (document_number),
-    CONSTRAINT uq_patient_email UNIQUE (email),
-    CONSTRAINT fk_patient_doc_type FOREIGN KEY (document_type_id) 
+    CONSTRAINT uq_person_document UNIQUE (document_number),
+    CONSTRAINT uq_person_email UNIQUE (email),
+    CONSTRAINT fk_person_doc_type FOREIGN KEY (document_type_id) 
         REFERENCES document_types(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_patient_city FOREIGN KEY (city_id) 
+    CONSTRAINT fk_person_city FOREIGN KEY (city_id) 
         REFERENCES cities(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 7. Alergias del Paciente (Desacoplado por 4FN: Independiente de Antecedentes Familiares)
+-- 5. Catálogo de Especialidades Médicas
+CREATE TABLE specialties (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    CONSTRAINT uq_specialty_name UNIQUE (name)
+) ENGINE=InnoDB;
+
+-- 6. Profesionales de la Salud (Sub-tipo de persons)
+CREATE TABLE healthcare_professionals (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    person_id BIGINT NOT NULL,
+    medical_license VARCHAR(50) NOT NULL,
+    specialty_id INT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_prof_person UNIQUE (person_id),
+    CONSTRAINT uq_prof_license UNIQUE (medical_license),
+    CONSTRAINT fk_prof_person FOREIGN KEY (person_id) 
+        REFERENCES persons(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_prof_specialty FOREIGN KEY (specialty_id) 
+        REFERENCES specialties(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 7. Pacientes (Sub-tipo clínico de persons normalizado en 4FN)
+CREATE TABLE patients (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    person_id BIGINT NOT NULL,
+    blood_type ENUM('O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-') NULL,
+    health_insurance VARCHAR(100) NULL,
+    affiliation_type ENUM('COTIZANTE', 'BENEFICIARIO', 'PARTICULAR', 'SUBSIDIADO') NOT NULL DEFAULT 'COTIZANTE',
+    occupation VARCHAR(100) NULL,
+    emergency_contact_name VARCHAR(100) NULL,
+    emergency_contact_phone VARCHAR(30) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uq_patient_person UNIQUE (person_id),
+    CONSTRAINT fk_patient_person FOREIGN KEY (person_id) 
+        REFERENCES persons(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 8. Alergias del Paciente (Desacoplado por 4FN)
 CREATE TABLE patient_allergies (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -97,7 +108,7 @@ CREATE TABLE patient_allergies (
     CONSTRAINT uq_patient_allergen UNIQUE (patient_id, allergen)
 ) ENGINE=InnoDB;
 
--- 8. Antecedentes Familiares (Desacoplado por 4FN: Independiente de Alergias)
+-- 9. Antecedentes Familiares (Desacoplado por 4FN)
 CREATE TABLE patient_family_histories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -108,7 +119,7 @@ CREATE TABLE patient_family_histories (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 9. Antecedentes Personales (Desacoplado por 4FN)
+-- 10. Antecedentes Personales (Desacoplado por 4FN)
 CREATE TABLE patient_antecedents (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -119,7 +130,18 @@ CREATE TABLE patient_antecedents (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 10. Historias Clínicas (Relación 1 a 1 obligatoria con Paciente)
+-- 11. Factores de Riesgo Específicos de Glaucoma (Desacoplado por 4FN)
+CREATE TABLE glaucoma_risk_factors (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    patient_id BIGINT NOT NULL,
+    risk_factor ENUM('CCT_DELGADO', 'MIOPIA_ALTA', 'ANTECEDENTE_FAMILIAR_1ER_GRADO', 'HIPOTENSION_NOCTURNA', 'VASOESPASMO_MIGRAÑA', 'HEMORRAGIA_DISCO', 'SINDROME_PSEUDOEXFOLIATIVO', 'SINDROME_DISPERSION_PIGMENTARIA') NOT NULL,
+    notes VARCHAR(255) NULL,
+    CONSTRAINT fk_grisk_patient FOREIGN KEY (patient_id) 
+        REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT uq_patient_risk_factor UNIQUE (patient_id, risk_factor)
+) ENGINE=InnoDB;
+
+-- 12. Historias Clínicas (Relación 1 a 1 obligatoria con Paciente)
 CREATE TABLE clinical_histories (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -132,7 +154,23 @@ CREATE TABLE clinical_histories (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 11. Consultas Médicas
+-- 13. Agendamiento de Citas Clínicas
+CREATE TABLE appointments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    patient_id BIGINT NOT NULL,
+    professional_id BIGINT NOT NULL,
+    appointment_date DATETIME NOT NULL,
+    appointment_type ENUM('PRIMERA_VEZ', 'CONTROL_GLAUCOMA', 'POST_QUIRURGICO', 'LECTURA_EXAMENES', 'URGENCIA') NOT NULL DEFAULT 'CONTROL_GLAUCOMA',
+    status ENUM('PROGRAMADA', 'CONFIRMADA', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO') NOT NULL DEFAULT 'PROGRAMADA',
+    reason VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_app_patient FOREIGN KEY (patient_id) 
+        REFERENCES patients(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_app_professional FOREIGN KEY (professional_id) 
+        REFERENCES healthcare_professionals(id) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- 14. Consultas Médicas
 CREATE TABLE medical_visits (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     clinical_history_id BIGINT NOT NULL,
@@ -151,7 +189,7 @@ CREATE TABLE medical_visits (
         REFERENCES healthcare_professionals(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 12. Catálogo de Diagnósticos
+-- 15. Catálogo de Diagnósticos
 CREATE TABLE diagnoses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL,
@@ -161,7 +199,7 @@ CREATE TABLE diagnoses (
     CONSTRAINT uq_diagnosis_code UNIQUE (code)
 ) ENGINE=InnoDB;
 
--- 13. Diagnósticos de la Consulta (Asociativa 2FN/3FN)
+-- 16. Diagnósticos de la Consulta (Asociativa 2FN/3FN)
 CREATE TABLE visit_diagnoses (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -175,7 +213,25 @@ CREATE TABLE visit_diagnoses (
         REFERENCES diagnoses(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 14. Mediciones de Presión Intraocular (PIO)
+-- 17. Exámenes de Agudeza Visual y Refracción
+CREATE TABLE visual_acuity_exams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT NOT NULL,
+    eye ENUM('OD', 'OI') NOT NULL,
+    sphere DECIMAL(4,2) NULL,
+    cylinder DECIMAL(4,2) NULL,
+    axis INT NULL,
+    uncorrected_va VARCHAR(20) NOT NULL,
+    corrected_va VARCHAR(20) NOT NULL,
+    pinhole_va VARCHAR(20) NULL,
+    exam_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_va_eye CHECK (eye IN ('OD', 'OI')),
+    CONSTRAINT chk_va_axis CHECK (axis IS NULL OR (axis >= 0 AND axis <= 180)),
+    CONSTRAINT fk_va_visit FOREIGN KEY (visit_id) 
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 18. Mediciones de Presión Intraocular (PIO)
 CREATE TABLE intraocular_pressures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -190,7 +246,7 @@ CREATE TABLE intraocular_pressures (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 15. Exámenes de Paquimetría Corneal (CCT)
+-- 19. Exámenes de Paquimetría Corneal (CCT)
 CREATE TABLE pachymetry_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -204,7 +260,24 @@ CREATE TABLE pachymetry_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 16. Exámenes de Gonioscopía
+-- 20. Exámenes de Biomicroscopía con Lámpara de Hendidura
+CREATE TABLE biomicroscopy_exams (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    visit_id BIGINT NOT NULL,
+    eye ENUM('OD', 'OI') NOT NULL,
+    cornea_status VARCHAR(100) NOT NULL DEFAULT 'TRANSPARENTE',
+    anterior_chamber_depth ENUM('VAN_HERICK_I', 'VAN_HERICK_II', 'VAN_HERICK_III', 'VAN_HERICK_IV') NOT NULL DEFAULT 'VAN_HERICK_IV',
+    iris_status VARCHAR(100) NOT NULL DEFAULT 'NORMAL',
+    lens_status ENUM('TRANSPARENTE', 'CATARATA_NUCLEAR', 'CATARATA_CORTICAL', 'CATARATA_SUBCAPSULAR', 'PSEUDOFAQUICO', 'AFAQUICO') NOT NULL DEFAULT 'TRANSPARENTE',
+    pseudoexfoliation_present BOOLEAN NOT NULL DEFAULT FALSE,
+    pigment_dispersion_present BOOLEAN NOT NULL DEFAULT FALSE,
+    exam_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_biomicro_eye CHECK (eye IN ('OD', 'OI')),
+    CONSTRAINT fk_biomicro_visit FOREIGN KEY (visit_id) 
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 21. Exámenes de Gonioscopía
 CREATE TABLE gonioscopy_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -218,7 +291,7 @@ CREATE TABLE gonioscopy_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 17. Exámenes de Tomografía de Coherencia Óptica (OCT)
+-- 22. Exámenes de Tomografía de Coherencia Óptica (OCT)
 CREATE TABLE oct_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -237,7 +310,7 @@ CREATE TABLE oct_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 18. Exámenes de Campo Visual (Campimetría)
+-- 23. Exámenes de Campo Visual (Campimetría)
 CREATE TABLE visual_field_exams (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -257,18 +330,29 @@ CREATE TABLE visual_field_exams (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 19. Catálogo de Medicamentos
+-- 24. Catálogo de Clases Farmacológicas de Medicamentos (3FN)
+CREATE TABLE medication_classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    mechanism_of_action TEXT NULL,
+    CONSTRAINT uq_med_class_name UNIQUE (name)
+) ENGINE=InnoDB;
+
+-- 25. Catálogo de Medicamentos Hipotensores
 CREATE TABLE medications (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    medication_class_id INT NOT NULL,
     name VARCHAR(150) NOT NULL,
     generic_name VARCHAR(150) NOT NULL,
     concentration VARCHAR(50) NOT NULL,
     presentation VARCHAR(100) NOT NULL DEFAULT 'Frasco gotero x 2.5 ml',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT uq_medication_name UNIQUE (name)
+    CONSTRAINT uq_medication_name UNIQUE (name),
+    CONSTRAINT fk_med_class FOREIGN KEY (medication_class_id) 
+        REFERENCES medication_classes(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 20. Tratamientos Médicos Prescritos
+-- 26. Tratamientos Médicos Prescritos
 CREATE TABLE treatments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
@@ -287,20 +371,32 @@ CREATE TABLE treatments (
         REFERENCES medications(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 21. Procedimientos y Cirugías
+-- 27. Catálogo de Tipos de Procedimientos y Cirugías (3FN)
+CREATE TABLE procedure_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    category ENUM('LASER', 'QUIRURGICO', 'DIAGNOSTICO') NOT NULL DEFAULT 'QUIRURGICO',
+    description TEXT NULL,
+    CONSTRAINT uq_procedure_type_code UNIQUE (code)
+) ENGINE=InnoDB;
+
+-- 28. Procedimientos y Cirugías Ejecutados
 CREATE TABLE procedures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     visit_id BIGINT NOT NULL,
-    name VARCHAR(150) NOT NULL,
+    procedure_type_id INT NOT NULL,
     eye ENUM('OD', 'OI', 'AMBOS') NOT NULL,
     procedure_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     complications TEXT NULL,
     results TEXT NULL,
     CONSTRAINT fk_procedure_visit FOREIGN KEY (visit_id) 
-        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
+        REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_procedure_type FOREIGN KEY (procedure_type_id) 
+        REFERENCES procedure_types(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 22. Registro Principal de Glaucoma (1 a 1 por Paciente con Glaucoma)
+-- 29. Registro Principal de Glaucoma (1 a 1 por Paciente con Glaucoma)
 CREATE TABLE glaucoma_records (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     patient_id BIGINT NOT NULL,
@@ -316,7 +412,7 @@ CREATE TABLE glaucoma_records (
         REFERENCES patients(id) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- 23. Controles Evolutivos de Glaucoma
+-- 30. Controles Evolutivos de Glaucoma
 CREATE TABLE glaucoma_controls (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     glaucoma_record_id BIGINT NOT NULL,
@@ -331,7 +427,7 @@ CREATE TABLE glaucoma_controls (
         REFERENCES medical_visits(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 24. Documentos Clínicos y Adjuntos
+-- 31. Documentos Clínicos y Adjuntos
 CREATE TABLE clinical_documents (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     clinical_history_id BIGINT NOT NULL,
@@ -344,7 +440,7 @@ CREATE TABLE clinical_documents (
         REFERENCES clinical_histories(id) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 25. Bitácora General de Auditoría
+-- 32. Bitácora General de Auditoría
 CREATE TABLE audit_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     table_name VARCHAR(100) NOT NULL,
@@ -357,18 +453,20 @@ CREATE TABLE audit_logs (
 ) ENGINE=InnoDB;
 
 -- Tablas de respaldo histórico para eliminaciones auditadas
+CREATE TABLE persons_backup LIKE persons;
 CREATE TABLE patients_backup LIKE patients;
 CREATE TABLE medical_visits_backup LIKE medical_visits;
 CREATE TABLE treatments_backup LIKE treatments;
 CREATE TABLE oct_exams_backup LIKE oct_exams;
 
 -- Índices de Rendimiento
-CREATE INDEX idx_patients_name ON patients(last_name, first_name);
+CREATE INDEX idx_persons_name ON persons(last_name, first_name);
 CREATE INDEX idx_visits_date ON medical_visits(visit_date);
+CREATE INDEX idx_app_date ON appointments(appointment_date);
 CREATE INDEX idx_iop_eye_pressure ON intraocular_pressures(eye, pressure);
 CREATE INDEX idx_oct_exam_date ON oct_exams(exam_date);
 CREATE INDEX idx_vf_exam_date ON visual_field_exams(exam_date);
 CREATE INDEX idx_treatments_active ON treatments(is_active);
 CREATE INDEX idx_audit_table_date ON audit_logs(table_name, changed_at);
 
-SELECT 'Esquema físico DDL creado exitosamente con 25 tablas relacionales e índices' AS estado;
+SELECT 'Esquema físico DDL creado exitosamente con 32 tablas relacionales e índices' AS estado;

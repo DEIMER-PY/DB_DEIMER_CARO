@@ -18,19 +18,22 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_list_all_patients $$
 CREATE PROCEDURE sp_list_all_patients()
 BEGIN
-    SELECT id, document_number, first_name, last_name, birth_date, gender, phone, email
-    FROM patients
-    ORDER BY last_name, first_name;
+    SELECT p.id, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.phone, per.email
+    FROM patients p
+    JOIN persons per ON p.person_id = per.id
+    ORDER BY per.last_name, per.first_name;
 END $$
 
 -- 2. Crear un procedimiento que reciba el ID de un paciente y muestre sus datos.
 DROP PROCEDURE IF EXISTS sp_get_patient_by_id $$
 CREATE PROCEDURE sp_get_patient_by_id(IN p_patient_id BIGINT)
 BEGIN
-    SELECT p.*, dt.code AS doc_type, c.name AS city_name
+    SELECT p.*, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.address, per.phone, per.email,
+           dt.code AS doc_type, c.name AS city_name
     FROM patients p
-    JOIN document_types dt ON p.document_type_id = dt.id
-    JOIN cities c ON p.city_id = c.id
+    JOIN persons per ON p.person_id = per.id
+    JOIN document_types dt ON per.document_type_id = dt.id
+    JOIN cities c ON per.city_id = c.id
     WHERE p.id = p_patient_id;
 END $$
 
@@ -38,11 +41,13 @@ END $$
 DROP PROCEDURE IF EXISTS sp_get_patient_by_document $$
 CREATE PROCEDURE sp_get_patient_by_document(IN p_doc_number VARCHAR(30))
 BEGIN
-    SELECT p.*, dt.code AS doc_type, c.name AS city_name
+    SELECT p.*, per.document_number, per.first_name, per.last_name, per.birth_date, per.gender, per.address, per.phone, per.email,
+           dt.code AS doc_type, c.name AS city_name
     FROM patients p
-    JOIN document_types dt ON p.document_type_id = dt.id
-    JOIN cities c ON p.city_id = c.id
-    WHERE p.document_number = p_doc_number;
+    JOIN persons per ON p.person_id = per.id
+    JOIN document_types dt ON per.document_type_id = dt.id
+    JOIN cities c ON per.city_id = c.id
+    WHERE per.document_number = p_doc_number;
 END $$
 
 -- 4. Crear un procedimiento que liste todas las consultas de un paciente.
@@ -50,10 +55,11 @@ DROP PROCEDURE IF EXISTS sp_list_visits_by_patient $$
 CREATE PROCEDURE sp_list_visits_by_patient(IN p_patient_id BIGINT)
 BEGIN
     SELECT mv.id AS visit_id, mv.visit_date, mv.reason, mv.assessment, mv.plan,
-           CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name
+           CONCAT(per.first_name, ' ', per.last_name) AS professional_name
     FROM medical_visits mv
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+    JOIN persons per ON hp.person_id = per.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC;
 END $$
@@ -62,19 +68,21 @@ END $$
 DROP PROCEDURE IF EXISTS sp_list_all_professionals $$
 CREATE PROCEDURE sp_list_all_professionals()
 BEGIN
-    SELECT hp.id, hp.document_number, hp.first_name, hp.last_name, hp.medical_license,
-           s.name AS specialty, hp.email, hp.phone, hp.is_active
+    SELECT hp.id, per.document_number, per.first_name, per.last_name, hp.medical_license,
+           s.name AS specialty, per.email, per.phone, hp.is_active
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
-    ORDER BY hp.last_name;
+    ORDER BY per.last_name;
 END $$
 
 -- 6. Crear un procedimiento que reciba una especialidad y muestre sus profesionales.
 DROP PROCEDURE IF EXISTS sp_list_professionals_by_specialty $$
 CREATE PROCEDURE sp_list_professionals_by_specialty(IN p_specialty_name VARCHAR(100))
 BEGIN
-    SELECT hp.id, hp.first_name, hp.last_name, hp.medical_license, hp.email, hp.phone
+    SELECT hp.id, per.first_name, per.last_name, hp.medical_license, per.email, per.phone
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
     WHERE s.name LIKE CONCAT('%', p_specialty_name, '%');
 END $$
@@ -92,18 +100,20 @@ END $$
 DROP PROCEDURE IF EXISTS sp_list_active_medications $$
 CREATE PROCEDURE sp_list_active_medications()
 BEGIN
-    SELECT id, name, generic_name, concentration, presentation
-    FROM medications
-    WHERE is_active = TRUE
-    ORDER BY name;
+    SELECT m.id, m.name, mc.name AS class_name, m.generic_name, m.concentration, m.presentation
+    FROM medications m
+    JOIN medication_classes mc ON m.medication_class_id = mc.id
+    WHERE m.is_active = TRUE
+    ORDER BY mc.name, m.name;
 END $$
 
 -- 9. Crear un procedimiento que liste procedimientos clínicos realizados a un paciente.
 DROP PROCEDURE IF EXISTS sp_list_patient_procedures $$
 CREATE PROCEDURE sp_list_patient_procedures(IN p_patient_id BIGINT)
 BEGIN
-    SELECT pr.id, pr.name AS procedure_name, pr.eye, pr.procedure_date, pr.results, pr.complications
+    SELECT pr.id, pt.name AS procedure_name, pr.eye, pr.procedure_date, pr.results, pr.complications
     FROM procedures pr
+    JOIN procedure_types pt ON pr.procedure_type_id = pt.id
     JOIN medical_visits mv ON pr.visit_id = mv.id
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     WHERE ch.patient_id = p_patient_id
@@ -143,9 +153,22 @@ CREATE PROCEDURE sp_insert_patient(
     OUT p_new_id BIGINT
 )
 BEGIN
-    INSERT INTO patients (document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email)
+    DECLARE v_person_id BIGINT;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+    INSERT INTO persons (document_type_id, document_number, first_name, last_name, birth_date, gender, city_id, address, phone, email)
     VALUES (p_doc_type_id, p_doc_num, p_first_name, p_last_name, p_birth_date, p_gender, p_city_id, p_address, p_phone, p_email);
+    SET v_person_id = LAST_INSERT_ID();
+
+    INSERT INTO patients (person_id, blood_type, health_insurance, affiliation_type, occupation, emergency_contact_name, emergency_contact_phone)
+    VALUES (v_person_id, 'O+', 'Sanitas', 'COTIZANTE', 'No especificado', 'Contacto de Emergencia', p_phone);
     SET p_new_id = LAST_INSERT_ID();
+    COMMIT;
 END $$
 
 -- 12. Crear un procedimiento para crear una historia clínica.
@@ -176,6 +199,14 @@ BEGIN
     INSERT INTO medical_visits (clinical_history_id, professional_id, visit_date, reason, symptoms, assessment, plan, is_closed)
     VALUES (p_history_id, p_prof_id, NOW(), p_reason, p_symptoms, p_assessment, p_plan, FALSE);
     SET p_new_visit_id = LAST_INSERT_ID();
+
+    UPDATE appointments 
+    SET status = 'ATENDIDA'
+    WHERE professional_id = p_prof_id
+      AND patient_id = (SELECT patient_id FROM clinical_histories WHERE id = p_history_id)
+      AND status IN ('PROGRAMADA', 'CONFIRMADA')
+      AND DATE(appointment_date) = CURDATE()
+    LIMIT 1;
 END $$
 
 -- 14. Crear un procedimiento para registrar un diagnóstico asociado a una consulta.
@@ -294,9 +325,10 @@ CREATE PROCEDURE sp_update_patient_contact(
     IN p_new_email VARCHAR(150)
 )
 BEGIN
-    UPDATE patients
-    SET phone = p_new_phone, email = p_new_email
-    WHERE id = p_patient_id;
+    UPDATE persons per
+    JOIN patients p ON per.id = p.person_id
+    SET per.phone = p_new_phone, per.email = p_new_email
+    WHERE p.id = p_patient_id;
 END $$
 
 -- 22. Crear un procedimiento para modificar el estado de una historia clínica.
@@ -380,9 +412,10 @@ CREATE PROCEDURE sp_update_professional_contact(
     IN p_is_active BOOLEAN
 )
 BEGIN
-    UPDATE healthcare_professionals
-    SET phone = p_phone, email = p_email, is_active = p_is_active
-    WHERE id = p_prof_id;
+    UPDATE healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
+    SET per.phone = p_phone, per.email = p_email, hp.is_active = p_is_active
+    WHERE hp.id = p_prof_id;
 END $$
 
 -- 29. Crear un procedimiento para modificar la interpretación de un OCT.
@@ -597,25 +630,29 @@ DROP PROCEDURE IF EXISTS sp_patient_complete_summary $$
 CREATE PROCEDURE sp_patient_complete_summary(IN p_patient_id BIGINT)
 BEGIN
     -- Datos demográficos e Historia
-    SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS name,
-           p.birth_date, TIMESTAMPDIFF(YEAR, p.birth_date, CURDATE()) AS age,
+    SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS name,
+           per.birth_date, TIMESTAMPDIFF(YEAR, per.birth_date, CURDATE()) AS age,
            ch.history_number, ch.status AS history_status
     FROM patients p
+    JOIN persons per ON p.person_id = per.id
     JOIN clinical_histories ch ON p.id = ch.patient_id
     WHERE p.id = p_patient_id;
     
-    -- Alergias y Antecedentes
+    -- Alergias, Antecedentes y Factores de Riesgo
     SELECT 'ALERGIAS' AS categoria, allergen AS detalle, severity AS extra FROM patient_allergies WHERE patient_id = p_patient_id
     UNION ALL
     SELECT 'ANTECEDENTE FAMILIAR', condition_name, relationship FROM patient_family_histories WHERE patient_id = p_patient_id
     UNION ALL
-    SELECT 'ANTECEDENTE PERSONAL', description, antecedent_type FROM patient_antecedents WHERE patient_id = p_patient_id;
+    SELECT 'ANTECEDENTE PERSONAL', description, antecedent_type FROM patient_antecedents WHERE patient_id = p_patient_id
+    UNION ALL
+    SELECT 'FACTOR RIESGO GLAUCOMA', risk_factor, IFNULL(notes, 'SIN OBSERVACIONES') FROM glaucoma_risk_factors WHERE patient_id = p_patient_id;
     
     -- Consultas Recientes
-    SELECT mv.id, mv.visit_date, mv.reason, CONCAT(hp.first_name, ' ', hp.last_name) AS professional
+    SELECT mv.id, mv.visit_date, mv.reason, CONCAT(per.first_name, ' ', per.last_name) AS professional
     FROM medical_visits mv
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     JOIN healthcare_professionals hp ON mv.professional_id = hp.id
+    JOIN persons per ON hp.person_id = per.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC LIMIT 5;
 END $$
@@ -671,9 +708,10 @@ DROP PROCEDURE IF EXISTS sp_patients_per_specialist $$
 CREATE PROCEDURE sp_patients_per_specialist()
 BEGIN
     SELECT s.name AS specialty,
-           CONCAT(hp.first_name, ' ', hp.last_name) AS professional_name,
+           CONCAT(per.first_name, ' ', per.last_name) AS professional_name,
            COUNT(DISTINCT ch.patient_id) AS total_unique_patients
     FROM healthcare_professionals hp
+    JOIN persons per ON hp.person_id = per.id
     JOIN specialties s ON hp.specialty_id = s.id
     LEFT JOIN medical_visits mv ON hp.id = mv.professional_id
     LEFT JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
@@ -685,13 +723,14 @@ END $$
 DROP PROCEDURE IF EXISTS sp_patients_inactive_months $$
 CREATE PROCEDURE sp_patients_inactive_months(IN p_months INT)
 BEGIN
-    SELECT p.id, p.document_number, CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
+    SELECT p.id, per.document_number, CONCAT(per.first_name, ' ', per.last_name) AS patient_name,
            MAX(mv.visit_date) AS last_visit_date,
            TIMESTAMPDIFF(MONTH, MAX(mv.visit_date), NOW()) AS months_since_last_visit
     FROM patients p
+    JOIN persons per ON p.person_id = per.id
     JOIN clinical_histories ch ON p.id = ch.patient_id
     LEFT JOIN medical_visits mv ON ch.id = mv.clinical_history_id
-    GROUP BY p.id, patient_name
+    GROUP BY p.id, patient_name, per.document_number
     HAVING last_visit_date IS NULL OR months_since_last_visit >= p_months
     ORDER BY months_since_last_visit DESC;
 END $$
@@ -746,6 +785,26 @@ BEGIN
     JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
     WHERE ch.patient_id = p_patient_id
     ORDER BY mv.visit_date DESC, iop.id DESC LIMIT 1;
+
+    -- Última Agudeza Visual
+    SELECT 'ÚLTIMA AGUDEZA VISUAL' AS exam_type, va.exam_date, va.eye,
+           CONCAT('SC: ', va.uncorrected_va, ' | CC: ', va.corrected_va) AS metrics,
+           CONCAT('Esfera: ', IFNULL(va.sphere, 0.00), ' Cil: ', IFNULL(va.cylinder, 0.00), ' Eje: ', IFNULL(va.axis, 0)) AS findings
+    FROM visual_acuity_exams va
+    JOIN medical_visits mv ON va.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+    WHERE ch.patient_id = p_patient_id
+    ORDER BY va.exam_date DESC LIMIT 1;
+
+    -- Última Biomicroscopía
+    SELECT 'ÚLTIMA BIOMICROSCOPIA' AS exam_type, bio.exam_date, bio.eye,
+           CONCAT('Cámara: ', bio.anterior_chamber_depth, ' | Cristalino: ', bio.lens_status) AS metrics,
+           CONCAT('Córnea: ', bio.cornea_status, ' | Iris: ', bio.iris_status, ' | PXF: ', IF(bio.pseudoexfoliation_present, 'SI', 'NO')) AS findings
+    FROM biomicroscopy_exams bio
+    JOIN medical_visits mv ON bio.visit_id = mv.id
+    JOIN clinical_histories ch ON mv.clinical_history_id = ch.id
+    WHERE ch.patient_id = p_patient_id
+    ORDER BY bio.exam_date DESC LIMIT 1;
 END $$
 
 -- 49. Crear un procedimiento transaccional que registre en una sola transacción una consulta, un diagnóstico y una medición de PIO.

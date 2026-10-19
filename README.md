@@ -107,7 +107,7 @@ Al hacer clic en una entidad de cualquier diagrama se abre su ficha en el explor
 ```mermaid
 flowchart LR
     subgraph SQL["sql/ — fuente del esquema"]
-        S0["00 init"] --> S1["01 DDL<br/>25 tablas + 4 respaldo"] --> S2["02 datos<br/>de prueba"]
+        S0["00 init"] --> S1["01 DDL<br/>32 tablas + 5 respaldo"] --> S2["02 datos<br/>de prueba"]
         S2 --> S3["03–04<br/>consultas"] --> S5["05–07<br/>rutinas y triggers"] --> S8["08 vistas<br/>y eventos"]
     end
     subgraph RUN["tests/ — ejecución"]
@@ -154,37 +154,37 @@ flowchart LR
 
 ```mermaid
 erDiagram
-    DEPARTMENTS ||--o{ CITIES : "ubica"
-    CITIES ||--o{ PATIENTS : "reside"
-    DOCUMENT_TYPES ||--o{ PATIENTS : "identifica"
-    DOCUMENT_TYPES ||--o{ HEALTHCARE_PROFESSIONALS : "identifica"
-    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : "posee"
-
+    DEPARTMENTS ||--o{ CITIES : "1:N pertenece a"
+    DOCUMENT_TYPES ||--o{ PERSONS : "1:N identifica"
+    CITIES ||--o{ PERSONS : "1:N reside en"
+    PERSONS ||--o| PATIENTS : "1:0..1 especializa"
+    PATIENTS ||--o{ PATIENT_ALLERGIES : "1:N presenta"
+    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "1:N reporta"
+    PATIENTS ||--o{ PATIENT_ANTECEDENTS : "1:N registra"
+    PATIENTS ||--o{ GLAUCOMA_RISK_FACTORS : "1:N pondera"
+    PERSONS ||--o| HEALTHCARE_PROFESSIONALS : "1:0..1 identifica"
+    SPECIALTIES ||--o{ HEALTHCARE_PROFESSIONALS : "1:N ejerce"
+    PATIENTS ||--o{ APPOINTMENTS : "1:N agenda"
+    HEALTHCARE_PROFESSIONALS ||--o{ APPOINTMENTS : "1:N atiende"
     PATIENTS ||--|| CLINICAL_HISTORIES : "1:1 tiene"
-    PATIENTS ||--o{ PATIENT_ALLERGIES : "1:N (4FN)"
-    PATIENTS ||--o{ PATIENT_FAMILY_HISTORIES : "1:N (4FN)"
-    PATIENTS ||--o{ PATIENT_ANTECEDENTS : "1:N (4FN)"
-    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:0..1 registra"
-
-    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N contiene"
-    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : "1:N adjunta"
-
+    CLINICAL_HISTORIES ||--o{ MEDICAL_VISITS : "1:N acumula"
     HEALTHCARE_PROFESSIONALS ||--o{ MEDICAL_VISITS : "1:N atiende"
-
-    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "1:N genera"
-    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "1:N asocia"
-
+    MEDICAL_VISITS ||--o{ VISIT_DIAGNOSES : "1:N diagnostica"
+    DIAGNOSES ||--o{ VISIT_DIAGNOSES : "1:N diagnostica"
+    CLINICAL_HISTORIES ||--o{ CLINICAL_DOCUMENTS : "1:N adjunta"
     MEDICAL_VISITS ||--o{ INTRAOCULAR_PRESSURES : "1:N mide"
-    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : "1:N realiza"
-    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : "1:N evalua"
-    MEDICAL_VISITS ||--o{ OCT_EXAMS : "1:N registra"
+    MEDICAL_VISITS ||--o{ PACHYMETRY_EXAMS : "1:N evalúa"
+    MEDICAL_VISITS ||--o{ GONIOSCOPY_EXAMS : "1:N inspecciona"
+    MEDICAL_VISITS ||--o{ OCT_EXAMS : "1:N escanea"
     MEDICAL_VISITS ||--o{ VISUAL_FIELD_EXAMS : "1:N cuantifica"
-
+    MEDICAL_VISITS ||--o{ VISUAL_ACUITY_EXAMS : "1:N determina"
+    MEDICAL_VISITS ||--o{ BIOMICROSCOPY_EXAMS : "1:N examina"
+    MEDICATION_CLASSES ||--o{ MEDICATIONS : "1:N clasifica"
     MEDICAL_VISITS ||--o{ TREATMENTS : "1:N prescribe"
     MEDICATIONS ||--o{ TREATMENTS : "1:N suministra"
-
-    MEDICAL_VISITS ||--o{ PROCEDURES : "1:N ejecuta"
-
+    MEDICAL_VISITS ||--o{ PROCEDURES : "1:N realiza"
+    PROCEDURE_TYPES ||--o{ PROCEDURES : "1:N tipifica"
+    PATIENTS ||--o| GLAUCOMA_RECORDS : "1:0..1 posee"
     GLAUCOMA_RECORDS ||--o{ GLAUCOMA_CONTROLS : "1:N monitorea"
     MEDICAL_VISITS ||--o{ GLAUCOMA_CONTROLS : "1:N asocia"
 
@@ -200,17 +200,17 @@ erDiagram
     }
 ```
 
-El DER completo, con los 214 atributos y sus tipos, está en [`diagrams/physical_erd.mmd`](diagrams/physical_erd.mmd).
+El DER completo, con los 270 atributos y sus tipos, está en [`diagrams/physical_erd.mmd`](diagrams/physical_erd.mmd).
 
 ### Normalización hasta 4FN
 
 | Forma normal | Qué se resolvió en este modelo |
 |---|---|
 | **1FN** | Listas de alergias, diagnósticos y medicamentos separadas en filas atómicas |
-| **2FN** | Catálogos `diagnoses` y `medications` fuera de `visit_diagnoses` y `treatments` |
-| **3FN** | Catálogos `cities`, `departments`, `specialties` y `document_types` para eliminar dependencias transitivas |
-| **BCNF** | Todo determinante es clave: `id` o una clave candidata `UNIQUE` (`document_number`, `history_number`, …) |
-| **4FN** | Las dependencias multivaluadas del paciente (alergias, antecedentes familiares y personales) van en tres tablas independientes |
+| **2FN** | Catálogos `diagnoses`, `medication_classes` y `medications` fuera de `visit_diagnoses` y `treatments` |
+| **3FN** | Catálogos `cities`, `departments`, `specialties`, `document_types` y `procedure_types` para eliminar dependencias transitivas; tabla `persons` para datos demográficos |
+| **BCNF** | Todo determinante es clave: `id` o una clave candidata `UNIQUE` (`document_number`, `medical_license`, `history_number`, …) |
+| **4FN** | Las dependencias multivaluadas del paciente (alergias, antecedentes familiares, personales y factores de riesgo de glaucoma) van en tablas independientes |
 
 Demostración paso a paso en [`docs/02_proceso_normalizacion_4fn.md`](docs/02_proceso_normalizacion_4fn.md); detalle de cada columna en el [diccionario de datos](docs/03_diccionario_de_datos.md).
 
@@ -218,8 +218,8 @@ Demostración paso a paso en [`docs/02_proceso_normalizacion_4fn.md`](docs/02_pr
 
 [`diagrams/oftalmologia_model.mdj`](diagrams/oftalmologia_model.mdj) contiene:
 
-- **29 entidades y 214 columnas**, cada una con su tipo y sus marcas **PK**, **FK** (con la columna a la que apunta), **U** (UNIQUE) y **N** (admite NULL);
-- **25 relaciones** con cardinalidad `1 : 0..*` o `1 : 0..1`;
+- **37 entidades y 270 columnas**, cada una con su tipo y sus marcas **PK**, **FK** (con la columna a la que apunta), **U** (UNIQUE) y **N** (admite NULL);
+- **33 relaciones** con cardinalidad `1 : 0..*` o `1 : 0..1`;
 - **8 diagramas**: uno completo y uno por módulo.
 
 <img src="diagrams/exportaciones_staruml/0_modelo_logico_completo.png" alt="Modelo lógico completo en StarUML" width="100%">
@@ -327,7 +327,7 @@ $env:MYSQL_MODE = "docker"; powershell -ExecutionPolicy Bypass -File tests\run_a
 | Linux · bash 5.1 | `run_all.sh` dentro de un contenedor Linux (`mysql:8.4`) en la red de `mysql_db` | ✅ 9/9 pasos |
 | macOS · bash 3.2 | `run_all.sh` con la misma versión de bash que trae macOS (imagen `bash:3.2`) | ✅ 9/9 pasos |
 | Validación de consistencia | `python tests/validar_consistencia.py` | ✅ 0 errores en 33 artefactos |
-| Modelo StarUML | `python tests/validar_modelo_staruml.py` | ✅ 29 entidades, 214 columnas, 25 relaciones |
+| Modelo StarUML | `python tests/validar_modelo_staruml.py` | ✅ 37 entidades, 270 columnas, 33 relaciones |
 | Documento de entrega | `python scripts/verify_tallerexamenbd.py` | ✅ 250 ejercicios con su bloque SQL |
 
 ```text
@@ -359,7 +359,7 @@ TODAS LAS VALIDACIONES COMPLETADAS EXITOSAMENTE
 | `sql/01_ddl_schema.sql` y su copia en `tallerexamenbd.md` | Tablas, columnas, tipos, `NULL`, `DEFAULT`, PK, UNIQUE, FK y `CHECK` |
 | `sql/02`–`08`, `tests/verify_solutions.sql` | Que cada columna usada en `INSERT`, `UPDATE`, `NEW.`/`OLD.` y `alias.columna` exista |
 | `docs/03_diccionario_de_datos.md` | Cada columna con su tipo, nulidad, claves y valor por defecto |
-| Diagramas Mermaid, draw.io y este README | Entidades, atributos, tipos y cardinalidad de las 25 relaciones |
+| Diagramas Mermaid, draw.io y este README | Entidades, atributos, tipos y cardinalidad de las 33 relaciones |
 | Modelo ER HTML y el artefacto publicado | Datos del explorador, fichas del modelo lógico, DER, Chen y tabla de relaciones |
 | StarUML `.mdj` y sus exportaciones SVG | Entidades, columnas en orden, tipos, marcas PK/FK/U/N y relaciones de cada diagrama |
 | Textos de `docs/`, README y AGENTS | Nombres de tabla citados y rangos de `CHECK` descritos |
@@ -389,7 +389,7 @@ DB_DEIMER_CARO/
 │
 ├── sql/                               # Scripts en orden de ejecución
 │   ├── 00_init_database.sql           # Base de datos utf8mb4 y event_scheduler
-│   ├── 01_ddl_schema.sql              # 25 tablas, 4 de respaldo, llaves, CHECK e índices
+│   ├── 01_ddl_schema.sql              # 32 tablas, 5 de respaldo, llaves, CHECK e índices
 │   ├── 02_dml_seed_data.sql           # Datos clínicos de prueba
 │   ├── 03_part1_queries.sql           # Parte I: 50 consultas
 │   ├── 04_part2_subqueries.sql        # Parte II: 50 subconsultas
@@ -402,7 +402,7 @@ DB_DEIMER_CARO/
 │   ├── modelo_entidad_relacion.html   # Modelo ER interactivo (versión local del artefacto)
 │   ├── plantilla_modelo_er.html       # Estilos, navegación y explorador de la página
 │   ├── generador_modelo_er.py         # Fuente única de tablas y llaves; genera el HTML
-│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML (29 entidades, 8 diagramas)
+│   ├── oftalmologia_model.mdj         # Modelo lógico StarUML (37 entidades, 8 diagramas)
 │   ├── generador_staruml.py           # Genera el .mdj
 │   ├── physical_erd.mmd               # DER físico completo en Mermaid
 │   ├── generador_mermaid.py           # Genera physical_erd.mmd
